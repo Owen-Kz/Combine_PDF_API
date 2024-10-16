@@ -61,7 +61,7 @@ const mergePDFs = async (pdfPaths) => {
 
     for (const pdfPath of pdfPaths) {
         const pdfBytes = fs.readFileSync(pdfPath);
-        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
         const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
         copiedPages.forEach((page) => mergedPdf.addPage(page));
     }
@@ -130,7 +130,7 @@ const CombinePDF = async (req, res) => {
                 ...(graphic_abstract || []),
                 ...(tables || [])
             ]);
-
+            console.log(convertedFiles)
             // Merge PDF files
             const combinedPdfBytes = await mergePDFs(convertedFiles);
             const combinedFilename = `combined-${Date.now()}.pdf`;

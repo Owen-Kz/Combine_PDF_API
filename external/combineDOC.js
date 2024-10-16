@@ -1,11 +1,9 @@
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
-const FormData = require('form-data');
-const { exec } = require('child_process');
-const { Document, Packer, Paragraph } = require('docx');
+const officegen = require('officegen');
 
+// Setup Multer for file uploads
 const upload = multer({ dest: 'uploads/' }).fields([
     { name: 'manuscript_file', maxCount: 1 },
     { name: 'tracked_manuscript', maxCount: 1 },
@@ -15,95 +13,32 @@ const upload = multer({ dest: 'uploads/' }).fields([
     { name: 'tables', maxCount: 10 }
 ]);
 
-const convertToDOCX = async (inputFilePath, outputFilePath) => {
-    // Example conversion using LibreOffice for various formats to DOCX
+// Function to merge DOCX files
+const mergeDOCXFiles = async (docxPaths, outputFilePath) => {
     return new Promise((resolve, reject) => {
-        const command = `libreoffice --headless --convert-to docx --outdir ${path.dirname(outputFilePath)} ${inputFilePath}`;
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Error converting ${inputFilePath} to DOCX: ${stderr}`);
-                reject(error);
-            } else {
-                console.log(`File converted to DOCX: ${outputFilePath}`);
-                resolve(outputFilePath);
-            }
-        });
-    });
-};
+        const docx = officegen('docx');
 
-const convertFilesToDOCX = async (files) => {
-    const convertedFiles = [];
-
-    for (const file of files) {
-        const { path: inputFilePath, originalname } = file;
-        const outputFilePath = `${inputFilePath}.docx`;
-
-        // Check if file is already a DOCX
-        if (path.extname(originalname).toLowerCase() === '.docx') {
-            convertedFiles.push(inputFilePath);
-        } else {
-            try {
-                await convertToDOCX(inputFilePath, outputFilePath);
-                convertedFiles.push(outputFilePath);
-            } catch (error) {
-                console.error(`Error converting ${inputFilePath} to DOCX: ${error.message}`);
-            }
-        }
-    }
-
-    return convertedFiles;
-};
-
-const mergeDOCXFiles = async (docxPaths) => {
-    const mergedDoc = new Document();
-
-    for (const docxPath of docxPaths) {
-        const fileBuffer = fs.readFileSync(docxPath);
-        const doc = await Document.load(fileBuffer);
-
-        // Extract paragraphs from the document and add them to the merged document
-        doc.paragraphs.forEach(paragraph => mergedDoc.addParagraph(paragraph));
-    }
-
-    const mergedDocBuffer = await Packer.toBuffer(mergedDoc);
-    return mergedDocBuffer;
-};
-
-const uploadCombinedDOCXToPHPServer = async (combinedFilePath, combinedFilename) => {
-    const form = new FormData();
-    form.append('combined_file', fs.createReadStream(combinedFilePath));
-
-    try {
-        const response = await axios.post(process.env.ASFIRJ_SERVER, form, {
-            headers: {
-                ...form.getHeaders()
-            }
+        docx.on('finalize', function () {
+            console.log('DOCX file has been created successfully.');
         });
 
-        console.log('File uploaded successfully', response.data);
-        if (response.data.success) {
-            // Delete combined file
-            fs.unlink(combinedFilePath, function (err) {
-                if (err) throw err;
-                console.log('File deleted:', combinedFilePath);
-            });
-        } else {
-            console.log('Upload failed:', response.data.message);
-        }
-    } catch (error) {
-        console.error('Error uploading file', error);
-    }
-};
-
-const cleanUpConvertedFiles = (files) => {
-    files.forEach((filePath) => {
-        fs.unlink(filePath, (err) => {
-            if (err) {
-                console.error(`Error deleting file ${filePath}`, err);
-            } else {
-                console.log(`Deleted file: ${filePath}`);
-            }
+        docx.on('error', function (err) {
+            console.error('Error creating DOCX:', err);
+            reject(err);
         });
+
+        // Add each file's content to the final DOCX
+        docxPaths.forEach((docxPath) => {
+            const fileBuffer = fs.readFileSync(docxPath, 'utf8');
+            docx.createP(fileBuffer); // Create a new paragraph for each DOCX file
+        });
+
+        // Generate the combined DOCX
+        const output = fs.createWriteStream(outputFilePath);
+        docx.generate(output);
+
+        output.on('finish', () => resolve(outputFilePath));
+        output.on('error', reject);
     });
 };
 
@@ -120,30 +55,24 @@ const CombineDOCX = async (req, res) => {
         try {
             const { manuscript_file, tracked_manuscript, figures, supplementary_material, graphic_abstract, tables } = req.files;
 
-            // Convert all files to DOCX
-            const convertedFiles = await convertFilesToDOCX([
-                ...(manuscript_file || []),
-                ...(tracked_manuscript || []),
-                ...(figures || []),
-                ...(supplementary_material || []),
-                ...(graphic_abstract || []),
-                ...(tables || [])
-            ]);
+            // Collect DOCX file paths to merge
+            const docxPaths = [
+                ...(manuscript_file || []).map(file => file.path),
+                ...(tracked_manuscript || []).map(file => file.path),
+                ...(figures || []).map(file => file.path),
+                ...(supplementary_material || []).map(file => file.path),
+                ...(graphic_abstract || []).map(file => file.path),
+                ...(tables || []).map(file => file.path),
+            ];
 
-            // Merge DOCX files
-            const combinedDocxBytes = await mergeDOCXFiles(convertedFiles);
+            // Merge DOCX files using officegen
             const combinedFilename = `combined-${Date.now()}.docx`;
             const combinedFilePath = path.join('uploads', combinedFilename);
-            fs.writeFileSync(combinedFilePath, combinedDocxBytes);
+            await mergeDOCXFiles(docxPaths, combinedFilePath);
 
             console.log("File Combination Complete,", combinedFilename);
 
-            // Upload the combined DOCX to the PHP server
-            await uploadCombinedDOCXToPHPServer(combinedFilePath, combinedFilename);
-
-            // Clean up temporary files
-            cleanUpConvertedFiles(convertedFiles);
-
+            // Respond with success
             res.json({ success: true, filename: combinedFilename });
 
         } catch (error) {
