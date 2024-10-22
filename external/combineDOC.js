@@ -2,6 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const officegen = require('officegen');
+const axios = require('axios');
+const FormData = require('form-data');
+
+
+
 
 // Setup Multer for file uploads
 const upload = multer({ dest: 'uploads/' }).fields([
@@ -12,6 +17,33 @@ const upload = multer({ dest: 'uploads/' }).fields([
     { name: 'graphic_abstract', maxCount: 1 },
     { name: 'tables', maxCount: 10 }
 ]);
+
+const uploadCombinedPDFToPHPServer = async (combinedFilePath, combinedFilename) => {
+    const form = new FormData();
+    form.append('combined_file', fs.createReadStream(combinedFilePath));
+
+    try {
+        const response = await axios.post(process.env.ASFIRJ_SERVER, form, {
+            headers: {
+                ...form.getHeaders()
+            }
+        });
+
+        console.log('File uploaded successfully', response.data);
+        if (response.data.success) {
+            // Delete combined file
+            fs.unlink(combinedFilePath, function (err) {
+                if (err) throw err;
+                console.log('File deleted:', combinedFilePath);
+            });
+        } else {
+            console.log('Upload failed:', response.data.message);
+        }
+    } catch (error) {
+        console.error('Error uploading file', error);
+    }
+};
+
 
 // Function to merge DOCX files
 const mergeDOCXFiles = async (docxPaths, outputFilePath) => {
@@ -41,6 +73,17 @@ const mergeDOCXFiles = async (docxPaths, outputFilePath) => {
         output.on('error', reject);
     });
 };
+const cleanUpConvertedFiles = (files) => {
+    files.forEach((filePath) => {
+        fs.unlink(filePath, (err) => {
+            if (err) {
+                console.error(`Error deleting file ${filePath}`, err);
+            } else {
+                console.log(`Deleted file: ${filePath}`);
+            }
+        });
+    });
+};
 
 const CombineDOCX = async (req, res) => {
     console.log("DOCX Combine Started");
@@ -68,12 +111,20 @@ const CombineDOCX = async (req, res) => {
             // Merge DOCX files using officegen
             const combinedFilename = `combined-${Date.now()}.docx`;
             const combinedFilePath = path.join('uploads', combinedFilename);
-            await mergeDOCXFiles(docxPaths, combinedFilePath);
+            const combinedPdfBytes = await mergeDOCXFiles(docxPaths, combinedFilePath);
+            
+            fs.writeFileSync(combinedFilePath, combinedPdfBytes);
 
             console.log("File Combination Complete,", combinedFilename);
 
+      
+            // Upload the combined PDF to the PHP server
+            await uploadCombinedPDFToPHPServer(combinedFilePath, combinedFilename);
+
+            // Clean up temporary files
+            cleanUpConvertedFiles(docxPaths);
             // Respond with success
-            res.json({ success: true, filename: combinedFilename });
+           return res.json({ success: true, filename: combinedFilename });
 
         } catch (error) {
             console.error('Error combining DOCX files', error);
