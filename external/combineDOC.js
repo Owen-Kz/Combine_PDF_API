@@ -111,7 +111,7 @@ const CombineDOCX = async (req, res) => {
             res.json({ success: true, filename: combinedFilename });
         } catch (error) {
             console.error('Error combining DOCX files', error);
-            res.status(500).json({ success: false, message: 'Error combining DOCX files' });
+            res.status(500).json({ success: false, message: 'Error combining DOCX files', filename:"noFILESENT"});
         }
     });
 };
