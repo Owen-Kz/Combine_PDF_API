@@ -1,12 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
-const officegen = require('officegen');
-const axios = require('axios');
-const FormData = require('form-data');
-
-
-
+const PizZip = require('pizzip');
+const Docxtemplater = require('docxtemplater');
+const { PDFDocument } = require('pdf-lib');
+const { Document, Packer, Paragraph } = require('docx');
 
 // Setup Multer for file uploads
 const upload = multer({ dest: 'uploads/' }).fields([
@@ -18,114 +16,99 @@ const upload = multer({ dest: 'uploads/' }).fields([
     { name: 'tables', maxCount: 10 }
 ]);
 
-const uploadCombinedPDFToPHPServer = async (combinedFilePath, combinedFilename) => {
-    const form = new FormData();
-    form.append('combined_file', fs.createReadStream(combinedFilePath));
+// Convert PDF to DOCX with basic text extraction
+const convertPDFToDOCX = async (pdfPath, outputDocxPath) => {
+    const pdfBytes = fs.readFileSync(pdfPath);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const docx = new Document();
 
-    try {
-        const response = await axios.post(process.env.ASFIRJ_SERVER, form, {
-            headers: {
-                ...form.getHeaders()
-            }
-        });
-
-        console.log('File uploaded successfully', response.data);
-        if (response.data.success) {
-            // Delete combined file
-            fs.unlink(combinedFilePath, function (err) {
-                if (err) throw err;
-                console.log('File deleted:', combinedFilePath);
-            });
-        } else {
-            console.log('Upload failed:', response.data.message);
-        }
-    } catch (error) {
-        console.error('Error uploading file', error);
+    for (let i = 0; i < pdfDoc.getPageCount(); i++) {
+        const page = pdfDoc.getPage(i);
+        const text = await page.getTextContent(); // Extract text from page
+        const paragraphs = text.items.map(item => new Paragraph(item.str));
+        docx.addSection({ children: paragraphs });
     }
+
+    const buffer = await Packer.toBuffer(docx);
+    fs.writeFileSync(outputDocxPath, buffer);
 };
 
+// Check if the file is a valid DOCX by checking its extension
+const isValidDocx = (filePath) => {
+    const fileExtension = path.extname(filePath).toLowerCase();
+    return fileExtension === '.docx';
+};
+
+// Convert PDFs to DOCX and return valid DOCX paths
+const processFilesToDOCX = async (filePaths) => {
+    const docxPaths = [];
+
+    for (const filePath of filePaths) {
+        if (path.extname(filePath).toLowerCase() === '.pdf') {
+            const outputDocxPath = filePath.replace('.pdf', '.docx');
+            await convertPDFToDOCX(filePath, outputDocxPath);
+            docxPaths.push(outputDocxPath);
+        } else if (isValidDocx(filePath)) {
+            docxPaths.push(filePath); // Add DOCX files directly if valid
+        } else {
+            console.warn(`Skipping invalid file: ${filePath}`);
+        }
+    }
+
+    console.log("path", docxPaths)
+    return docxPaths;
+};
 
 // Function to merge DOCX files
 const mergeDOCXFiles = async (docxPaths, outputFilePath) => {
-    return new Promise((resolve, reject) => {
-        const docx = officegen('docx');
+    const zip = new PizZip();
 
-        docx.on('finalize', function () {
-            console.log('DOCX file has been created successfully.');
-        });
-
-        docx.on('error', function (err) {
-            console.error('Error creating DOCX:', err);
-            reject(err);
-        });
-
-        // Add each file's content to the final DOCX
-        docxPaths.forEach((docxPath) => {
-            const fileBuffer = fs.readFileSync(docxPath, 'utf8');
-            docx.createP(fileBuffer); // Create a new paragraph for each DOCX file
-        });
-
-        // Generate the combined DOCX
-        const output = fs.createWriteStream(outputFilePath);
-        docx.generate(output);
-
-        output.on('finish', () => resolve(outputFilePath));
-        output.on('error', reject);
+    docxPaths.forEach(docxPath => {
+        try {
+            const content = fs.readFileSync(docxPath, 'binary');
+            const doc = new Docxtemplater(new PizZip(content));
+            zip.file(path.basename(docxPath), doc.getZip().generate({ type: 'nodebuffer' }));
+        } catch (error) {
+            console.error(`Error processing DOCX file ${docxPath}:`, error);
+        }
     });
-};
-const cleanUpConvertedFiles = (files) => {
-    files.forEach((filePath) => {
-        fs.unlink(filePath, (err) => {
-            if (err) {
-                console.error(`Error deleting file ${filePath}`, err);
-            } else {
-                console.log(`Deleted file: ${filePath}`);
-            }
-        });
-    });
+
+    fs.writeFileSync(outputFilePath, zip.generate({ type: 'nodebuffer' }));
+    return outputFilePath;
 };
 
+// Main handler function
 const CombineDOCX = async (req, res) => {
-    console.log("DOCX Combine Started");
-
     upload(req, res, async (err) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error uploading files' });
         }
 
-        console.log("Files Received");
-
         try {
-            const { manuscript_file, tracked_manuscript, figures, supplementary_material, graphic_abstract, tables } = req.files;
-
-            // Collect DOCX file paths to merge
-            const docxPaths = [
-                ...(manuscript_file || []).map(file => file.path),
-                ...(tracked_manuscript || []).map(file => file.path),
-                ...(figures || []).map(file => file.path),
-                ...(supplementary_material || []).map(file => file.path),
-                ...(graphic_abstract || []).map(file => file.path),
-                ...(tables || []).map(file => file.path),
+            // Collect DOCX or PDF file paths to process
+            const docxOrPdfPaths = [
+                ...(req.files.manuscript_file || []).map(file => file.path),
+                ...(req.files.tracked_manuscript || []).map(file => file.path),
+                ...(req.files.figures || []).map(file => file.path),
+                ...(req.files.supplementary_material || []).map(file => file.path),
+                ...(req.files.graphic_abstract || []).map(file => file.path),
+                ...(req.files.tables || []).map(file => file.path),
             ];
 
-            // Merge DOCX files using officegen
+            // Convert PDFs to DOCX and gather all DOCX paths
+            const docxPaths = await processFilesToDOCX(docxOrPdfPaths);
+
+            // Merge DOCX files using Docxtemplater
             const combinedFilename = `combined-${Date.now()}.docx`;
             const combinedFilePath = path.join('uploads', combinedFilename);
-            const combinedPdfBytes = await mergeDOCXFiles(docxPaths, combinedFilePath);
-            
-            fs.writeFileSync(combinedFilePath, combinedPdfBytes);
-
-            console.log("File Combination Complete,", combinedFilename);
-
-      
-            // Upload the combined PDF to the PHP server
-            await uploadCombinedPDFToPHPServer(combinedFilePath, combinedFilename);
+            await mergeDOCXFiles(docxPaths, combinedFilePath);
 
             // Clean up temporary files
-            cleanUpConvertedFiles(docxPaths);
-            // Respond with success
-           return res.json({ success: true, filename: combinedFilename });
+            docxOrPdfPaths.forEach(file => {
+                if (file.endsWith('.pdf')) fs.unlinkSync(file); // Remove original PDFs
+            });
 
+            res.json({ success: true, filename: combinedFilename });
         } catch (error) {
             console.error('Error combining DOCX files', error);
             res.status(500).json({ success: false, message: 'Error combining DOCX files' });
