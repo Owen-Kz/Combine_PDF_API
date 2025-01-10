@@ -37,7 +37,12 @@ const convertDocxToPdf = async (docxPath, outputPdfPath) => {
   const docxBuffer = fs.readFileSync(docxPath);
   const { value: html } = await mammoth.convertToHtml({ buffer: docxBuffer });
 
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+});
+
+  // const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setContent(html);
   await page.pdf({ path: outputPdfPath, format: 'A4' });
@@ -138,9 +143,9 @@ const CombinePDF = async (req, res) => {
         if (err) console.error(`Error cleaning up combined file: ${outputFilePath}`, err);
       });
 
-      console.log('individualFiles', cloudinaryOriginalUrls);
-      console.log('pdfFiles', cloudinaryPdfUrls);
-      console.log('combinedFile', combinedUploadUrl);
+      // console.log('individualFiles', cloudinaryOriginalUrls);
+      // console.log('pdfFiles', cloudinaryPdfUrls);
+      // console.log('combinedFile', combinedUploadUrl);
       res.json({
         success: true,
         originalFiles: cloudinaryOriginalUrls,
