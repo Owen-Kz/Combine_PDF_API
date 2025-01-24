@@ -53,6 +53,7 @@ const http = require("http");
 // });
 const {Server} = require('socket.io');
 const SaveMessage = require("./external/saveMessage");
+const saveSpaceMessage = require("./external/saveSpaceMessage");
 require('debug')('socket.io');
 
 const io = new Server(server, {
@@ -80,29 +81,25 @@ socket.on('disconnect', () => {
 });
 
 // Generate a unique room ID for this pair of users
-socket.on("join-room", async (roomId) =>{
-  console.log("joinRoom", roomId)
+socket.on("join-room", (roomId, userId) => {
   socket.join(roomId); // Join the room
+  console.log(`User ${userId} joined room: ${roomId}`);
+});
 
-})
+
 socket.on("message", async (data, roomId) => {
-
   try {
 
-      // Wait for the message to be saved
-      // await SaveMessage(data, roomId);
-      
-      io.to(roomId).emit("chat-message", data);
-      if(data.files[0]){
-    
-      }else{
-     await SaveMessage(data, roomId)
-     }
-      // If the message is saved successfully, emit the event
+    // Emit the message to all users in the room
+    io.to(roomId).emit("chat-message", data);
+     if (!data.files || !data.files.length) {
+      await SaveMessage(data, roomId);
+    }
   } catch (error) {
-      console.log("Error saving message:", error);
+    console.log("Error handling message:", error);
   }
 });
+
 
 
 
@@ -114,7 +111,26 @@ socket.on("feedback", (data) => {
 
 
 
+  // THE SOCKET IO CHAT SYSTEM FOR SPACES GOES HERE
+  socket.on('join-group-chat', async (roomId) => {
+    socket.join(roomId); // Join the group chat room
+  });
 
+  socket.on('leave-group-chat', async (roomId) => {
+    socket.leave(roomId); // Leave the group chat room
+  });
+
+  socket.on('group-chat-message', async (data, roomId) => {
+
+  io.to(roomId).emit('group-chat-message', data);
+
+
+  if (!data.files || !data.files.length) {
+    await saveSpaceMessage(data)
+  }
+
+
+  });
 
 
 
