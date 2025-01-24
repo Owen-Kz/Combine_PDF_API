@@ -6,7 +6,15 @@ const openfile = require("../external/openFile");
 
 const router = express.Router()
 router.use(express.json())
-
+// Enable CORS for this router
+router.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    next();
+  });
+  
 router.post("/external/api/combinePDF", CombinePDF)
 router.post("/external/api/combineDOC", CombineDOCX)
 router.get("/file", downloadFile)

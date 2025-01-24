@@ -23,7 +23,102 @@ app.set("view engine", "ejs");
 
 app.set("views", ["./views", "./views/admin", "./public/directory/profile", "./public/", "./public/userUpload/books", "./public/directory", "./public/userUpload/audio"]);
 
+// const io = require("socket.io")(server, {
+//   port: 5000 // Change this to your desired port number
+// })
+const http = require("http");
+// const servr = http.createServer(app);
 
+// const io = require("socket.io")(servr, {
+//   cors: {
+//     origin: '*',
+//     methods: ["GET", "POST"],
+//     credentials: true
+//   }
+// });
+
+
+// const io = require('socket.io')(server, {
+//   port: 5000,
+//   cors: {
+//       origin: '*',
+//       methods: ["GET", "POST"],
+//       // allowedHeaders: ["my-custom-header"],    // Optional: Specify custom headers
+//       credentials: true ,
+//   },
+ 
+// // transports: ["websocket"], 
+//   // pingTimeout: 60000, // Wait 60 seconds before assuming the connection is lost
+//   // pingInterval: 25000, // Send a ping every 25 seconds
+// });
+const {Server} = require('socket.io');
+const SaveMessage = require("./external/saveMessage");
+require('debug')('socket.io');
+
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Update with your actual origin
+    methods: ["GET", "POST"],
+    credentials: true ,
+
+},
+transports: ["websocket"],
+});
+
+let socketsConnected = new Set();
+
+io.on('connection', onConnected);
+
+function onConnected(socket) {
+console.log('Socket connected', socket.id);
+socketsConnected.add(socket.id);
+io.emit('clients-total', socketsConnected.size);
+socket.on('disconnect', () => {
+ 
+  socketsConnected.delete(socket.id); 
+  io.emit('clients-total', socketsConnected.size);
+});
+
+// Generate a unique room ID for this pair of users
+socket.on("join-room", async (roomId) =>{
+  console.log("joinRoom", roomId)
+  socket.join(roomId); // Join the room
+
+})
+socket.on("message", async (data, roomId) => {
+
+  try {
+
+      // Wait for the message to be saved
+      // await SaveMessage(data, roomId);
+      
+      io.to(roomId).emit("chat-message", data);
+      if(data.files[0]){
+    
+      }else{
+     await SaveMessage(data, roomId)
+     }
+      // If the message is saved successfully, emit the event
+  } catch (error) {
+      console.log("Error saving message:", error);
+  }
+});
+
+
+
+
+socket.on("feedback", (data) => {
+  socket.broadcast.emit("feedback", data);
+});
+
+
+
+
+
+
+
+
+}
 
 app.use("/", require("./routes/pages"));
 

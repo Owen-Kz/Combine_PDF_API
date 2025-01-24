@@ -34,6 +34,7 @@
     "officegen": "^0.6.5",
     "pdf-lib": "^1.17.1",
     "pizzip": "^3.1.7",
-    "puppeteer": "^23.11.1"
+    "puppeteer": "^23.11.1",
+    "socket.io": "^4.8.1"
   }
 }
