@@ -92,9 +92,9 @@ socket.on("message", async (data, roomId) => {
 
     // Emit the message to all users in the room
     io.to(roomId).emit("chat-message", data);
-     if (!data.files || !data.files.length) {
-      await SaveMessage(data, roomId);
-    }
+    //  if (!data.files || !data.files.length) {
+    //   await SaveMessage(data, roomId);
+    // }
   } catch (error) {
     console.log("Error handling message:", error);
   }
@@ -125,9 +125,9 @@ socket.on("feedback", (data) => {
   io.to(roomId).emit('group-chat-message', data);
 
 
-  if (!data.files || !data.files.length) {
-    await saveSpaceMessage(data)
-  }
+  // if (!data.files || !data.files.length) {
+  //   await saveSpaceMessage(data)
+  // }
 
 
   });
