@@ -48,6 +48,7 @@ const uploadArticlePage = async (req, res) => {
 
             res.render("uploadPage", {
                 articleId: ArticleId,
+                article_id: ArticleId,
                 firstname, lastname, othername, prefix,
                 affiliation, affiliation_country, affiliation_city,
                 orcid, asfi_membership_id,
