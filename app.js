@@ -5,10 +5,15 @@ const app =  express();
 const cookie = require("cookie-parser");
 const PORT = process.env.PORT || 31000;
 const server = require("http").Server(app)
+const session = require("express-session");
 
 const bodyParser = require("body-parser");
-
-
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Set to true if using HTTPS
+}));
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
@@ -22,6 +27,9 @@ app.use(express.json());
 app.set("view engine", "ejs");
 
 app.set("views", ["./views", "./views/admin", "./public/directory/profile", "./public/", "./public/userUpload/books", "./public/directory", "./public/userUpload/audio"]);
+app.use("/css", express.static(__dirname + "/public/css", { type: 'text/css' }));
+app.use("/js", express.static(__dirname + "/public/js"));
+app.use("/assets", express.static(__dirname + "/public/assets"));
 
 // const io = require("socket.io")(server, {
 //   port: 5000 // Change this to your desired port number
@@ -54,6 +62,7 @@ const http = require("http");
 const {Server} = require('socket.io');
 const SaveMessage = require("./external/saveMessage");
 const saveSpaceMessage = require("./external/saveSpaceMessage");
+const path = require("path");
 require('debug')('socket.io');
 
 const io = new Server(server, {

@@ -1,0 +1,138 @@
+
+<div id="article-type" class="form-section">
+<form onsubmit="return false" id="submitArticleType" >
+
+
+    <h3 class="manu_head">Article Type & Discipline</h3>
+    <span class="manu_head"><span style="color: #e22424;">*</span>Choose Article Type:</span>
+
+    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+    <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly hidden>
+    <select name="article_type" id="article_type" class="form-control" required>
+      <!-- <option value="">Select an Option</option> -->
+      <% if(article_type) { %>
+        <option value="<%=article_type%>"><%=article_type%></option>
+      <% } else{ %>
+   <option value="">Select an Option</option>
+      <% } %>
+      <option value="Original Article">Original Article</option>
+      <option value="Review">Narrative Review</option>
+      <option value="Systematic Review">Systematic Review</option>
+      <option value="Letter to Editor">Letter to Editor</option>
+      <option value="Editorial">Editorial</option>
+      <option value="Commentary">Commentary</option>
+      <option value="Protocol">Protocol</option>
+      <option value="Perspectives"> Perspectives</option>
+      <option value="Data">Data</option>
+      <option value="Opinion">Opinion</option>
+      <option value="Learning Corner">Learning Corner</option>
+      <option value="Field Story">Field Story</option>
+      <option value="Insight">Insight</option>
+      <option value="Correspondence">Correspondence</option>
+    </select>
+
+    
+    <label for="discipline"><span style="color: #e22424;">*</span>Discipline</label>
+    <select id="discipline" name="discipline" class="form-control" required>
+      <!-- <option value="">Select a Discipline</option> -->
+      <% if(article_discipline){ %>
+        <option value="<%=article_discipline%>"><%= article_discipline %></option>
+
+      <% }else { %>
+        <option value="">Select a Discipline</option>
+
+        <% } %>
+      <option value="Agricultural sciences">Agricultural sciences</option>
+      <option value="Allied Health Sciences">Allied Health Sciences</option>
+      <option value="Anthropology">Anthropology</option>
+      <option value="Arts">Arts</option>
+      <option value="Biology">Biology</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Climate Change">Climate Change</option>
+      <option value="Computer and Information Sciences">Computer and Information Sciences</option>
+      <option value="Earth Sciences">Earth Sciences</option>
+      <option value="Engineering and Technology">Engineering and Technology</option>
+      <option value="Environmental Sciences">Environmental Sciences</option>
+      <option value="Epidemiology">Epidemiology</option>
+      <option value="Humanities">Humanities</option>
+      <option value="Leadership and Management">Leadership and Management</option>
+      <option value="Life Sciences">Life Sciences</option>
+      <option value="Materials Science">Materials Science</option>
+      <option value="Mathematics">Mathematics</option>
+      <option value="Medicine">Medicine</option>
+      <option value="Physics and Astronomy">Physics and Astronomy</option>
+      <option value="Politics">Politics</option>
+      <option value="Public & Global Health">Public & Global Health</option>
+      <option value="Social and Behavioral Sciences">Social and Behavioral Sciences</option>
+      <option value="Statistics">Statistics</option>
+      <option value="Theology">Theology</option>
+      <option value="Other">Other (please specify)</option>
+    </select>
+
+    <label for=""><span style="color: #e22424;">*</span>Has this manuscript been submitted previously to ASFIRJ?</label> <br>
+Yes <input type="radio" name="prevsub" id="prevsub_yes" onclick="toggleInputField()"> <br>
+No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField()"> <br>
+
+<div id="manuscriptIDField" style="display: none;">
+<label for="">Please provide the manuscript ID</label>
+
+<% if(previousId) {%>
+    <input type="text" name="previous_id" id="previous_mansucript_id" class="form-control" value="<%=previousId%>" readonly> <br>
+    <% }else{ %>
+<input type="text" name="previous_id" id="previous_mansucript_id" class="form-control"> <br>
+   <% } %>
+
+</div>
+
+
+    <p style="color: #e22424;">* Indicates Mandatory Fields</p>
+    <div id="disciplineContainer"></div>
+    <input type="submit" hidden value="submit" id="submitType" disabled>
+
+    <!-- <button type="button" class="submit-next nextManuscript" onclick="showNext('upload-manuscript', 'article-type', 'article_type_nav', 'upload_manuscript_nav', 0, 1,'submitType')" disabled>Save & Continue</button> -->
+
+    <input type="button" class="submit-next nextManuscript" value="Save & continue" onclick="submitSection('submitType')">
+</form>
+
+
+  </div>
+
+  <script>
+ const headerMessageContainer = document.getElementById("headerMessage")
+
+headerMessageContainer.innerHTML = headerMessages[0]
+
+const submitArticleType = document.getElementById("submitArticleType")
+const article_id = submitArticleType.querySelector("input[name='manuscript_id']")
+const submissionStatus = submitArticleType.querySelector("input[name='submissionStatus']")
+submitArticleType.addEventListener("submit", function(e){
+    e.preventDefault()
+    
+    const data = {
+        article_id: article_id.value,
+        discipline:discipline.value,
+        article_type:article_type.value,
+        previous_mansucript_id: previous_mansucript_id.value,
+        submissionStatus: submissionStatus.value
+    }
+   fetch(`/submitArticleType`, {
+    method:"POST",
+    headers:{
+        "Content-type":"application/JSON"
+    },
+    body:JSON.stringify(data)
+   }).then(res =>res.json())
+   .then(data =>{
+    if(data.success){
+        showProgressSavedPopup()
+        showNext('upload-manuscript', 'article-type', 'article_type_nav', 'upload_manuscript_nav', 0, 1,'submitType')
+    }else if(data.error){
+        showErrorPopup(data.error)
+    }else{
+    
+        showErrorPopup("Internal Server Error")
+    }
+   })
+})
+</script>
+

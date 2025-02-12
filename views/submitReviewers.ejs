@@ -1,0 +1,249 @@
+
+<div id="suggest-reviewers" class="form-section hidden">
+    <form onsubmit="return false" id="submitReviewersForm">
+        <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+
+    <h3 class="manu_head">Suggest Reviewers (Optional)</h3>
+    <div id="suggestReviewer" style="width: 100%; overflow-x: scroll; margin-bottom: 10px; padding-bottom: 20px;">
+     
+     <% if(suggestedReviewers) {
+      for(let r=0; r>suggestedReviewers.length; r++){
+      %>
+      <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." value="<%=suggestedReviewers[i].fullname%>" id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" value="<%=suggestedReviewers[i].affiliation%>" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;" value="<%=suggestedReviewers[i].affiliation_country%>">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;" value="<%=suggestedReviewers[i].affiliation_city%>">
+          </div>
+        </div>
+      <%} 
+      for(let s = 0; s<6-suggestedReviewers.length; s++) { %>
+        <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-right: 10px; width: 300px;">
+          <label for="">Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="suggested_reviewer_email[]" id="suggested_reviewer_email">
+        </div>
+
+      </div>
+
+        <%}
+     } else{ %> 
+
+ 
+      <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-right: 10px; width: 300px;">
+          <label for="">Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="suggested_reviewer_email[]" id="suggested_reviewer_email">
+        </div>
+
+      </div>
+
+      <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-right: 10px; width: 300px;">
+          <label for="">Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="suggested_reviewer_email[]" id="suggested_reviewer_email">
+        </div>
+
+      </div>
+
+      <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-right: 10px; width: 300px;">
+          <label for="">Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="suggested_reviewer_email[]" id="suggested_reviewer_email">
+        </div>
+
+      </div>
+
+      <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-right: 10px; width: 300px;">
+          <label for="">Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="suggested_reviewer_email[]" id="suggested_reviewer_email">
+        </div>
+
+      </div>
+
+      <div class="suggestHandle" style="width: 100%;">
+        <div class="drag-handle"></div>
+        <div style="margin-right: 10px;">
+          <label for="fullname">Full Name:</label>
+          <input name="suggested_reviewer_fullname[]" type="text" class="form-control" placeholder="Full Name..." id=""/>
+        </div>
+        <div style="margin-right: 10px;">
+          <label for="">Affiliation(s):</label>
+          <div style="display: flex;">
+            <input type="text" class="form-control hd" placeholder="Affiliation..." name="suggested_reviewer_affiliation[]" id="suggested_reviewer_affiliation" style="margin-right: 5px;">
+            <input type="text" class="form-control hd" placeholder="City..." name="suggested_reviewer_city[]" id="suggested_reviewer_city" style="margin-right: 5px;">
+            <input type="text" class="form-control" placeholder="Country..." name="suggested_reviewer_country[]" id="suggested_reviewer_country" style="margin-right: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-right: 10px; width: 300px;">
+          <label for="">Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="suggested_reviewer_email[]" id="suggested_reviewer_email">
+        </div>
+
+      </div>
+      <%}%>
+    </div>
+
+
+    <div style="display: flex; justify-content: space-around;">
+      <!-- back button  -->
+      <button type="button" class="submit-next" onclick="NavigationNext('author-information', 'author_information_nav','suggest_reviewers_nav', 5)">Back</button>
+      <!-- end back button  -->
+
+      <input type="submit" value="submit" id="submitReviewers" disabled hidden>
+      <!-- next button  -->
+      <button type="button" class="submit-next nextManuscript" id="suggestNextButton" onclick="submitSection('submitReviewers')">Save & Continue</button>
+      <!-- end next button  -->
+    </div>
+</form>
+  </div>
+
+
+  <script>
+    // Wait for the DOM to fully load
+document.addEventListener('DOMContentLoaded', function() {
+    // Select the Next button element
+    const nextButton = document.getElementById('suggestNextButton');
+
+    // Add click event listener to the Next button
+    nextButton.addEventListener('click', function() {
+        // Select all reviewer sections
+        const reviewerSections = document.querySelectorAll('#suggest-reviewers .suggestHandle');
+
+        // Array to store unfilled sections
+        let unfilledSections = [];
+
+        // Loop through each reviewer section
+        reviewerSections.forEach((section, index) => {
+            // Check if all fields in this section are filled
+            const inputs = section.querySelectorAll('input[type="text"]');
+            let allFilled = true;
+            inputs.forEach(input => {
+                if (input.value.trim() === '') {
+                    allFilled = false;
+                }
+            });
+
+            // If section is not filled, add index to unfilledSections array
+            if (!allFilled) {
+                unfilledSections.push(index + 1); // index + 1 because index is zero-based
+            }
+        });
+
+ 
+            // Assuming there is a function showNext() defined elsewhere
+            showNext('disclosures', 'suggest-reviewers', 'suggest_reviewers_nav', 'disclosures_nav', 'author-information', 7, 7, 'submitReviewers');
+    });
+});
+  </script>
+
+
+<!-- submit Form   -->
+<script>
+  submitReviewersForm = document.getElementById("submitReviewersForm")
+
+submitReviewersForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  const formData = new FormData(submitReviewersForm)
+  fetch(`/addReviewerToPaper`, {
+    method: "POST",
+    body: formData
+  }).then(res => res.json())
+  .then(data =>{
+    if(data.error){
+      showErrorPopup(data.error)
+      showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
+
+    }else if(data.success){
+    showProgressSavedPopup()
+// showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
+
+    }else{
+
+      showErrorPopup("An Error Occured")
+      showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
+
+    }
+  })
+
+})
+</script>

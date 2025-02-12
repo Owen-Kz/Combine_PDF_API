@@ -1,0 +1,317 @@
+<script type="module" src="/js/addAuthorForModal.js"></script>
+
+<div id="author-information" class="form-section hidden">
+    <form onsubmit="return false" id="submitAuthorsForm" enctype="multipart/form-data">
+    <h3 class="manu_head">Author's Information</h3>
+    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+    <div id="addAuthor" style="width: 100%;">
+      <div class="authorinfoContainer">
+        <div class="authorname">
+          <div style="margin-right: 10px;">
+            <label for="prefix"><span style="color: #e22424;">*</span>Prefix:</label>
+            <input name="loggedIn_authors_prefix" class="form-control hd" id="author_information_prefix" value="<%= prefix %>" readonly />
+          </div>
+
+          <div style="margin-right: 10px;">
+            <label for=""><span style="color: #e22424;">*</span>First Name:</label>
+            <input type="text" class="form-control hd" placeholder="First Name..." name="loggedIn_authors_first_name" value="<%=firstname %>" id="loggedIn_firstname" readonly>
+          </div>
+            <!-- <div style="display: flex;"> -->
+          <div style="margin-right: 10px;">
+                  <label for="">MiddleName:</label>
+                    <input type="text" class="form-control" placeholder="Middle name" name="loggedIn_authors_other_name" id="loggedIn_othername" value="<%=othername  %>"  readonly>
+                  <!-- </div> -->
+          </div>
+          <div style="margin-right: 10px;">
+              <label for=""><span style="color: #e22424;">*</span>Last Name:</label>
+              <input type="text" class="form-control hd" placeholder="Last Name..." name="loggedIn_authors_last_name" id="loggedIn_lastname" value="<%=lastname%>" readonly>
+          </div>
+        </div>  
+        
+        <div class="authorinfo">
+          <div style="margin-right: 10px;">
+              <label for="">ORCID ID:</label>
+              <input type="text" class="form-control hd orcidID" placeholder="ORCID ID..." name="loggedIn_authors_ORCID" id="loggedIn_orcid" value="<%= orcid %>">
+          </div>
+      
+
+          <div style="margin-right: 10px;">
+              <label for=""><span style="color: #e22424;">*</span>Affiliation(s):</label>
+              <input type="text" class="form-control hd" placeholder="Affiliation..." name="loggedIn_affiliation" id="loggedIn_affiliation" value="<%= affiliation%>" readonly>
+          </div>
+          <div style="margin-right: 10px;">
+            <label for=""><span style="color: #e22424;">*</span>City:</label>
+            <input type="text" class="form-control hd" placeholder="City..." name="loggedIn_affiliation_city" id="loggedIn_affiliation_city" value="<%= affiliation_city %>"  readonly>
+          </div>
+          <div style="margin-right: 10px;">
+            <label for=""><span style="color: #e22424;">*</span>Country:</label>
+            <input type="text" class="form-control" placeholder="Country..." name="loggedIn_affiliation_country" id="loggedIn_affiliation_country" value="<<%= affiliation_country  %>" readonly>
+          </div>
+        </div>
+        <div>
+          <label for=""><span style="color: #e22424;">*</span>Email:</label>
+          <input type="email" class="form-control hd" placeholder="Email..." name="loggedIn_author" id="logged_email" value <%= email %> readonly>
+        </div>
+        <div>
+          <label for="">ASFI Membership ID:</label>
+          <input type="text" class="form-control hd" placeholder="Membership ID..." name="loggedIn_membership_id" value="<%= asfi_membership_id %>">
+        </div>
+        <div>
+            <label for=""><span style="color: #e22424;">*</span>Corresponding Author's Email:</label>
+            <input type="email" class="form-control hd" placeholder="Corresponding Author Email..." name="corresponding_author" value="<%= email %>" id="loggedIn_email">
+        </div>
+      </div>
+       <br>
+    </div>
+      
+        <div class="addauthorSearch">
+          <span style="font-weight: bold;">Add Author:</span><input type="search" placeholder="Enter Email of Author..." class="search-space" id="authorSearch">
+          <button type="button" class="add-author-btn" id="searchAuthor">
+            <span class="searchText">Search</span><span class="searchloader"></span>
+          </button>
+        </div>
+        <p style="color: #e22424;">* Indicates Mandatory Fields</p>
+       <br>
+
+      <div style="display: flex; justify-content: space-around;">
+        <!-- back button  -->
+        <button type="button" class="submit-next" onclick="NavigationNext('keywords', 'keywords_nav','author_information_nav', 4)">Back</button>
+        <!-- end back button  -->
+
+        <input type="submit" value="submit" id="submitAuthors" disabled hidden>
+        <!-- next button  -->
+        <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitAuthors')" disabled>Save & Continue</button>
+        <!-- end next button  -->
+      </div>
+       </form>
+  </div>
+
+
+
+
+
+  <script>
+    function addAuthorInput(prefix, firstName, middleName, lastName, orcid, affiliation, affiliationCity, affiliationCountry, email) {
+    var authorContainer = document.getElementById('author-information');
+    var addAuthor = document.getElementById('addAuthor');
+   
+    // Create fields for the new author
+    var newAuthorInputs = document.createElement('div');
+    newAuthorInputs.className = 'author-container';
+    newAuthorInputs.innerHTML = `
+        <div style="display: flex; width: 200%; justify-content: center; align-items: center;" id="author-container">
+        <div class="drag-handle"></div>
+    <div style="margin-right: 10px;">
+        <label for="prefix">Prefix:</label>
+        <select name="authors_prefix[]" class="form-control">
+            <option value="${prefix.value}"></option>
+        </select>
+    </div>
+
+
+                    <div style="margin-right: 10px; width: 300px;">
+                              <label for="">First Name:</label>
+                              <input type="text" class="form-control hd" placeholder="First Name..." name="authors_first_name[]" value="${firstName.value}" >
+                              </div>
+                              <!-- <div style="display: flex;"> -->
+                                <div style="margin-right: 10px;">
+                                    <label for="">MiddleName:</label>
+                                      <input type="text" class="form-control" placeholder="Middle name" name="authors_other_name[]" value="${middleName.value}" >
+                                    <!-- </div> -->
+                                </div>
+                            <div style="margin-right: 10px; width: 300px;">
+                                <label for="">Last Name:</label>
+                                <input type="text" class="form-control hd" placeholder="Last Name..." name="authors_last_name[]" value="${lastName.value}">
+                            </div>
+
+                            <div style="margin-right: 10px; width: 300px;">
+                                <label for="">ORCID ID”:</label>
+                                <input type="text" class="form-control hd orcidID" placeholder="ORCID ID..." name="authors_orcid[]" value="${orcid.value}">
+                            </div>
+
+    <div style="margin-right: 10px; width: 300px;">
+                            <label for="">Affiliation:</label>
+                            <div style="display: flex;">
+                            <input type="text" class="form-control" placeholder="Affiliation..." name="affiliation[]" value="${affiliation.value}">
+                            <input type="text" class="form-control" placeholder="Affiliation City..." name="affiliation_city[]" value="${affiliationCity.value}">
+                            <input type="text" class="form-control" placeholder="Affiliation Country..." name="affiliation_country[]" value="${affiliationCountry.value}">
+                            </div>
+                        </div>
+                
+                        <div style="border-bottom: 1px solid #404040; margin-bottom: 12px;">
+                            <label for="">Email:</label>
+                            <input type="email" class="form-control" placeholder="Email..." name="email[]" value="${email.value}">
+                        </div>
+                        <div class="remove-author" style="width: 20px; height: 20px; color:white; font-weight:bold; background-color: red; border-radius:6px; display:flex; justify-content: center; align-items: center; text-align: center; line-height: 20px; cursor:pointer;">x</div>
+        </div>
+
+    `;
+
+    // Append the new author inputs to the container
+    addAuthor.appendChild(newAuthorInputs);
+
+    // Add event listener to the "x" button
+    newAuthorInputs.querySelector('.remove-author').addEventListener('click', function() {
+        addAuthor.removeChild(newAuthorInputs);
+    });
+    // RunOrcidQuery();
+}
+// Initialize SortableJS
+document.addEventListener('DOMContentLoaded', function() {
+    var sortable = new Sortable(document.getElementById('addAuthor'), {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        handle: '.drag-handle'
+    });
+});
+  </script>
+
+<script>
+      function PlainAuthorField(prefix, firstName, middleName, lastName, orcid, affiliation, affiliationCity, affiliationCountry, email, membershipID) {
+    var authorContainer = document.getElementById('author-information');
+    var addAuthor = document.getElementById('addAuthor');
+   
+    // Create fields for the new author
+    var newAuthorInputs = document.createElement('div');
+    newAuthorInputs.className = 'author-container';
+    newAuthorInputs.innerHTML = `
+      <div style="display: flex; justify-content: space-between;"><div class="drag-handle"></div><div class="remove-author" style="width: 20px; height: 20px; color:white; font-weight:bold; background-color: red; border-radius:6px; display:flex; justify-content: center; align-items: center; text-align: center; line-height: 20px; cursor:pointer;">x</div></div>
+          
+          <div class="authorname" id="author-container">
+            <div style="margin-right: 10px;">
+                <label for="prefix"><sapn style="color: #e22424;">*</span>Prefix:</label>
+                <select name="authors_prefix[]" class="form-control">
+                    <option value="${prefix}">${prefix}</option>
+                </select>
+            </div>  
+                      <div style="margin-right: 10px;">
+                                <label for=""><span style="color: #e22424;">*</span>First Name:</label>
+                                <input type="text" class="form-control hd" placeholder="First Name..." name="authors_first_name[]" value="${firstName}" >
+                                </div>
+                                <!-- <div style="display: flex;"> -->
+                                  <div style="margin-right: 10px;">
+                                      <label for="">MiddleName:</label>
+                                        <input type="text" class="form-control" placeholder="Middle name" name="authors_other_name[]" value="${middleName}" >
+                                      <!-- </div> -->
+                                  </div>
+                              <div style="margin-right: 10px;">
+                                  <label for=""><span style="color: #e22424;">*</span>Last Name:</label>
+                                  <input type="text" class="form-control hd" placeholder="Last Name..." name="authors_last_name[]" value="${lastName}">
+                              </div>
+           </div>
+                    <div class="authorinfo">
+                              <div style="margin-right: 10px;">
+                                  <label for="">ORCID ID”:</label>
+                                  <input type="text" class="form-control hd orcidID" placeholder="ORCID ID..." name="authors_orcid[]" value="${orcid}">
+                              </div>
+  
+
+                              <div style="margin-right: 10px;">
+                                  <label for=""><span style="color: #e22424;">*</span>Affiliation(s):</label>
+                                  <input type="text" class="form-control" placeholder="Affiliation..." name="affiliation[]" value="${affiliation}">
+                              </div>
+                              <div style="margin-right: 10px;">
+                                <label for=""><span style="color: #e22424;">*</span>City:</label>
+                               <input type="text" class="form-control" placeholder="City..." name="affiliation_city[]" value="${affiliationCity}">
+                              </div>
+                              <div style="margin-right: 10px;">
+                                <label for=""><span style="color: #e22424;">*</span>Country:</label>
+                                <input type="text" class="form-control" placeholder="Country..." name="affiliation_country[]" value="${affiliationCountry}">
+                              </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                              <label for=""><span style="color: #e22424;">*</span>Email:</label>
+                              <input type="email" class="form-control" placeholder="Email..." name="email[]" value="${email}">
+                        </div>
+                        <div>
+                              <label for="">ASFI Membership ID:</label>
+                              <input type="text" class="form-control hd" placeholder="Membership ID..." name="membership_id[]" value="${membershipID}">
+                            </div>
+  
+      `;
+    // Append the new author inputs to the container
+    addAuthor.appendChild(newAuthorInputs);
+
+    // Add event listener to the "x" button
+    newAuthorInputs.querySelector('.remove-author').addEventListener('click', function() {
+        addAuthor.removeChild(newAuthorInputs);
+    });
+    // RunOrcidQuery();
+}
+</script>
+
+<script>
+    const authorsArray = document.getElementById("authorsArray")
+    var app = new Vue({
+      el: '#app',
+      data: {
+        keywords: [],
+        saisie: "",
+      },
+      methods: {
+        removeFromArray: function(index) {
+
+          authorsArray.value.split(",").filter(x => {
+
+          });
+
+          this.keywords.splice(index, 1);
+          this.saisie = this.keywords;
+        },
+      },
+      watch: {
+        saisie: function() {
+          this.keywords = this.saisie.split(",").filter(x => {
+            return x.trim() != '';
+          });
+        }
+      }
+    });
+    // Initialize SortableJS
+document.addEventListener('DOMContentLoaded', function() {
+  var sortable = new Sortable(document.getElementById('suggestReviewer'), {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      handle: '.drag-handle'
+  });
+});
+
+
+// SubmitForm 
+submitAuthorsForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  const formData = new FormData(submitAuthorsForm)
+  fetch(`/addAuthorToPaper`, {
+    method: "POST",
+    body: formData
+  }).then(res => res.json())
+  .then(data =>{
+    if(data.error){
+      showErrorPopup(data.error)
+    }else if(data.success){
+    showProgressSavedPopup()
+showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
+
+    }else{
+      showErrorPopup("An Error Occured")
+    }
+  })
+
+})
+  </script>
+
+
+<% if(Authors){  
+  for(let a=0; a<Authors.length; a++){
+    let fullName  = Authors[a].authors_fullname
+  let nameParts = fullName.split(" "); // Split the name by spaces
+    let prefix = nameParts[0]; // First part is the prefix
+  let firstName = nameParts[1] || ""; // Second part is the first name
+  let lastName = nameParts[nameParts.length - 1] || ""; // Last part is the last name
+  let otherNames = nameParts.slice(2, -1).join(" ") || ""; // Middle names
+  %>
+ <script>
+  PlainAuthorField('<%=prefix%>','<%=firstName%>','<%=otherNames%>','<%=lastName%>',
+  '<%=Authors[a].orcid_id%>','<%=Authors[a].affiliations%>','<%=Authors[a].affiliation_city%>','<%=Authors[a].affiliation_country%>','<%=Authors[a].authors_email%>','<%=Authors[a].asfi_membership_id%>')
+   </script>
+<%} } %>

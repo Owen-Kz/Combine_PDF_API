@@ -1,0 +1,66 @@
+<div id="abstract" class="form-section hidden">
+    <form onsubmit="return false" id="submitAbstractForm">
+    <div>
+
+      <h3 class="manu_head"><span style="color: #e22424;">*</span>Abstract</h3><br>
+      <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+
+      <!-- Main toolbar -->
+      <div class="bg-body border rounded-bottom h-400px overflow-hidden quill-editor" id="quilleditor" style="height: 500px;">
+      </div>
+      <div id="word-count" class="wordCount"></div><span id="limit-exceed"> </span>
+    </div>
+    <p style="color: #e22424;">* Indicates Mandatory Fields</p> <br>
+
+    <div style="display: flex; justify-content: space-around;">
+      <!-- back button  -->
+      <button type="button" class="submit-next" onclick="NavigationNext('title', 'title_nav', 'abstract_nav', 2)">Back</button>
+      <!-- end back button  -->
+      <input type="submit" value="submit" id="submitAbstract" disabled hidden>
+      <!-- next button  -->
+      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitAbstract')" >Save & Continue</button>
+      <!-- end next button  -->
+    </div>
+    </form>
+  </div>
+
+
+  <script type="module">
+    import {quill} from '/js/quill.js'
+    const submitAbstractForm = document.getElementById("submitAbstractForm")
+
+    const savedAbstract = getCookie("_abstract") ? getCookie("_abstract") : '[]'
+
+ 
+
+    quill.setContents(JSON.parse(savedAbstract))
+     submitAbstractForm.addEventListener("submit", function(e){
+      e.preventDefault()
+      // if(!quill.getContents().ops || quill.getContents().ops == '[{"insert":"\\n"}]'){
+      //   return showErrorPopup("Abstract Cannot be empty")
+      // }
+      const data = {
+        abstract :  JSON.stringify(quill.getContents().ops)
+      }
+
+
+      fetch(`/submitAbstract`, {
+        method:"POST",
+        headers:{
+          "Content-type" : "application/JSON"
+        },
+        body:JSON.stringify(data)
+      }).then(res =>res.json())
+      .then(data =>{
+        if(data.error){
+          showErrorPopup(data.error)
+
+        }else if(data.success){
+        showProgressSavedPopup()
+        showNext('keywords', 'abstract', 'abstract_nav', 'keywords_nav', 'title', 4,4, 'submitAbstract')
+    }else {
+        showErrorPopup("An Error Occured. Please try again")
+        }
+      })
+    })
+  </script>

@@ -1,0 +1,67 @@
+
+#formNotSubmitted .overlayX{
+opacity: 0;
+visibility: hidden;
+}
+.overlayX {
+position: fixed;
+z-index: 2492;
+height: 100%;
+width: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+background-color: transparent;
+backdrop-filter: blur(4px);
+/* background-color: white;
+opacity: 0.7; */
+top: 0;left: 0
+}
+
+.overlayX div:nth-child(2){
+margin-top:50px;
+}
+.overlayX .spinn {
+background-color: #310357;
+position: absolute;
+left: 50%;
+top: 50%;
+margin-left: -20px;
+margin-top: -20px;
+}
+.spinn {
+width: 40px;
+height: 40px;
+
+border-radius: 100%;
+-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+animation: sk-scaleout 1.0s infinite ease-in-out;
+}
+
+.spinner {
+width: 40px;
+height: 40px;
+
+border-radius: 100%;
+-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+animation: sk-scaleout 1.0s infinite ease-in-out;
+}
+
+@-webkit-keyframes sk-scaleout {
+0% { -webkit-transform: scale(0) }
+100% {
+-webkit-transform: scale(1.0);
+opacity: 0;
+}
+}
+
+@keyframes sk-scaleout {
+0% {
+-webkit-transform: scale(0);
+transform: scale(0);
+} 100% {
+-webkit-transform: scale(1.0);
+transform: scale(1.0);
+opacity: 0;
+}
+}

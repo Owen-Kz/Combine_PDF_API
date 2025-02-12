@@ -1,0 +1,60 @@
+<div id="title" class="form-section hidden">
+    
+    <form onsubmit="return false" id="submitTitleForm">
+        <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+    <b style="text-align: center;"><span style="color: #e22424;">*</span>Manuscript Title</b>
+    <% if(title){ %>
+      <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title" value="<%= title %>">
+    <% } else {%>
+      <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title">
+      <% } %>
+    <p style="color: #e22424;">* Indicates Mandatory Fields</p> <br>
+
+    <div style="display: flex; justify-content: space-around;">
+      <!-- back button  -->
+      <button type="button" class="submit-next" onclick="NavigationNext('upload-manuscript', 'upload_manuscript_nav', 'title_nav',1)">Back</button>
+      <!-- end back button  -->
+      <input type="submit" value="submit" id="submitTitle" disabled hidden>
+      <!-- next button  -->
+      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitTitle')">Save & Continue</button>
+      <!-- end next button  -->
+    </div>
+    
+    </form>
+  </div>
+
+
+  <script>
+    const submitTitleForm = document.getElementById("submitTitleForm")
+    const title = submitTitleForm.querySelector("input[name='manuscript_full_title']")
+    submitTitleForm.addEventListener("submit", function(e){
+      e.preventDefault()
+      const data = {
+        manuscript_full_title:title.value
+      }
+      if(title && title.value !== ""){
+        fetch(`/submitManuscriptTitle`, {
+          method:"POST",
+          headers:{
+            "Content-type":"application/JSON"
+          },
+          body:JSON.stringify(data)
+        }).then(res =>res.json())
+        .then(data =>{
+          
+          if(data.error){
+            showErrorPopup(data.error)
+          }else if(data.success){
+
+            showProgressSavedPopup()
+            showNext('abstract', 'title', 'title_nav', 'abstract_nav', 'upload-manuscript', 3,3, 'submitTitle')
+          }else{
+            showErrorPopup("Something Went Wrong. please try again")
+          }
+        })
+      }else{
+        showErrorPopup("Title Field is Required")
+      }
+    })
+    
+  </script>

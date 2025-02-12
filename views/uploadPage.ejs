@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+  <title> Author - Dashboard</title>
+
+  
+
+ 
+  <!-- Bootstrap CSS -->
+  <link href="/assets/global/css/bootstrap.min.css" rel="stylesheet">
+
+  <link href="/assets/global/css/all.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/global/css/line-awesome.min.css" />
+
+  <link rel="stylesheet" href="/assets/templates/metro_hyip/css/main.css">
+
+  <link rel="stylesheet" href="/assets/templates/metro_hyip/css/custom.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+
+
+  <!-- <link rel="stylesheet" href="/assets/templates/metro_hyip/css/color.php?color=EB4830&secondColor="> -->
+  <link rel="stylesheet" href="/css/header.css">
+  <link rel="stylesheet" href="/css/loader.css">
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+  <script src="/js/headerMessages.js"> </script>
+  <script src="/js/submissionHeader.js"> </script>
+  <script src="/js/messagePopups.js"></script>
+  <script type="module" src="/js/checkField.js"></script>
+  <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+        }
+    </script>
+
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+  <style>
+    
+.popup {
+    position: fixed;
+    top: 30%; /* Adjust top spacing as needed */
+    right: 20px; /* Adjust right spacing as needed */
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    outline: none;
+    border: none;
+    z-index: 9999999;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.popup.show {
+    opacity: 1;
+}
+
+.popup.hidden {
+    display: none;
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.popup.slide-in {
+    animation: slideIn 0.3s forwards;
+}
+
+
+.errorpopup {
+    position: fixed;
+    top: 30%; /* Adjust top spacing as needed */
+    right: 20px; /* Adjust right spacing as needed */
+    padding: 10px 20px;
+    background-color: #e22424;
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    outline: none;
+    border: none;
+    z-index: 9999999;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.errorpopup.show {
+    opacity: 1;
+}
+
+.errorpopup.hidden {
+    display: none;
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.errorpopup.slide-in {
+    animation: slideIn 0.3s forwards;
+}
+  </style>
+</head>
+
+<body id="formNotSubmitted" style="color:black;">
+
+<style>
+  input {
+    color:black
+  }
+</style>
+  <div class="preloader">
+    <div class="loader-p"></div>
+  </div>
+  <div class="overlayX">
+    <div class="spinn"></div>
+    <div style="font-weight: bold; color:black">Uploading Documents...please wait...</div>
+  </div>
+  <div id="progressSavedPopup" class="popup hidden">
+    Progress has been saved!
+</div>
+<div id="errorPopup" class="errorpopup hidden">
+  
+</div>
+
+  <div class="body-overlay"></div>
+
+  <div class="sidebar-overlay"></div>
+
+  <a class="scroll-top"><i class="fas fa-angle-double-up"></i></a>
+
+  <div class="dashboard-fluid position-relative">
+    <div class="dashboard-header">
+
+      <div class="dashboard-header__inner" >
+
+        <div class="dashboard-header__left">
+          <a href="" class="sidebar-logo__link"> <img src="https://asfirj.org/assets/images/logoIcon/logo.png" alt="site-logo"></a>
+        </div>
+        <div class="dashboard-header__right">
+          <div class="user-info">
+            <div class="user-info__button">
+              <div class="user-info__info">
+
+                <span class="fw-bold user_fullnameContainer">
+                 
+                </span>
+
+                <!-- <ul class="user-info-dropdown">
+                                    <li class="user-info-dropdown__item"><a class="user-info-dropdown__link"
+                                            href="../../user/profile-setting.html">Profile Setting</a></li>
+                                    <li class="user-info-dropdown__item"><a class="user-info-dropdown__link"
+                                            href="../../user/change-password.html">Change Password</a></li>
+                                                                <li class="user-info-dropdown__item"><a class="user-info-dropdown__link"
+                                            href="../../user/logout">Logout</a></li>
+                                </ul>
+                                <div class="user-info__content">
+                                    <div class="d-flex justify-content-around">
+                                        <span class="user-info__name" id="user_fullnameContainer"></span>
+                                        <span><i class="las la-angle-down"></i></span>
+                                    </div>
+                                    <span class="user-info__link" id="user_emailContainer"> </span>
+                                </div> -->
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background-color: #310357; display: none !important;" id="navbarContainer">
+
+      </div>
+      <div class="dashboard__inner">
+        <div class="sidebar-menu" id="userMenu">
+          <div class="submission-header-dash" style="margin-top: 0px;">
+            <div style="text-align: center;"><span class="fw-bold" style="color: #404040;">Author Dashboard</span></div>
+
+
+            <ul class="submit-nav">
+              <a href="https://asfirj.org/dashboard/authordash/manuscripts/">
+                <li style="background-color: #320359; color: white !important;">  
+                <span class="newSubmissionsCount">0</span> Submitted Manuscripts</li></a>
+              <a href="https://asfirj.org/dashboard/authordash/coauth/">
+                <li><span class="coAuhtoredCount">0</span> Manuscripts I Have Co-Authored</li></a>
+              <li class="active">Submit New Manuscript
+                <ul class="submit-nav" id="sectionNav">
+                  <a href="javascript:void(0)" id="article_type_nav">
+                    <li> <i class="material-icons">lock</i>Article Type</li>
+                  </a>
+                  <a href="javascript:void(0)" id="upload_manuscript_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Upload Manuscript</li>
+                  </a>
+                  <a href="javascript:void(0)" id="title_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Title</li>
+                  </a>
+                  <a href="javascript:void(0)" id="abstract_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Abstract</li>
+                  </a>
+                  <a href="javascript:void(0)" id="keywords_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Keywords</li>
+                  </a>
+                  <a href="javascript:void(0)" id="author_information_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Authors</li>
+                  </a>
+                  <a href="javascript:void(0)" id="suggest_reviewers_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Suggest Reviewers</li>
+                  </a>
+                  <a href="javascript:void(0)" id="disclosures_nav" class="disabled">
+                    <li><i class="material-icons">lock</i>Disclosures</li>
+                  </a>
+                  <a href="javascript:void(0)" id="review_submit_nav" class="disabled ">
+                    <li><i class="material-icons">lock</i>Review & Submit</li>
+                  </a>
+
+                </ul>
+              </li>
+              <a href="https://asfirj.org/dashboard/authordash/inreview/">
+                <li> <span class="inReviewCount">0</span> Manuscripts With Decisions</li></a>
+              <a href="https://asfirj.org/portal/logout/"><li>Logout</li></a>
+
+            </ul>
+          </div>
+        </div>
+        <!-- ========= Sidebar Menu End ================ -->
+        <div class="dashboard__right">
+
+
+          <div class="dashboard-body__bar d-xl-none d-block mt-2 text-end">
+            <span class="dashboard-body__bar-icon"><i class="las la-bars"></i></span>
+          </div>
+          <div class="dashboard-body">
+            <section class="mt-3 mb-60">
+              <div class="row gy-2 justify-content-center">
+
+                <div class="submit-container">
+                  <div class="submit-body">
+                    <div class="submit-start" id="headerMessage">
+
+
+                    </div>
+
+
+                    <!-- <form id="uploadForm">
+                       -->
+                      <div class="message" id="message_container">
+                      </div>
+                 <%- include("articleType") %>
+
+                  <%- include("submitFiles") %>
+                  <%- include("submitTitle") %>
+
+                  <%- include("submitabstract") %>
+                  <%- include("submitKeywords") %>
+                  <%- include("submitAuthors") %>
+                  <%- include("submitReviewers") %>
+
+                  <%- include("disclosures") %>
+                   
+
+
+                  
+                
+
+                 
+
+                  
+
+
+
+
+
+                  </div>
+                </div>
+
+
+              </div>
+
+
+
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- The Modal -->
+<div id="myModal" class="addauthormodal">
+
+  <!-- Modal content -->
+  <div class="addauthormodal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <form id="authorForm">
+   
+    </form>
+  </div>
+
+</div>
+<div id="google_translate_element"></div>
+
+
+
+    <script src="/assets/global/js/jquery-3.6.0.min.js"></script>
+    <script src="/assets/global/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/templates/metro_hyip/js/main.js"></script>
+    <!-- <script type="module" src="/js/forms/addAuthorForModal.js"></script> -->
+
+    <script>
+      'use strict';
+      (function($) {})(jQuery);
+    </script>
+
+
+    <link rel="stylesheet" href="/assets/global/css/iziToast.min.css">
+    <script src="/assets/global/js/iziToast.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+
+    <script type="module" src="/js/quill.js"></script>
+    <script>
+function toggleInputField() {
+    var manuscriptIDField = document.getElementById("manuscriptIDField");
+    var isYesChecked = document.getElementById("prevsub_yes").checked;
+    
+    // Show the input field if "Yes" is selected, hide otherwise
+    manuscriptIDField.style.display = isYesChecked ? "block" : "none";
+}
+</script>
+   
+
+    <script>
+    // Get the modal
+  var modal = document.getElementById('myModal');
+
+// Function to open the modal
+function openModal() {
+  modal.style.display = "block";
+}
+
+// Function to close the modal
+function closeModal() {
+  modal.style.display = "none";
+}
+
+
+
+  // Close the modal after submission (optional)
+  closeModal();
+    </script>
+
+ 
+
+<!-- Prevent submission on enter  -->
+
+<script>
+  document.querySelectorAll("input").forEach(input => {
+    input.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+        }
+    });
+});
+
+</script>
+
+<!-- <script src="/js/navbar.js" type="module"></script> -->
+  </body>
+
+</html>
