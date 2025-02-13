@@ -20,7 +20,7 @@ const SubmitDisclosures = async (req, res) => {
                     return res.json({error:err})
                 }else if(paper[0]){
                     const RecipientEmail = paper[0].corresponding_authors_email
-                    const manuscriptTitle = paper[0].manuscript_title 
+                    const manuscriptTitle = paper[0].title 
                     const manuscriptId = paper[0].revision_id
 
                     if(review_status === "submitted"){
