@@ -29,11 +29,17 @@
     import {quill} from '/js/quill.js'
     const submitAbstractForm = document.getElementById("submitAbstractForm")
 
-    const savedAbstract = getCookie("_abstract") ? getCookie("_abstract") : '[]'
+// Ensure it's a valid JSON or set a default empty Delta
+let parsedAbstract;
+try {
+    parsedAbstract = savedAbstract ? JSON.parse(savedAbstract) : { ops: [{ insert: "\n" }] };
+} catch (error) {
+    console.error("Error parsing savedAbstract:", error);
+    parsedAbstract = { ops: [{ insert: "\n" }] }; // Fallback to empty Quill content
+}
 
- 
-
-    quill.setContents(JSON.parse(savedAbstract))
+// Set contents in Quill
+quill.setContents(parsedAbstract);
      submitAbstractForm.addEventListener("submit", function(e){
       e.preventDefault()
       // if(!quill.getContents().ops || quill.getContents().ops == '[{"insert":"\\n"}]'){
