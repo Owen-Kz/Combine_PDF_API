@@ -44,7 +44,7 @@ const uploadArticlePage = async (req, res) => {
 
         function renderPlainPage(){
         currentProcess = "saved_for_later"
-        console.log(ArticleId)
+        console.log("articleID", ArticleId)
 
             res.render("uploadPage", {
                 articleId: ArticleId,
@@ -54,6 +54,23 @@ const uploadArticlePage = async (req, res) => {
                 orcid, asfi_membership_id,
                 email, discipline,
                 currentProcess,
+                title:null,
+                article_discipline: null,
+                article_type:null,
+                manuscript_file: null,
+                tracked_manuscript_file: null,
+                coverLetter: null,
+                tables:null,
+                figures:null,
+                graphic_abstract:null,
+                supplementaryMaterials: null,
+                correspondingAuthor: req.user.email,
+                previousId: null,
+                status:null,
+                Keywords:null,
+                Authors:null,
+                suggestedReviewers:null,
+                
             })
         }
         if(req.query.a){

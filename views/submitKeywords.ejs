@@ -2,7 +2,7 @@
     <form onsubmit="return false" id="submitKeywordsForm">
         <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
     <h3 class="manu-head"><span style="color: #e22424;">*</span>Keywords</h3>
-    <% if(Keywords) {
+    <% if(Keywords &&Keywords!==null) {
       for(let i=0; i<Keywords.length; i++){
       
       %>

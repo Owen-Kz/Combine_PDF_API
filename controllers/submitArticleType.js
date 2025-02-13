@@ -30,7 +30,7 @@ const submitArticleType = async (req,res) =>{
                 articleID = req.cookies._sessionID
             }
 
-            console.log(articleID)
+          
             let revisionsCount = 0 
             let correctionsCount = 0
             if(req.cookies._newCorrectionCount){

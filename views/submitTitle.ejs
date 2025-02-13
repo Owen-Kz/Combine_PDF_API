@@ -3,7 +3,7 @@
     <form onsubmit="return false" id="submitTitleForm">
         <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
     <b style="text-align: center;"><span style="color: #e22424;">*</span>Manuscript Title</b>
-    <% if(title){ %>
+    <% if(title && title !== null){ %>
       <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title" value="<%= title %>">
     <% } else {%>
       <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title">

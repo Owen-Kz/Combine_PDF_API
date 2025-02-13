@@ -301,7 +301,7 @@ showNext('suggest-reviewers', 'author-information', 'author_information_nav', 's
   </script>
 
 
-<% if(Authors){  
+<% if(Authors && Authors !== null){  
   for(let a=0; a<Authors.length; a++){
     let fullName  = Authors[a].authors_fullname
   let nameParts = fullName.split(" "); // Split the name by spaces

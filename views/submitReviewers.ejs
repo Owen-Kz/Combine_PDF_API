@@ -6,7 +6,7 @@
     <h3 class="manu_head">Suggest Reviewers (Optional)</h3>
     <div id="suggestReviewer" style="width: 100%; overflow-x: scroll; margin-bottom: 10px; padding-bottom: 20px;">
      
-     <% if(suggestedReviewers) {
+     <% if(suggestedReviewers && suggestedReviewers !== null) {
       for(let r=0; r>suggestedReviewers.length; r++){
       %>
       <div class="suggestHandle" style="width: 100%;">

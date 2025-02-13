@@ -10,7 +10,7 @@
     <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly hidden>
     <select name="article_type" id="article_type" class="form-control" required>
       <!-- <option value="">Select an Option</option> -->
-      <% if(article_type) { %>
+      <% if(article_type && article_type !== null) { %>
         <option value="<%=article_type%>"><%=article_type%></option>
       <% } else{ %>
    <option value="">Select an Option</option>
@@ -35,7 +35,7 @@
     <label for="discipline"><span style="color: #e22424;">*</span>Discipline</label>
     <select id="discipline" name="discipline" class="form-control" required>
       <!-- <option value="">Select a Discipline</option> -->
-      <% if(article_discipline){ %>
+      <% if(article_discipline && article_discipline !== null){ %>
         <option value="<%=article_discipline%>"><%= article_discipline %></option>
 
       <% }else { %>
@@ -103,13 +103,13 @@ No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField(
 headerMessageContainer.innerHTML = headerMessages[0]
 
 const submitArticleType = document.getElementById("submitArticleType")
-const article_id = submitArticleType.querySelector("input[name='manuscript_id']")
+const article_idCOntainer = submitArticleType.querySelector("input[name='manuscript_id']")
 const submissionStatus = submitArticleType.querySelector("input[name='submissionStatus']")
 submitArticleType.addEventListener("submit", function(e){
     e.preventDefault()
     
     const data = {
-        article_id: article_id.value,
+        article_id: article_idCOntainer.value,
         discipline:discipline.value,
         article_type:article_type.value,
         previous_mansucript_id: previous_mansucript_id.value,
