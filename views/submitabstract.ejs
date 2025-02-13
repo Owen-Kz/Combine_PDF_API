@@ -29,6 +29,9 @@
     import {quill} from '/js/quill.js'
     const submitAbstractForm = document.getElementById("submitAbstractForm")
 
+    const savedAbstract = getCookie("_abstract")
+
+ 
 // Ensure it's a valid JSON or set a default empty Delta
 let parsedAbstract;
 try {
