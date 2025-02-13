@@ -2,6 +2,8 @@ const db = require("../routes/db.config");
 const multer = require("multer");
 const clearCookie = require("./utils/clearCookie");
 const SendNewSubmissionEmail = require("./utils/sendNewSubmissionEmail");
+const sendEmailToHandler = require("./utils/SendHandlerEmail");
+const CoAuthors = require("./CoAuthors");
 const upload = multer();
 
 const SubmitDisclosures = async (req, res) => {
@@ -12,7 +14,6 @@ const SubmitDisclosures = async (req, res) => {
         }
         try {
             const articleId = req.cookies._sessionID
-          
             const {review_status} = req.body
             db.query("SELECT * FROM submissions WHERE revision_id =?", [articleId], (err, paper) =>{
                 if(err){
@@ -23,7 +24,10 @@ const SubmitDisclosures = async (req, res) => {
                     const manuscriptId = paper[0].revision_id
 
                     if(review_status === "submitted"){
-                    // SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
+                    SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
+                    sendEmailToHandler(sendEmailToHandler("submissions@asfirj.org", manuscriptTitle, manuscriptId))
+                    CoAuthors(req,res, manuscriptId)
+                    
                     }
                 }else{
                     return res.json({error:"Paper Not Found"})
@@ -41,9 +45,10 @@ const SubmitDisclosures = async (req, res) => {
                     clearCookie(req, res, "_manFile")
                     clearCookie(req, res, "__KeyCount")
                     clearCookie(req,res, "_process")
+                    return  res.json({success:"Manuscript Saved"})
 
                     }else{
-                      return  res.json({success:"Manuscript Saved"})
+                      return  res.json({error:"Manuscript Could not be saved"})
                     }
                 }else{
                     return res.json({error:"We could not find the manuscript"})

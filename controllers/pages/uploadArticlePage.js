@@ -5,12 +5,16 @@ const writeCookie = require("../utils/writeCookie");
 const findKeywords = require("../utils/findKeywords");
 const findAuthors = require("../utils/findAuthors");
 const findReviewers = require("../utils/findReviewers");
+const clearCookie = require("../utils/clearCookie");
+const db = require("../../routes/db.config");
 
 const uploadArticlePage = async (req, res) => {
     try {
 
         let ArticleId;
 
+        // check if the article has already been submitted 
+   
         const prefix = req.user.prefix
         const firstname = req.user.firstname
         const lastname = req.user.lastname
@@ -44,7 +48,7 @@ const uploadArticlePage = async (req, res) => {
 
         function renderPlainPage(){
         currentProcess = "saved_for_later"
-        console.log("articleID", ArticleId)
+        //  clearCookie(req,res, '_abstract')
 
             res.render("uploadPage", {
                 articleId: ArticleId,
@@ -74,14 +78,34 @@ const uploadArticlePage = async (req, res) => {
             })
         }
         if(req.query.a){
+            db.query("SELECT * FROM submissions WHERE revision_id = ? AND status = 'submitted' AND corresponding_authors_email = ? ", [req.query.a, req.user.email], async(err, data)=>{
+                if(err){
+                    console.log(err)
+                    return res.render("success", {status:'error', message:"Internal Server Error", tag:"Something Went Wrong"})
+    
+                }else if(data[0]){
+                    console.log("Masnucript Already submitted")
+                   return res.render("success", {status:'success', message:"Manuscript Has Already been Submitted", tag:"Manuscript Already Submitted"})
+                }else {
+                    
+            
             const ArticleData = await findManuscript(req.query.a,req.cookies._uem)
             const Keywords = await findKeywords(ArticleData.revision_id)
             const submissionAuthors = await findAuthors(ArticleData.revision_id, req.cookies._uem)
             const suggestedReviewers = await findReviewers(ArticleData.revision_id)
             if(ArticleData){
                 ArticleId = req.query.a;
+                if(ArticleData.abstract && ArticleData.abstract !== null){
                 writeCookie(req,res, "_abstract", ArticleData.abstract)
-            
+                }
+                if(ArticleData.manuscript_file && ArticleData.manuscript_file !== null){
+                    writeCookie(req,res, "_manFile", 1)
+                }
+                if(ArticleData.cover_letter_file && ArticleData.cover_letter_file !== null){
+                    writeCookie(req,res, "_manFile", 1)
+                }
+                
+
             if(req.query.correct){
                 const newCorrectionCount = new Number(ArticleData.corrections_count)+1
                 const correctionID = `${ArticleData.article_id}.Cr${newCorrectionCount}`
@@ -136,6 +160,8 @@ const uploadArticlePage = async (req, res) => {
         ArticleId = await generateArticleId(req, res); 
         renderPlainPage()
     }
+}
+})
     }else{
         renderPlainPage()
      

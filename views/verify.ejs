@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification | ASFIRJ</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+        }
+        .icon img {
+            width: 50px;
+        }
+        h2 {
+            font-size: 22px;
+            margin: 10px 0;
+        }
+        p {
+            font-size: 14px;
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <% if(status === "success") { %>
+        <div class="icon" style="background: #4CAF50;">
+        <% }else{ %>
+        <div class="icon" style="background: #FF4D4D;">
+            <% } %>
+            <% if (status === "success") { %>
+                ✅
+            <% } else { %>
+                ❌
+            <% } %>
+        </div>
+        <h2><%= status === "success" ? 'Email Verification' : 'Verification Failed' %></h2>
+        <p><%= message %></p>
+
+        <% if(status === "success") { %>
+                <a href="https://asfirj.org/dashboard" class="btn" style="background: #4CAF50;">Proceed to login</a>
+
+            <% }else{ %>
+
+                <a href="/" class="btn" style="background: #FF4D4D;">Go to Homepage</a>
+                <% } %>
+        
+    </div>
+</body>
+</html>

@@ -21,6 +21,8 @@
     "@getbrevo/brevo": "^2.2.0",
     "adm-zip": "^0.5.16",
     "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "child_process": "^1.0.2",
     "cloudinary": "^2.5.1",

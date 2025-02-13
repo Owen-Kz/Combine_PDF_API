@@ -16,6 +16,7 @@ const authorsProfileSearch = require("../controllers/getAuthorsProfile");
 const AddAuthorToPaper = require("../controllers/AddAuthorPaper");
 const AddReviewerToPaper = require("../controllers/addSuggestedReviewers");
 const SubmitDisclosures = require("../controllers/submitDiscolosures");
+const verifyAccount = require("../controllers/account/verifyAccount");
 // const documentFile = require("../external/otherWords");
 
 const router = express.Router()
@@ -53,6 +54,7 @@ router.post("/submitDisclosures", getUserData, SubmitDisclosures)
 router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})
 })
+router.get("/verify", verifyAccount)
 
 
 router.get("/dashboard", async (req,res) =>{

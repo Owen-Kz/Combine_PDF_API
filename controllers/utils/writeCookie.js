@@ -5,7 +5,7 @@ const writeCookie = (req,res,cookieName, cookieValue) =>{
         httpOnly: false,
         sameSite: false,
         }
-        console.log(cookieName, cookieValue)
+        // console.log(cookieName, cookieValue)
         res.cookie(cookieName, cookieValue, cookieOptions)
 }
 

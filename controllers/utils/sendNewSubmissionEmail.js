@@ -5,6 +5,7 @@ const db = require("../../routes/db.config");
 
 const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscriptId) => {
     if (!RecipientEmail) {
+        console.log("Invalied Request")
         return ({ status: "error", message: "Invalid Request" });
     }
 
@@ -16,6 +17,7 @@ const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscrip
         }
 
         if (result.length === 0) {
+            console.log("user Does not exist")
             return ({ status: "error", message: "User does not exist on our servers" });
         }
 
@@ -53,6 +55,7 @@ const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscrip
         try {
             // Send email
             await apiInstance.sendTransacEmail(email);
+            console.log("email Sent")
             return ({ status: "success", message: "Email sent successfully" });
         } catch (error) {
             console.error("Email sending error:", error);
