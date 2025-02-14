@@ -30,7 +30,6 @@ app.set("views", ["./views", "./views/admin", "./public/directory/profile", "./p
 app.use("/css", express.static(__dirname + "/public/css", { type: 'text/css' }));
 app.use("/js", express.static(__dirname + "/public/js"));
 app.use("/assets", express.static(__dirname + "/public/assets"));
-app.use("/manuscripts", express.static(__dirname + "/temp"));
 
 
 // const io = require("socket.io")(server, {

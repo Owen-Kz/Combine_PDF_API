@@ -19,6 +19,7 @@ const SubmitDisclosures = require("../controllers/submitDiscolosures");
 const verifyAccount = require("../controllers/account/verifyAccount");
 const convertFiles = require("../controllers/convertFiles");
 const combinedFilesPage = require("../controllers/pages/combineFilesPage");
+const downloadExternal = require("../controllers/fileUploads/downloadExternal");
 // const documentFile = require("../external/otherWords");
 
 const router = express.Router()
@@ -62,6 +63,7 @@ router.get("/combine", (req,res) =>{
 })
 router.get("/convertFiles", convertFiles)
 router.get("/combineFiles", combinedFilesPage)
+router.get("/manuscripts/:fileName", downloadExternal)
 
 
 router.get("/dashboard", async (req,res) =>{
