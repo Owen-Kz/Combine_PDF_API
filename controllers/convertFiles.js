@@ -58,6 +58,7 @@ const convertFiles = async (req, res) => {
               console.error(`Failed to download: ${fileUrl} - Status: ${response.status}`);
               continue;
             }
+            console.log(response.data)
 
             fs.writeFileSync(filePath, response.data);
             tempFiles.push(filePath);
