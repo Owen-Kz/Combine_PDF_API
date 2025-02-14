@@ -17,6 +17,8 @@ const AddAuthorToPaper = require("../controllers/AddAuthorPaper");
 const AddReviewerToPaper = require("../controllers/addSuggestedReviewers");
 const SubmitDisclosures = require("../controllers/submitDiscolosures");
 const verifyAccount = require("../controllers/account/verifyAccount");
+const convertFiles = require("../controllers/convertFiles");
+const combinedFilesPage = require("../controllers/pages/combineFilesPage");
 // const documentFile = require("../external/otherWords");
 
 const router = express.Router()
@@ -55,6 +57,11 @@ router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})
 })
 router.get("/verify", verifyAccount)
+router.get("/combine", (req,res) =>{
+  res.render("loading")
+})
+router.get("/convertFiles", convertFiles)
+router.get("/combineFiles", combinedFilesPage)
 
 
 router.get("/dashboard", async (req,res) =>{

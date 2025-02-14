@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="httpd://asfirj.org/assets/images/logoIcon/favicon.png" type="image/x-icon">
-    <title>Email Verification | ASFIRJ</title>
+    <title>Submissions | ASFIRJ</title>
     <style>
         body {
             display: flex;
@@ -48,7 +48,7 @@
             padding: 10px 20px;
             color: white;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 25px;
         }
     </style>
 </head>
@@ -65,16 +65,17 @@
                 ❌
             <% } %>
         </div>
-        <h2><%= status === "success" ? 'Email Verification' : 'Verification Failed' %></h2>
+        <h2><%= tag %></h2>
         <p><%= message %></p>
 
         <% if(status === "success") { %>
-                <a href="https://asfirj.org/dashboard" class="btn" style="background: #4CAF50;">Proceed to login</a>
-
+                <a href="/manuscripts/<%= fileURL%>" download="<%= fileURL%>" class="btn" style="background: #4CAF50;">Download</a>
+                <p><a href="https://editors.asfirj.org/View?a=<%=ArticleID %>">Back to Dashboard</a></p>
             <% }else{ %>
 
-                <a href="/" class="btn" style="background: #FF4D4D;">Go to Homepage</a>
+                <a href="https://editors.asfirj.org" class="btn" style="background: #FF4D4D;">Go to Dasboard</a>
                 <% } %>
+                
         
     </div>
 </body>

@@ -1,29 +1,107 @@
-const db = require("../routes/db.config")
+const db = require("../routes/db.config");
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const util = require("util");
+const libre = require("libreoffice-convert");
 
-const convertFIles = async(req,res) =>{
+const convertFiles = async (req, res) => {
+  try {
+    const { a } = req.query;
 
-    try{
-        const {manuscriptId} = req.query.a
-        db.query("SELECT * manuscript_file, tables, figures, graphic_abstract, supplementary_material FROM submissions WHERE revision_id = ?", [manuscriptId], async (err, data) =>{
-            if(err){
-                console.log(err)
-                return res.json({error:err})
+    db.query(
+      "SELECT manuscript_file, tables, figures, graphic_abstract, supplementary_material FROM submissions WHERE revision_id = ?",
+      [a],
+      async (err, data) => {
+        if (err) {
+          console.error("Database Error:", err);
+          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent(err.message)}&tag=Internal Server Error`});
+        }
+
+        if (data.length === 0) {
+          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent("No files found")}&tag=File not found`});
+        }
+
+        const files = [
+          data[0].manuscript_file,
+          data[0].tables,
+          data[0].figures,
+          data[0].graphic_abstract,
+          data[0].supplementary_material,
+        ].filter(Boolean);
+
+        if (files.length === 0) {
+          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent("No valid files found")}&tag=Invalid Files`});
+        }
+
+        const tempDir = path.join(__dirname, "../temp");
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+        let pdfFiles = [];
+        let tempFiles = [];
+
+        for (const fileUrl of files) {
+          try {
+            const fileExt = path.extname(fileUrl).toLowerCase();
+            const filePath = path.join(tempDir, `temp_${Date.now()}${fileExt}`);
+            const pdfPath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+
+            // Attempt to download the file
+            const response = await axios({
+              url: fileUrl,
+              responseType: "arraybuffer",
+              timeout: 15000,
+            });
+
+            if (!response.data || response.status !== 200) {
+              console.error(`Failed to download: ${fileUrl} - Status: ${response.status}`);
+              continue;
             }
-            if(data[0]){
-                const manuscriptFile = data[0].manuscript_file 
-                const tables = data[0].tables 
-                const graphicAbstract = data[0].graphicAbstract 
-                const supplementaryMaterial = data[0].supplementary_material
-                
-                
+
+            fs.writeFileSync(filePath, response.data);
+            tempFiles.push(filePath);
+
+            if (fileExt !== ".pdf") {
+              const convertAsync = util.promisify(libre.convert);
+              const pdfData = await convertAsync(fs.readFileSync(filePath), ".pdf", undefined);
+              fs.writeFileSync(pdfPath, pdfData);
+              pdfFiles.push(pdfPath);
+              tempFiles.push(pdfPath);
+            } else {
+              pdfFiles.push(filePath);
             }
-        })
-    }catch(error){
-        return res.json({error:error.message})
-    }
+          } catch (error) {
+            console.error(`Error downloading ${fileUrl}:`, error.message);
+            continue;
+          }
+        }
 
+        if (pdfFiles.length === 0) {
+          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent("No valid PDFs to merge")}&tag=Processing Failed`})
+        }
 
-}
+        const { default: PDFMerger } = await import("pdf-merger-js");
+        const merger = new PDFMerger();
 
+        for (const pdf of pdfFiles) {
+          await merger.add(pdf);
+        }
 
-module.exports = convertFIles
+        const mergedFilePath = path.join(tempDir, `merged_${a}.pdf`);
+        await merger.save(mergedFilePath);
+
+        // Delete temporary files (except merged file)
+        tempFiles.forEach((file) => {
+          if (fs.existsSync(file)) fs.unlinkSync(file);
+        });
+
+        const fileName = mergedFilePath.substring(mergedFilePath.lastIndexOf("/") + 1);
+        return res.json({url:`/combineFiles?status=success&message=${encodeURIComponent("Your files have been combined")}&tag=Files Combined Successfully&file=${encodeURIComponent(fileName)}`});
+      }
+    );
+  } catch (error) {
+    return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent(error.message)}&tag=Something Went Wrong`});
+  }
+};
+
+module.exports = convertFiles;
