@@ -74,7 +74,7 @@
         <p><%= message %></p>
 
         <% if(status === "success") { %>
-                <a href="/manuscripts/<%= fileURL%>" download="<%= fileURL%>" class="btn" style="background: #4CAF50;">Download</a>
+                <a href="/manuscripts/<%= fileURL%>" download="<%= fileURL%>" class="btn" style="background: #4CAF50;" id="downloadButton">Download</a>
                 <p><a href="https://editors.asfirj.org/View?a=<%=ArticleID %>">Back to Dashboard</a></p>
             <% }else{ %>
 
