@@ -49,7 +49,7 @@ const convertFiles = async (req, res) => {
 
             // Download the file
             const response = await axios({
-              url: fileUrl,
+              url: `https://process.asfirj.org/doc?url=${fileUrl}`,
               responseType: "arraybuffer",
               timeout: 15000,
             });
