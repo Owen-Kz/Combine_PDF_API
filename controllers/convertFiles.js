@@ -39,9 +39,13 @@ const convertFiles = async (req, res) => {
         });
         
         const responseData = await response.json(); 
- 
 
+        if(responseData){
         return res.json(responseData)
+        }else{
+    return res.json({ url: `/combineFiles?status=error&message=${encodeURIComponent("Could not fetch host")}&tag=Something Went Wrong` });
+            
+        }
 
       
       }
