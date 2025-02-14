@@ -15,23 +15,24 @@ const convertFiles = async (req, res) => {
       async (err, data) => {
         if (err) {
           console.error("Database Error:", err);
-          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent(err.message)}&tag=Internal Server Error`});
+          return res.json({ url: `/combineFiles?status=error&message=${encodeURIComponent(err.message)}&tag=Internal Server Error` });
         }
 
         if (data.length === 0) {
-          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent("No files found")}&tag=File not found`});
+          return res.json({ url: `/combineFiles?status=error&message=${encodeURIComponent("No files found")}&tag=File not found` });
         }
 
+        // Filter out empty or null file fields
         const files = [
           data[0].manuscript_file,
           data[0].tables,
           data[0].figures,
           data[0].graphic_abstract,
           data[0].supplementary_material,
-        ].filter(Boolean);
+        ].filter(file => file && file.trim() !== "");
 
         if (files.length === 0) {
-          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent("No valid files found")}&tag=Invalid Files`});
+          return res.json({ url: `/combineFiles?status=error&message=${encodeURIComponent("No valid files found")}&tag=Invalid Files` });
         }
 
         const tempDir = path.join(__dirname, "../temp");
@@ -46,7 +47,7 @@ const convertFiles = async (req, res) => {
             const filePath = path.join(tempDir, `temp_${Date.now()}${fileExt}`);
             const pdfPath = path.join(tempDir, `temp_${Date.now()}.pdf`);
 
-            // Attempt to download the file
+            // Download the file
             const response = await axios({
               url: fileUrl,
               responseType: "arraybuffer",
@@ -77,9 +78,22 @@ const convertFiles = async (req, res) => {
         }
 
         if (pdfFiles.length === 0) {
-          return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent("No valid PDFs to merge")}&tag=Processing Failed`})
+          return res.json({ url: `/combineFiles?status=error&message=${encodeURIComponent("No valid PDFs to merge")}&tag=Processing Failed` });
         }
 
+        // ✅ If only one valid PDF exists, return it immediately
+        if (pdfFiles.length === 1) {
+          const singleFile = pdfFiles[0];
+          console.log(singleFile)
+        const fileName = singleFile.substring(singleFile.lastIndexOf("/") + 1);
+        console.log(fileName)
+
+          return res.json({
+            url: `/combineFiles?status=success&message=${encodeURIComponent("Single file found")}&tag=File Ready&file=${encodeURIComponent(fileName)}`
+          });
+        }
+
+        // Merge multiple PDFs
         const { default: PDFMerger } = await import("pdf-merger-js");
         const merger = new PDFMerger();
 
@@ -94,13 +108,14 @@ const convertFiles = async (req, res) => {
         tempFiles.forEach((file) => {
           if (fs.existsSync(file)) fs.unlinkSync(file);
         });
-
         const fileName = mergedFilePath.substring(mergedFilePath.lastIndexOf("/") + 1);
-        return res.json({url:`/combineFiles?status=success&message=${encodeURIComponent("Your files have been combined")}&tag=Files Combined Successfully&file=${encodeURIComponent(fileName)}`});
+        return res.json({
+          url: `/combineFiles?status=success&message=${encodeURIComponent("Your files have been combined")}&tag=Files Combined Successfully&file=${encodeURIComponent(fileName)}`
+        });
       }
     );
   } catch (error) {
-    return res.json({url:`/combineFiles?status=error&message=${encodeURIComponent(error.message)}&tag=Something Went Wrong`});
+    return res.json({ url: `/combineFiles?status=error&message=${encodeURIComponent(error.message)}&tag=Something Went Wrong` });
   }
 };
 

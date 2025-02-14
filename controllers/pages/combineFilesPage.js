@@ -6,7 +6,7 @@ const combinedFilesPage = async (req,res) =>{
 
     if(file){
         filePath = file
-        ArticleID = file.substring(file.lastIndexOf("_") + 1)
+        ArticleID = file.substring(file.lastIndexOf("_") + 1) 
     }
     return res.render("combineFiles", {status, message, tag, filePath: file, fileURL: file, ArticleID})
 }catch(error){
