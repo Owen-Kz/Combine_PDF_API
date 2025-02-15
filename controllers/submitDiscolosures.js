@@ -22,6 +22,9 @@ const SubmitDisclosures = async (req, res) => {
                     const RecipientEmail = paper[0].corresponding_authors_email
                     const manuscriptTitle = paper[0].title 
                     const manuscriptId = paper[0].revision_id
+                    if(!paper[0].manuscript_file || paper[0].manuscript_file === null || paper[0].manuscript_file === ""){
+                        return res.json({error:"Upload a Manuscript file to continue"})
+                    }
 
                     if(review_status === "submitted"){
                     SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
