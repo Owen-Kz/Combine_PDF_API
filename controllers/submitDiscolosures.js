@@ -24,7 +24,7 @@ const SubmitDisclosures = async (req, res) => {
                     const manuscriptId = paper[0].revision_id
                     if(!paper[0].manuscript_file || paper[0].manuscript_file === null || paper[0].manuscript_file === ""){
                         return res.json({error:"Upload a Manuscript file to continue"})
-                    }
+                    }else{
 
                     if(review_status === "submitted"){
                     SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
@@ -32,11 +32,8 @@ const SubmitDisclosures = async (req, res) => {
                     CoAuthors(req,res, manuscriptId)
                     
                     }
-                }else{
-                    return res.json({error:"Paper Not Found"})
-                }
-            })
- 
+
+          
             db.query("UPDATE submissions SET status = ? WHERE revision_id = ?", [review_status, articleId], async (err, data) =>{
                 if(err){
                     return res.json({error:err})
@@ -57,6 +54,12 @@ const SubmitDisclosures = async (req, res) => {
                     return res.json({error:"We could not find the manuscript"})
                 }
             })
+        }
+    }else{
+        return res.json({error:"Paper Not Found"})
+    }
+})
+
          
         } catch (error) {
             console.error("Error Processing Authors:", error.message);
