@@ -3,6 +3,7 @@ const db = require("../../routes/db.config")
 
 const findManuscript = (manuscriptID, email) =>{
     try{
+        console.log("MAN", manuscriptID)
         return new Promise((resolve, reject) =>{
             db.query("SELECT * FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ? AND status != 'submitted'",[manuscriptID, email], async(err,data) =>{
                 if(err){

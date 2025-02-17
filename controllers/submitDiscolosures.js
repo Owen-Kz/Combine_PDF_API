@@ -45,6 +45,8 @@ const SubmitDisclosures = async (req, res) => {
                     clearCookie(req, res, "_manFile")
                     clearCookie(req, res, "__KeyCount")
                     clearCookie(req,res, "_process")
+                    clearCookie(req,res, "_abstract")
+                    clearCookie(req,res, "_covFile")
                     return  res.json({success:"Manuscript Saved"})
 
                     }else{

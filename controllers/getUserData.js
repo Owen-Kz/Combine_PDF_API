@@ -4,7 +4,7 @@ const getUserData = async (req,res, next) =>{
     try{
         const userID = req.query._uid
 
-        db.query("SELECT * FROM authors_account WHERE md5(email) = ? OR id = ?",[userID, userID], async(error, data) =>{
+        db.query("SELECT * FROM authors_account WHERE email = ? OR md5(id) = ?",[userID, userID], async(error, data) =>{
             if(error){
                 console.log(error)
                 return res.json({error:error})

@@ -1,4 +1,5 @@
 const db = require("../routes/db.config")
+const checkIfFIleExists = require("./fileUploads/checkIfExists")
 
 const submitTitle = async (req,res) =>{
     try{
@@ -19,7 +20,26 @@ const submitTitle = async (req,res) =>{
             }
        
             if(data[0]){
+
+                // check if the files exist 
+          
+        
+         
+
+               checkIfFIleExists(req,res, req.cookies.exist_man,"manuscript_file",  req.cookies.new_manuscript)
+                
+                checkIfFIleExists(req,res, req.cookies.exist_cover,"cover_letter_File", req.cookies.new_cover_letter)
+
+                checkIfFIleExists(req,res, req.cookies.exist_tables, "tables", req.cookies.new_tables)
+
+                checkIfFIleExists(req,res, req.cookies.exist_figures, "figures", req.cookies.new_figures)
+
+                checkIfFIleExists(req,res, req.cookies.exist_graphic, "graphic_abstract", req.cookies.new_graphic_abstract)
+
+                checkIfFIleExists(req,res, req.cookies.exist_supplementary, "supplementary_material", req.cookies.new_supplement)
             
+                checkIfFIleExists(req,res, req.cookies.exist_tracked, "tracked_manuscript_file", req.cookies.new_tracked_file)
+                
                 // update the submissoin if it already exists 
                 db.query("UPDATE submissions SET title =? WHERE revision_id = ?", [manuscript_full_title, article_id], async(err, update) =>{
                     if(err){

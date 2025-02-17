@@ -20,7 +20,7 @@ const submitArticleType = async (req,res) =>{
             
         }
         // check if the id already exists by another users session 
-        db.query("SELECT * FROM submissions WHERE revision_id = ? ANd corresponding_authors_email != ?",[articleID, correspondingAuthor], async (err, sessionId) =>{
+        db.query("SELECT * FROM submissions WHERE revision_id = ? ANd corresponding_authors_email != ?",[article_id, correspondingAuthor], async (err, sessionId) =>{
             if(err){
                 console.log(err)
                 return res.json({error:err})
@@ -30,6 +30,7 @@ const submitArticleType = async (req,res) =>{
             }else{
                 articleID = req.cookies._sessionID
             }
+            console.log(req.cookies._sessionID)
 
           
             let revisionsCount = 0 

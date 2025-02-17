@@ -7,13 +7,20 @@ const findAuthors = require("../utils/findAuthors");
 const findReviewers = require("../utils/findReviewers");
 const clearCookie = require("../utils/clearCookie");
 const db = require("../../routes/db.config");
+const findRevisionId = require("../utils/findRevisionId");
 
 const uploadArticlePage = async (req, res) => {
     try {
 
         let ArticleId;
+        let NewRevisionId = ""
 
-        // check if the article has already been submitted 
+        // // check if the article has already been submitted 
+        // clearCookie(req, res, "_sessionID")
+        // clearCookie(req, res, "_abstract")
+        // clearCookie(req, res, "_manFile")
+  
+        
    
         const prefix = req.user.prefix
         const firstname = req.user.firstname
@@ -27,17 +34,16 @@ const uploadArticlePage = async (req, res) => {
         const affiliation_city = req.user.affiliation_city
         const asfi_membership_id = req.user.asfi_membership_id
 
+        
+       
         if (req.query.a) {
-            ArticleId = req.query.a; // If article ID is in query params, use 
-            // const cookieOptions = {
-            //     expiresIn: new Date(Date.now() + process.env.COOKIE_EXPIRES * 24 * 60 * 60 * 1000),
-            //     httpOnly: false
-            // }
-            // res.cookie("_sessionID", ArticleId, cookieOptions)
-            // if (req.cookies._abstract) {
-            //     res.clearCookie("_abstract")
-            // }
-            // res.cookie("_manFile", 0, cookieOptions)
+            // ArticleId =  await findRevisionId(req.query.a, req.cookies._uem);
+            ArticleId = req.query.a;
+           
+            clearCookie(req, res, "_sessionID") // If article ID is in query params, use 
+          writeCookie(req,res, "_sessionID", ArticleId)
+        // clearCookie(req,res, "_covFile")
+        
         } else if (req.cookies._sessionID) {
             ArticleId = req.cookies._sessionID; // Retrieve from session
         } else {
@@ -78,7 +84,14 @@ const uploadArticlePage = async (req, res) => {
             })
         }
         if(req.query.a){
-            db.query("SELECT * FROM submissions WHERE revision_id = ? AND status = 'submitted' AND corresponding_authors_email = ? ", [req.query.a, req.user.email], async(err, data)=>{
+         
+        
+        clearCookie(req, res, "_abstract")
+        clearCookie(req, res, "_manFile")
+        clearCookie(req, res, "__KeyCount")
+        clearCookie(req,res, "_process")
+
+            db.query("SELECT * FROM submissions WHERE revision_id = ? AND status = 'submitted' AND corresponding_authors_email = ? ", [ArticleId, req.user.email], async(err, data)=>{
                 if(err){
                     console.log(err)
                     return res.render("success", {status:'error', message:"Internal Server Error", tag:"Something Went Wrong"})
@@ -89,12 +102,13 @@ const uploadArticlePage = async (req, res) => {
                 }else {
                     
             
-            const ArticleData = await findManuscript(req.query.a,req.cookies._uem)
+            const ArticleData = await findManuscript(ArticleId, req.cookies._uem)
+         
             const Keywords = await findKeywords(ArticleData.revision_id)
             const submissionAuthors = await findAuthors(ArticleData.revision_id, req.cookies._uem)
             const suggestedReviewers = await findReviewers(ArticleData.revision_id)
             if(ArticleData){
-                ArticleId = req.query.a;
+                ArticleId = ArticleData.revision_id;
                 if(ArticleData.abstract && ArticleData.abstract !== null){
                 writeCookie(req,res, "_abstract", ArticleData.abstract)
                 }
@@ -102,20 +116,37 @@ const uploadArticlePage = async (req, res) => {
                     writeCookie(req,res, "_manFile", 1)
                 }
                 if(ArticleData.cover_letter_file && ArticleData.cover_letter_file !== null){
-                    writeCookie(req,res, "_manFile", 1)
+                    writeCookie(req,res, "_covFile", 1)
                 }
                 
 
             if(req.query.correct){
                 const newCorrectionCount = new Number(ArticleData.corrections_count)+1
                 const correctionID = `${ArticleData.article_id}.Cr${newCorrectionCount}`
+                NewRevisionId = correctionID
+                const manuscript_file = ArticleData.manuscript_file
+                const cover_letter_file = ArticleData.cover_letter_file
+                const tables = ArticleData.tables
+                const figures = ArticleData.figures
+                const graphic_abstract = ArticleData.graphic_abstract
+                const supplementary_materials = ArticleData.supplementary_materials
+                const tracked_manuscript_file = ArticleData.tracked_manuscript_file
                 writeCookie(req,res, "_sessionID", correctionID)
                 writeCookie(req,res,"_newCorrectionCount", newCorrectionCount)
+                writeCookie(req,res, "exist_man", manuscript_file)
+                writeCookie(req,res, "exist_cover", cover_letter_file)
+                writeCookie(req,res, "exist_tables", tables)
+                writeCookie(req,res, "exist_figures", figures)
+                writeCookie(req,res, "exist_graphic", graphic_abstract)
+                writeCookie(req,res, "exist_supplementary", supplementary_materials)
+                writeCookie(req,res, "exist_tracked", tracked_manuscript_file)
+
             
                 currentProcess = "correction_saved"
                 writeCookie(req,res, "_process", "correction")
             }else if(req.query.edit){
                 currentProcess = "saved_for_later"
+            
                 writeCookie(req,res, "_process", "edit")
 
             }else if(req.query.revise){
@@ -123,14 +154,31 @@ const uploadArticlePage = async (req, res) => {
              
                 const newRevisionCount = new Number(ArticleData.revisions_count) +1
                 const revisionID = `${ArticleData.article_id}.R${newRevisionCount}`
+                NewRevisionId = revisionID
+                const manuscript_file = ArticleData.manuscript_file
+                const cover_letter_file = ArticleData.cover_letter_file
+                const tables = ArticleData.tables
+                const figures = ArticleData.figures
+                const graphic_abstract = ArticleData.graphic_abstract
+                const supplementary_materials = ArticleData.supplementary_materials
+                const tracked_manuscript_file = ArticleData.tracked_manuscript_file
                 writeCookie(req,res, "_sessionID", revisionID)
                 writeCookie(req,res, "_process", "revision")
                 writeCookie(req,res,"_newReviseCount", newRevisionCount)
+                writeCookie(req,res, "exist_man", manuscript_file)
+                writeCookie(req,res, "exist_cover", cover_letter_file)
+                writeCookie(req,res, "exist_tables", tables)
+                writeCookie(req,res, "exist_figures", figures)
+                writeCookie(req,res, "exist_graphic", graphic_abstract)
+                writeCookie(req,res, "exist_supplementary", supplementary_materials)
+                writeCookie(req,res, "exist_tracked", tracked_manuscript_file)
 
             }else{
                 currentProcess = "saved_for_later"
                 writeCookie(req,res, "_sessionID", ArticleId)
             }
+            writeCookie(req,res, "new_revisionID", NewRevisionId)
+
         res.render("uploadPage", {
             articleId: ArticleData.revision_id,
             firstname, lastname, othername, prefix,

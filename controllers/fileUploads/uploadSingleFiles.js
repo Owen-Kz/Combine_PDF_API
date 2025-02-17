@@ -4,6 +4,7 @@ const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const db = require("../../routes/db.config");
+const clearCookie = require("../utils/clearCookie");
 
 
 // Cloudinary Configuration
@@ -58,12 +59,41 @@ const uploadSingleFile = (req,res) =>{
             }
         if(FileField === 'manuscript_file'){
             res.cookie("_manFile", 1, cookieOptions)
+            clearCookie(req, res, "new_manuscript")
+            res.cookie("new_manuscript", 1, cookieOptions)
             // req.session._manFile = 1;
         }
 
         if(FileField === "cover_letter_file"){
             res.cookie("_covFile", 1, cookieOptions)
+            clearCookie(req, res, "new_cover_letter")
+            res.cookie("new_cover_letter", 1, cookieOptions)
         }
+
+        if(FileField === "tables"){
+            clearCookie(req, res, "new_tables")
+            res.cookie("new_tables", 1, cookieOptions)
+        }
+
+        if(FileField === "figures_file"){
+            clearCookie(req, res, "new_figures")
+            res.cookie("new_figures", 1, cookieOptions)
+        }
+
+        if(FileField === "graphic_abstract"){
+            clearCookie(req, res, "new_graphic_abstract")
+            res.cookie("new_graphic_abstract", 1, cookieOptions)
+        }
+
+        if(FileField === "supplementary_material"){
+            clearCookie(req, res, "new_supplement")
+            res.cookie("new_supplement", 1, cookieOptions)
+        }
+        if(FileField === "tracked_manuscript_file"){
+            clearCookie(req, res, "new_tracked_file")
+            res.cookie("new_tracked_file", 1, cookieOptions)
+        }
+
         // Update the field 
         const articleId = req.cookies._sessionID
         db.query(`UPDATE submissions SET ${FileField} = ? WHERE revision_id = ?`, [result.secure_url, articleId], async (err, updated) =>{

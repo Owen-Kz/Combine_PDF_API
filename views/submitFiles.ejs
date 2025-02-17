@@ -79,7 +79,7 @@
     <div id="coverLetterContainer">
       <label for=""><span style="color: #e22424;">*</span>Cover Letter:</label>
       <div class="fileControls">
-        <% if(coverLetter && coverLetter !== null) { %>
+        <% if(coverLetter && coverLetter !== null && coverLetter !== "N/A") { %>
           <a href="/doc?url=<%=coverLetter%>" target="_blank">Cover Letter</a>
           <span class="delete_button" onclick="createPlainField('cover_letter_file', 'Cover Letter', 1)"><i class="fa fa-trash"></i> Remove File</span>
           <% }else{ %>

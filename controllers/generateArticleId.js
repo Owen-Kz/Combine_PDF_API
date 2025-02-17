@@ -1,4 +1,5 @@
 const db = require("../routes/db.config");
+const clearCookie = require("./utils/clearCookie");
 
 const generateArticleId = async (req,res) => {
     try {
@@ -35,6 +36,25 @@ const generateArticleId = async (req,res) => {
                     }
                     res.cookie("_sessionID", articleID, cookieOptions)
                     res.cookie("_manFile", 0, cookieOptions)
+                    res.clearCookie("new_manuscript")
+                    res.cookie("_covFile", 0, cookieOptions)
+                    res.clearCookie("new_cover_letter")
+                    res.clearCookie("new_tables")
+                    res.clearCookie("new_figures")
+                    res.clearCookie("new_graphic_abstract")
+                    res.clearCookie("new_supplement")
+                    res.clearCookie("new_tracked_file")
+                    clearCookie(req, res, "__KeyCount")
+                    clearCookie(req,res, "_process")
+                    // clearCookie(req,res, "_covFile")
+                    clearCookie(req,res, "exist_man")
+                    clearCookie(req,res, "exist_cover")
+                    clearCookie(req,res, "exist_tables")
+                    clearCookie(req,res, "exist_figures")
+                    clearCookie(req,res, "exist_graphic")
+                    clearCookie(req,res, "exist_supplementary")
+                    clearCookie(req,res, "exist_tracked")
+                    
                     if(req.cookies._abstract){
                     res.clearCookie("_abstract")
                     }
