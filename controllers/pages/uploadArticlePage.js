@@ -146,8 +146,23 @@ const uploadArticlePage = async (req, res) => {
                 writeCookie(req,res, "_process", "correction")
             }else if(req.query.edit){
                 currentProcess = "saved_for_later"
-            
+                const cover_letter_file = ArticleData.cover_letter_file
+                const tables = ArticleData.tables
+                const figures = ArticleData.figures
+                const graphic_abstract = ArticleData.graphic_abstract
+                const supplementary_materials = ArticleData.supplementary_materials
+                const tracked_manuscript_file = ArticleData.tracked_manuscript_file
+                const manuscript_file = ArticleData.manuscript_file
+                NewRevisionId = ArticleData.revision_id
                 writeCookie(req,res, "_process", "edit")
+                writeCookie(req,res,"_newReviseCount", newRevisionCount)
+                writeCookie(req,res, "exist_man", manuscript_file)
+                writeCookie(req,res, "exist_cover", cover_letter_file)
+                writeCookie(req,res, "exist_tables", tables)
+                writeCookie(req,res, "exist_figures", figures)
+                writeCookie(req,res, "exist_graphic", graphic_abstract)
+                writeCookie(req,res, "exist_supplementary", supplementary_materials)
+                writeCookie(req,res, "exist_tracked", tracked_manuscript_file)
 
             }else if(req.query.revise){
                 currentProcess = "revision_saved"
