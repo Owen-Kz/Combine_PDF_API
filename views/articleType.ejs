@@ -77,9 +77,9 @@ No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField(
 <label for="">Please provide the manuscript ID</label>
 
 <% if(previousId) {%>
-    <input type="text" name="previous_id" id="previous_mansucript_id" class="form-control" value="<%=previousId%>" readonly> <br>
+    <input type="text" name="previous_manuscript_id" id="previous_manuscript_id" class="form-control" value="<%=previousId%>" readonly> <br>
     <% }else{ %>
-<input type="text" name="previous_id" id="previous_mansucript_id" class="form-control"> <br>
+<input type="text" name="previous_manuscript_id" id="previous_manuscript_id" class="form-control"> <br>
    <% } %>
 
 </div>
@@ -112,7 +112,7 @@ submitArticleType.addEventListener("submit", function(e){
         article_id: article_idCOntainer.value,
         discipline:discipline.value,
         article_type:article_type.value,
-        previous_mansucript_id: previous_mansucript_id.value,
+        previous_manuscript_id: previous_manuscript_id.value,
         submissionStatus: submissionStatus.value
     }
    fetch(`/submitArticleType`, {
