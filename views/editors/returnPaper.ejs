@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <meta name="robots" content="noindex,nofollow">
+    <title>Portal | ASFIRJ Editor</title>
+        <!-- Favicon icon -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/editorStatic/plugins/images/favicon.png">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:300,600" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+    <link href="/editorStatic/plugins/bower_components/chartist/dist/chartist.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/editorStatic/plugins/bower_components/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.css">
+    <!-- Custom CSS -->
+    <link href="/editorStatic/css/style.min.css" rel="stylesheet">
+    <link href="/editorStatic/css/table.css" rel="stylesheet">
+    <link href="/editorStatic/css/filterList.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/jquery.selectric/1.10.1/selectric.css'>
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/material-design-iconic-font/2.2.0/css/material-design-iconic-font.min.css'>
+    <!-- QUILL JS  -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <!-- END QUILL JS  -->
+    <link rel="stylesheet" href="/editorStatic/css/shareModal.css">
+</head>
+
+<body>
+    <!-- ============================================================== -->
+    <!-- Preloader - style you can find in spinners.css -->
+    <!-- ============================================================== -->
+    <div class="preloader">
+        <div class="lds-ripple">
+            <div class="lds-pos"></div>
+            <div class="lds-pos"></div>
+        </div>
+    </div>
+    <!-- ============================================================== -->
+    <!-- Main wrapper - style you can find in pages.scss -->
+    <!-- ============================================================== -->
+    <div id="main-wrapper" data-layout="vertical" data-navbarbg="skin5" data-sidebartype="full"
+        data-sidebar-position="absolute" data-header-position="absolute" data-boxed-layout="full">
+        <!-- ============================================================== -->
+        <!-- Topbar header - style you can find in pages.scss -->
+        <!-- ============================================================== -->
+        <header class="topbar" data-navbarbg="skin5" id="topbar">
+        </header>
+
+        <script src="/editorStatic/js/routes/topbar.js"></script>
+
+        <style>
+
+            .box-shadow{
+                box-shadow: 0px 10px 30px 0px rgba(37, 37, 37, 0.10);
+            }
+            .align-items-center{
+              align-items: center;
+              justify-content: center;
+              float: center;
+              margin: auto;
+            }
+            .align-center{
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                color:rgb(81, 81, 81);
+                /* position: relative; */
+            }
+            .align-center i{
+                font-size:50px;
+            }
+            .analytics-info{
+                transition: 200ms ease-in-out;
+                cursor: pointer;
+                user-select: none;
+            }
+            .analytics-info:hover{
+                transform: scale(1.1);
+            }
+        </style>
+        <!-- ============================================================== -->
+        <!-- End Topbar header -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- Left Sidebar - style you can find in sidebar.scss  -->
+        <!-- ============================================================== -->
+        <aside class="left-sidebar" data-sidebarbg="skin6" style="transition: ease-in-out 300ms;">
+            <!-- Sidebar scroll-->
+            <div class="scroll-sidebar">
+                <!-- Sidebar navigation-->
+
+                <nav class="sidebar-nav" id="sidebar_nav">
+                    
+
+                </nav>
+                <script type="module" src="/editorStatic/js/routes/dashboard/sidenav.js"></script>
+                <!-- End Sidebar navigation -->
+            </div>
+            <!-- End Sidebar scroll-->
+        </aside>
+       
+       
+        <div class="page-wrapper"> 
+
+            <div class="page-breadcrumb bg-white">
+                <div class="row align-items-center">
+                    <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                        <h4 class="page-title">Return Paper</h4>
+                    </div>
+                    <div class="col-lg-9 col-sm-8 col-md-8 col-xs-12">
+                        <div class="d-md-flex">
+                            <ol class="breadcrumb ms-auto">
+                                <li><a href="#" class="fw-normal">Return Paper</a></li>
+                            </ol>
+                            <a href="/editors/logout" target="_blank"
+                                class="btn btn-danger  d-none d-md-block pull-right ms-3 hidden-xs hidden-sm waves-effect waves-light text-white">Logout</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- ============================================================== -->
+            <!-- End Bread crumb and right sidebar toggle -->
+            <!-- ============================================================== -->
+            <!-- ============================================================== -->
+            <!-- Container fluid  -->
+            <!-- ============================================================== -->
+            <div class="container-fluid">
+                <!-- ============================================================== -->
+                <!-- Three charts -->
+                <!-- ============================================================== -->
+           
+                
+                <!-- ============================================================== -->
+                <!-- RECENT SALES -->
+                <!-- ============================================================== -->
+                <div class="row">
+                    <div class="col-md-12 col-lg-12 col-sm-12">
+                        <div class="white-box">
+                         
+                            <div class="projects mb-4">
+                                <div class="projects-inner" id="articlesContainer">
+                                   
+                                <form onsubmit="return false" id="sendMail">
+                                    <input type="hidden" id="articleIdContainer" name="articleId" readonly>
+                                    <input type="hidden" id="editor" name="editor" readonly>
+
+                                      <!-- Section  -->
+                                      <div class="d-md-flex mb-3" style="flex-direction: column;">
+                                        <h4 class="box-title mb-0">Recipient</h4>
+                                        <div>
+                                            <input class="form-control" type="email" name="reviewerEmail" id="email" placeholder="Enter Recipient email" required></div>
+                                            
+                                            
+                                            <input class="form-control" type="text" name="ccEmail" id="ccEmail" placeholder="CC">
+                                  
+
+                                        <input class="form-control" type="text" name="bccEmail"
+                                        id="bccEmail" placeholder="BCC">
+                                        <div>* Seperate CC and BCC emails by comma (',')
+                                        </div>
+
+                                            <ul id="emailList"></ul>
+                                            <div id="invitationLink">*This Email has been auto filled with the Corresponding Author's Email</div>
+                                    
+                                    </div>
+                                    <!-- End Section  -->
+                                         <!-- Section  -->
+                                         <div class="d-md-flex mb-3" style="flex-direction: column;">
+                                            <h4 class="box-title mb-0">Subject</h4>
+                                            <div><input class="form-control" type="text" name="subject" id="subject" placeholder="Enter Subject" required></div>
+                                        </div>
+                                        <!-- End Section  -->
+
+                                         <!-- Section  -->
+                                         <div class="d-md-flex mb-3" style="flex-direction: column;">
+                                            <h4 class="box-title mb-0">Message Body</h4>
+                                            
+                                            <div style="display: flex; width: 100%;">*
+                                                Please Replace the Areas Marked red with their appropriate Data (e.g <span style="color: rgb(209, 12, 12);"><b>[Area Name]</b></span>)
+                                           </div>
+                                         <!-- Main toolbar -->
+                                        <div class="bg-body border rounded-bottom h-400px overflow-hidden" id="quilleditor" style="height: 500px;">
+                                        </div>   
+                                               <!-- Attachments section -->
+                                               <div class="d-md-flex mb-3" style="flex-direction: column;">
+                                                <h4 class="box-title mb-0">Attachments (Max: 10 Files)</h4>
+                                                <input class="form-control" type="file" name="attachments[]" id="attachmentInput" multiple accept="*/*">
+                                                <div id="attachmentPreviewContainer" style="margin-top: 15px;"></div>
+                                            </div>
+                                            <!-- end attachment section   -->
+                                    </div>
+                        <!-- End Section  -->
+                         <!-- button Section  -->
+                         <div class="d-md-flex mb-6" style="flex-direction: column; align-items: center;">
+                          <button type="submit" class="btn btn-github" style="border-radius: 25px; width: fit-content;">
+                            <i class="fa fa-paper-plane" style="border-right: 1px solid; padding: 10px;"></i> 
+                            <span style="padding-left:10px;">Send</span></button>
+                            </div>
+
+                                </form>
+                                </div>
+                                
+                       
+                            </div>
+
+            <!-- ============================================================== -->
+            <!-- End Container fluid  -->
+            <!-- ============================================================== -->
+            <!-- ============================================================== -->
+            <!-- footer -->
+            <!-- ============================================================== -->
+            <footer class="footer text-center" id="footer"> 
+                
+            </footer>
+            <script type="module" src="/editorStatic/js/routes/dashboard/footer.js"></script>
+            <!-- ============================================================== -->
+            <!-- End footer -->
+            <!-- ============================================================== -->
+             <!-- Start Modal  -->    
+    <a href="#" id="shareButton" data-bs-toggle="modal" data-bs-target="#exampleModal" style="display: none;" > Open Modal
+    </a>
+ <div class="modal fade" id="exampleModal" tabindex="-1" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-scrollable modal-lg">
+     <div class="modal-content rounded-1">
+       <div class="modal-header border-bottom">
+        
+       </div>
+
+       <div class="modal-body message-body" data-simplebar="">
+         <div class="content">
+   
+     
+           <p>Are you sure you want to send this email?</p>
+           <button class="btn btn-primary btn-danger" id="confirmButton">
+             Yes</button>
+
+             <button class="btn btn-secondary"  id="closeModal">No, Cancel</button>
+             
+         </div>
+ 
+    
+       </div>
+     </div>
+   </div>
+ </div>
+   <!-- End Modal  -->
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Page wrapper  -->
+        <!-- ============================================================== -->
+    </div>
+    <!-- ============================================================== -->
+    <!-- End Wrapper -->
+    <!-- ============================================================== -->
+    <!-- ============================================================== -->
+    <!-- All Jquery -->
+    <!-- ============================================================== -->
+    <script src="/editorStatic/plugins/bower_components/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap tether Core JavaScript -->
+    <script src="/editorStatic/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/editorStatic/js/app-style-switcher.js"></script>
+    <script src="/editorStatic/plugins/bower_components/jquery-sparkline/jquery.sparkline.min.js"></script>
+    <!--Wave Effects -->
+    <script src="/editorStatic/js/waves.js"></script>
+    <!--Menu sidebar -->
+    <script src="/editorStatic/js/sidebarmenu.js"></script>
+    <!--Custom JavaScript -->
+    <script src="/editorStatic/js/custom.js"></script>
+    <!--This page JavaScript -->
+    <!--chartis chart-->
+    <script src="/editorStatic/plugins/bower_components/chartist/dist/chartist.min.js"></script>
+    <script src="/editorStatic/plugins/bower_components/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script>
+    <script src="/editorStatic/js/pages/dashboards/dashboard1.js"></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js'></script>
+    <script type="module" src="/editorStatic/js/routes/quill.js"></script>
+    <script type="module" src="/editorStatic/js/routes/dashboard/emails/returnManuscript.js"></script>
+    <script type="module" src="/editorStatic/js/routes/dashboard/filterinviteEditorsList.js"></script>
+    <script type="module" src="/editorStatic/js/routes/dashboard/addFileAttachment.js"></script>
+</body>
+
+</html>

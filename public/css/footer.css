@@ -47,7 +47,7 @@
 .footer-widget .booking-wrap-inner {}
 
 .footer-widget .booking-wrap-inner h3 {
-    font-family: "sofia-pro-bold", sans-serif;
+    font-family: "Lato-bold", sans-serif;
     font-size: 16px;
     color: #fff;
     margin: 0;
@@ -121,7 +121,7 @@
 }
 
 .widget-links li a {
-    font-family: 'Sofia-Pro-Regular', sans-serif;
+    font-family: 'Lato-Regular', sans-serif;
     /* color: #6a7c92; */
     font-size: 16px;
     line-height: 1;
@@ -231,7 +231,7 @@
 }
 
 .footer-info-list h3 {
-    font-family: "sofia-pro-regular", sans-serif;
+    font-family: "Lato-regular", sans-serif;
     font-size: 16px;
     color: #fff;
     text-align: left;

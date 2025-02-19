@@ -148,7 +148,7 @@
 }
 .header-menu-wrap li li:last-child{ margin: 0; }
 .header-menu-wrap li li > a{
-    font-family: "sofia-pro-regular",sans-serif;
+    font-family: "Lato-regular",sans-serif;
     display: block;
     height: auto;
     line-height: inherit;
@@ -210,7 +210,7 @@
 }
 
 .header-menu-wrap .dropdown-menu li > a {
-    font-family: "sofia-pro-regular", sans-serif;
+    font-family: "Lato-regular", sans-serif;
     display: block;
     height: auto;
     line-height: inherit;

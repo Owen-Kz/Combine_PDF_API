@@ -1,0 +1,172 @@
+body {
+  font-family: "SofiaPro";
+  font-size: 12px;
+}
+
+p {
+  margin-left: inherit;
+}
+a{
+  color: #e00196 !important;
+}
+.title {
+  color: blue;
+}
+
+.form-control {
+  width: 90%;
+}
+
+.btn-primary.submit-btn,
+.btn-primary.submit-btn:hover {
+  /* width: 90%; */
+  box-sizing: border-box;
+  height: 40px;
+  width: 102px;
+  border: 1px solid #333333;
+  border-radius: 2px;
+  background-color: #333333;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.btn-primary.reset-btn,
+.btn-primary.reset-btn:hover {
+  width: 100%;
+}
+.cancel-btn {
+  padding: 11px;
+}
+
+.cancel-btn a {
+  text-decoration: underline;
+  color: rgba(0, 0, 0, 0.89);
+}
+
+.base-login-container {
+  background: #fff;
+  height: 100vh;
+}
+
+.base-login-container.bg-image-holder {
+  background: url("../images/aboutUsnew.jpg") center bottom no-repeat;
+  background-size: cover;
+}
+
+.corner-image {
+  position: fixed;
+  bottom: 0px;
+  height: 30%;
+  left: 0;
+}
+
+.base-login-container.base-form-holder {
+  position: relative;
+}
+
+.base-login-container.base-form-holder .form-holder {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+}
+
+.forgotten-password a,
+.forgotten-password a:hover {
+  height: 18px;
+  width: 125px;
+  color: #000000;
+  font-family: "SofiaPro";
+  font-size: 13px;
+  line-height: 18px;
+  text-decoration: underline;
+}
+
+.bwt-logo {
+  color: #07103c;
+  font-family: "SofiaProBold";
+  font-size: 25px;
+  font-weight: bold;
+  line-height: 26px;
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+
+.bwt-logo span{
+  font-weight: 100;
+  font-size: 20px;
+  color: #333333;
+}
+
+.app-icon-holder {
+  padding: 20px;
+  text-align: center;
+}
+
+.icon-holder {
+  /* height: 200px; */
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  box-shadow: 0 12px 33px 0 rgba(0, 0, 0, 0.1);
+}
+
+.app-initials {
+  margin: auto;
+  text-align: center;
+}
+
+.card-title {
+  /* position: fixed; */
+  /* bottom: 42px; */
+  color: rgba(0, 0, 0, 0.89);
+  font-family: "SofiaProBold";
+  font-size: 14px;
+  font-weight: bold;
+  /* line-height: 20px; */
+  text-align: center;
+  /* left: 50%; */
+  /* right: 50%; */
+  margin-bottom: 0;
+}
+
+.icon-card-holder {
+  margin-bottom: 20px;
+}
+
+.form-control.form-control-lg {
+  font-size: 13px;
+}
+.title {
+  color: rgba(0, 0, 0, 0.89);
+  font-family: "SofiaProBold";
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.app-icon-selector .icon-holder:hover {
+  background-color: #e6e6e6;
+}
+
+h3.username-holder {
+  margin-bottom: 30px;
+}
+
+@font-face {
+  font-family: SofiaPro;
+  src: url("https://oidc-provider-k8-prod.s3.amazonaws.com/fonts/SofiaPro-Regular.ttf");
+}
+
+@font-face {
+  font-family: SofiaProBold;
+  src: url("https://oidc-provider-k8-prod.s3.amazonaws.com/fonts/SofiaPro-Bold.ttf");
+}
+
+@media only screen and (max-width: 800px) {
+  .base-login-container.bg-image-holder {
+    display: none;
+  }
+}
