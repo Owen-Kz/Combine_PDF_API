@@ -112,7 +112,7 @@ deleteProfile.addEventListener("click", function(){
    const confirmDeletion =  prompt(`Are you sure you want to delete this profile? To confirm, type "${email}" to continue.`)
 
    if(confirmDeletion && confirmDeletion === email){
-   fetch(`${submissionsEndpoint}/backend/editors/deleteAuthorAccount.php`, {
+   fetch(`${submissionsEndpoint}/accounts/deleteAuthor`, {
     method:"POST",
     body:JSON.stringify({id:email, admin:user}),
     headers: {
@@ -123,7 +123,7 @@ deleteProfile.addEventListener("click", function(){
    .then(data=>{
     if(data.success){
         alert(data.success)
-        window.location.href = `${parentDirectoryName}/../Dashboard`
+        window.location.href = `${parentDirectoryName}/dashboard`
     }else{
         alert(data.error)
     }
@@ -137,7 +137,7 @@ deleteProfile.addEventListener("click", function(){
 verifyAccount.addEventListener("click", function(){
 
     
-    fetch(`${submissionsEndpoint}/backend/editors/verifyUser.php`, {
+    fetch(`${submissionsEndpoint}/accounts/verifyUser`, {
     method:"POST",
     body:JSON.stringify({id:email, admin:user}),
     headers: {
@@ -166,7 +166,7 @@ migrateProfile.addEventListener("click", function(){
 
 
    if(confirmMigration && confirmMigration === email){
-   fetch(`${submissionsEndpoint}/backend/editors/migrateAccount.php`, {
+   fetch(`${submissionsEndpoint}/accounts/migrateAuthor`, {
     method:"POST",
     body:JSON.stringify({id:email, admin:user}),
     headers: {
@@ -177,7 +177,7 @@ migrateProfile.addEventListener("click", function(){
    .then(data=>{
     if(data.success){
         alert(data.success)
-        window.location.href = `${parentDirectoryName}/../Dashboard`
+        // window.location.href = `${parentDirectoryName}/../Dashboard`
 
     }else{
         alert(data.error)

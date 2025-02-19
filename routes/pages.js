@@ -87,6 +87,9 @@ const clearCookie = require("../controllers/utils/clearCookie");
 const countAllEditorInvites = require("../controllers/editors/countAllEditorInvites");
 const archiveSubmission = require("../controllers/editors/archiveSubmission");
 const viewReviewPage = require("../controllers/editors/pages/viewReviewPage");
+const VerifyAuthorAccount = require("../controllers/editors/verifyAuthorAccount");
+const DeleteAuthorAccount = require("../controllers/editors/deleteAuthorAccount");
+const MigrateAccount = require("../controllers/editors/migrateAuthorAccount");
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -193,6 +196,9 @@ router.get("/editors/getReviews", getREviews)
 router.get("/editors/getAuthors", getSubmissionAuthors)
 router.post("/editors/articleinvitations", EditorLoggedIn, getInvitations)
 router.post("/editors/viewReview",EditorLoggedIn, viewReview)
+router.post("/editors/accounts/verifyUser", EditorLoggedIn, VerifyAuthorAccount)
+router.post("/editors/accounts/deleteAuthor", EditorLoggedIn, DeleteAuthorAccount)
+router.post("/editors/accounts/migrateAuthor", EditorLoggedIn, MigrateAccount)
 
 
 // for Emails 
