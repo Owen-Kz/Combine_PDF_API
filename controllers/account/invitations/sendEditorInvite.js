@@ -17,10 +17,10 @@ cloudinary.config({
 });
 
 const inviteEditorEMail = async (req, res) => {
-  upload.array("attachments")(req, res, async (err) => {
+  upload.array("attachments[]")(req, res, async (err) => {
     if (err) {
       console.error("Error during file upload:", err);
-      return res.status(500).json({ error: "File upload failed" });
+      return res.status(500).json({ error:"error", message: "File upload failed" });
     }
 
     try {
@@ -29,12 +29,12 @@ const inviteEditorEMail = async (req, res) => {
       apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 
       if (!req.cookies.userRegistered) {
-        return res.status(401).json({ error: "User not logged in" });
+        return res.status(401).json({ error:"error", message: "User not logged in" });
       }
 
       const editorId = req.user.id;
       if (!(await isAdminAccount(editorId))) {
-        return res.status(403).json({ error: "Not Admin" });
+        return res.status(403).json({ error:"error", message: "Not Admin" });
       }
 
       const { articleId, reviewerEmail, subject, message, ccEmail, bccEmail } = req.body;
@@ -61,7 +61,7 @@ const inviteEditorEMail = async (req, res) => {
           );
         } catch (err) {
           console.error("Cloudinary upload error:", err);
-          return res.status(500).json({ error: "Error uploading files to Cloudinary" });
+          return res.status(500).json({ error:"error", message: "Error uploading files to Cloudinary" });
         }
       }
 
@@ -80,7 +80,7 @@ const inviteEditorEMail = async (req, res) => {
           );
         });
       } catch (error) {
-        return res.status(403).json({ error: "Unauthorized account" });
+        return res.status(403).json({ error:"error", message: "Unauthorized account" });
       }
 
       // Check if invited user is an author on this article
@@ -142,7 +142,7 @@ const inviteEditorEMail = async (req, res) => {
         });
       } catch (dbError) {
         console.error("Database error:", dbError);
-        return res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error:"error", message: "Database error" });
       }
 
       const senderEmail = process.env.BREVO_EMAIL;

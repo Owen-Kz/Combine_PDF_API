@@ -6,7 +6,7 @@ const isAdminAccount = require("./isAdminAccount");
 const emailContent =  (req, res) => {
   const userId = req.user.id;
   const emailId = req.query.emailId;
-console.log(userId)
+
   if (userId && emailId) {
     if (isAdminAccount(userId)) {
       const query = 'SELECT * FROM `sent_emails` WHERE `id` = ?';

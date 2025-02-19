@@ -92,6 +92,17 @@
         margin: 0 5px;
         padding: 5px 10px;
         cursor: pointer;
+        border: none;
+        outline: none;
+        border-radius: 25px;
+        min-width: 100px;
+        color: white;
+    }
+    .pagination-controls button:not(:disabled){
+        background-color: #310357;
+    }
+    .pagination-controls button:disabled{
+        background-color: #31035791;
     }
     .pagination-controls span {
         font-weight: bold;
@@ -310,6 +321,9 @@
     <button id="nextPage" onclick="nextPage()">Next</button>
 </div> -->
                                     </table>
+                                    <div id="paginationContainer" class="pagination-controls">
+  
+                                    </div>
                                 </div>
                        
                             </div>

@@ -121,7 +121,7 @@ fetch(`${submissionsEndpoint}/articleinvitations`,{
             // if(action !== "" && ArticleId != ""){
             // if(action === "view" ){
         
-            window.location.href = `${parentDirectoryName}/Reviews?a=${ArticleIdMain}&r=${reviewerEmailMain}`
+            window.location.href = `/editors/Reviews?a=${ArticleIdMain}&r=${reviewerEmailMain}`
             // }
           
         // }

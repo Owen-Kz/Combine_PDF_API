@@ -6,7 +6,7 @@ const returnPaperPage = async (req,res) =>{
             res.render("editorLogin")
         }
     }catch(error){
-        console.log(errror)
+        console.log(error)
         return res.json({error:error.message})
     }
 }

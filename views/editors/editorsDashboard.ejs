@@ -92,6 +92,17 @@
         margin: 0 5px;
         padding: 5px 10px;
         cursor: pointer;
+        border: none;
+        outline: none;
+        border-radius: 25px;
+        min-width: 100px;
+        color: white;
+    }
+    .pagination-controls button:not(:disabled){
+        background-color: #310357;
+    }
+    .pagination-controls button:disabled{
+        background-color: #31035791;
     }
     .pagination-controls span {
         font-weight: bold;
@@ -388,12 +399,14 @@
                                   
                                         </tbody>
                                         <!-- Pagination Controls -->
-<!-- <div id="pagination" class="pagination-controls">
-    <button id="prevPage" onclick="previousPage()">Previous</button>
-    <span id="pageIndicator">Page 1</span>
-    <button id="nextPage" onclick="nextPage()">Next</button>
+<!-- <div id="paginationContainer" class="pagination-controls">
+  
 </div> -->
+<!-- <div id="paginationContainer"></div> -->
                                     </table>
+                                    <div id="paginationContainer" class="pagination-controls">
+  
+                                    </div>
                                 </div>
                        
                             </div>
@@ -454,103 +467,6 @@
             monitorElements();
         };
     </script>
-    <!-- <script>
-    const itemsPerPage = 5; // Number of items to show per page
-    let currentPage = 1; // Initial page
-
-    // Function to render a specific set of items based on the current page
-    function renderPage(pageNumber) {
-        const allItems = document.querySelectorAll('#submissionsContainer .success-item'); // Get all dynamic items
-        const totalItems = allItems.length;
-
-        // Calculate the start and end indices for the items to display on this page
-        const startIndex = (pageNumber - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-
-        // Hide all items initially
-        allItems.forEach((item, index) => {
-            item.style.display = 'none'; // Hide each item
-        });
-
-        // Show only the items for the current page
-        for (let i = startIndex; i < endIndex && i < totalItems; i++) {
-            allItems[i].style.display = ''; // Unhide items within the range
-        }
-
-        // Update the page indicator text
-        document.getElementById('pageIndicator').textContent = `Page ${currentPage}`;
-
-        // Disable/Enable the Previous and Next buttons based on the page
-        document.getElementById('prevPage').disabled = currentPage === 1; // Disable "Previous" on the first page
-        document.getElementById('nextPage').disabled = endIndex >= totalItems; // Disable "Next" on the last page
-    }
-
-    // Function to handle the Previous button click
-    function previousPage() {
-        if (currentPage > 1) {
-            currentPage -= 1; // Go to the previous page
-            renderPage(currentPage);
-        }
-    }
-
-    // Function to handle the Next button click
-    function nextPage() {
-        const allItems = document.querySelectorAll('#submissionsContainer .success-item');
-        if ((currentPage * itemsPerPage) < allItems.length) {
-            currentPage += 1; // Go to the next page
-            renderPage(currentPage);
-        }
-    }
-
-    // Function to handle the hiding of the preloader
-    function hidePreloader() {
-        const preloader = document.querySelector('.preloader2');
-        preloader.classList.add('hidden');
-    }
-
-    // Function to monitor dynamic elements and detect when all have been loaded
-    function monitorElements() {
-        let dynamicContentLoaded = false;
-        let lastLoadedCount = 0; // Track the last number of loaded items
-        let noNewItemsForSeconds = 0; // Counter to track if new items stop loading
-
-        // Function to periodically check if dynamic content has finished loading
-        function checkLoadingStatus() {
-            const dynamicElements = document.getElementsByClassName('success-item');
-            const currentLoadedCount = dynamicElements.length;
-
-            // If new elements have been added, reset the counter
-            if (currentLoadedCount > lastLoadedCount) {
-                lastLoadedCount = currentLoadedCount;
-                noNewItemsForSeconds = 0; // Reset counter if new items are detected
-            } else {
-                // Increment the counter if no new items have been added
-                noNewItemsForSeconds += 1;
-            }
-
-            // If no new items for a certain period (e.g., 2 seconds), assume loading is complete
-            if (noNewItemsForSeconds >= 2) {
-                dynamicContentLoaded = true;
-            }
-
-            // If loading is complete, hide the preloader and show the first page of results
-            if (dynamicContentLoaded) {
-                clearInterval(checkInterval); // Stop checking
-                hidePreloader(); // Hide the preloader
-                renderPage(currentPage); // Render the first page of items
-            }
-        }
-
-        // Check every 1 second to see if all elements have finished loading
-        const checkInterval = setInterval(checkLoadingStatus, 1000); // Adjust interval time if needed
-    }
-
-    // Wait until the entire page is initially loaded
-    window.onload = function () {
-        // Start monitoring specific elements after the initial page load
-        monitorElements();
-    };
-</script> -->
 
    
    

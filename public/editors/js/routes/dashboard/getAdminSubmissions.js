@@ -1,7 +1,7 @@
 import { submissionsEndpoint } from "../constants.js";
 
-function GetAdminSubmissions(id){
-   return fetch(`${submissionsEndpoint}/allSubmissions`, {
+function GetAdminSubmissions(id, page){
+   return fetch(`${submissionsEndpoint}/allSubmissions?page=${page}`, {
         method: "POST",
         body:JSON.stringify({admin_id:id}),
         headers:{

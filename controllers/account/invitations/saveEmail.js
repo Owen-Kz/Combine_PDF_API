@@ -13,18 +13,25 @@ const saveEmailDetails = async (
 ) => {
   try {
     // Check if email already exists
-    const [existingEmails] = await new Promise((resolve, reject) => {
-      db.query(
-        "SELECT id FROM sent_emails WHERE recipient = ? AND subject = ? AND sender = ? AND article_id = ?",
-        [recipientEmail, subject, senderEmail, articleId],
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
-      );
-    });
-
+    const existingEmailsQuery = () =>{
+      return new Promise((resolve, reject) => {
+        db.query(
+          "SELECT id FROM sent_emails WHERE recipient = ? AND subject = ? AND sender = ? AND article_id = ?",
+          [recipientEmail, subject, senderEmail, articleId],
+          (err, result) => {
+            if (err) {
+              console.log(err)
+              reject(err);
+  
+            }
+            else resolve(result);
+          }
+        );
+      });
+    }
+    const existingEmails = await existingEmailsQuery()
     let emailId;
+ 
     if (existingEmails.length > 0) {
       // Email already exists, get the existing ID
       emailId = existingEmails[0].id;

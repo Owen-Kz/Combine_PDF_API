@@ -92,6 +92,17 @@
         margin: 0 5px;
         padding: 5px 10px;
         cursor: pointer;
+        border: none;
+        outline: none;
+        border-radius: 25px;
+        min-width: 100px;
+        color: white;
+    }
+    .pagination-controls button:not(:disabled){
+        background-color: #310357;
+    }
+    .pagination-controls button:disabled{
+        background-color: #31035791;
     }
     .pagination-controls span {
         font-weight: bold;
@@ -270,7 +281,7 @@
                     <div class="col-md-12 col-lg-12 col-sm-12">
                         <div class="white-box">
                             <div class="d-md-flex mb-3">
-                                <h3 class="box-title mb-0">Accepted Papers</h3>
+                                <h3 class="box-title mb-0">Archived Papers</h3>
                                 <div class="col-md-3 col-sm-4 col-xs-6 ms-auto">
                                    <input type="text" class="form-control form-input search" id="search" placeholder="Search">
                                     <!-- <select class="form-select shadow-none row border-top">
@@ -310,6 +321,9 @@
     <button id="nextPage" onclick="nextPage()">Next</button>
 </div> -->
                                     </table>
+                                    <div id="paginationContainer" class="pagination-controls">
+  
+                                    </div>
                                 </div>
                        
                             </div>

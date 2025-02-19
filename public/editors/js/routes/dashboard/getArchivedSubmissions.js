@@ -1,7 +1,7 @@
 import { submissionsEndpoint } from "../constants.js";
 
-function getArchivedSubmissions(id){
-   return fetch(`${submissionsEndpoint}/archivedSubmissions`, {
+function getArchivedSubmissions(id, page){
+   return fetch(`${submissionsEndpoint}/archivedSubmissions?page=${page}`, {
         method: "POST",
         body:JSON.stringify({admin_id:id}),
         headers:{

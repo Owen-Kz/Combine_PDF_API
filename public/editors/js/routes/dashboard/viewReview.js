@@ -36,13 +36,16 @@ const getReviewerDetails = await getAuthorsDetails(user, reviewer)
 ReviewerDetailsContaienr.innerHTML = `Reviewer's Report <br> by ${getReviewerDetails}`
 if(ArticleId && reviewer){
     // Get the Details of the review and display on the page 
-    fetch(`${submissionsEndpoint}/viewReview`,{
+    fetch(`/editors/viewReview`,{
         method:"POST",
+        headers:{
+            "Content-type": "application/JSON"
+        },
         body:JSON.stringify({a:ArticleId, r:reviewer})
     }).then(res => res.json())
     .then(async data=>{
-        if(data.status === "success"){
-            const reviewsContent = data.reviewContent
+        if(data.success){
+            const reviewsContent = data.reviewContent[0]
             const oneParagraph = reviewsContent.one_paragraph_comment
             const oneParagraphFile = reviewsContent.one_paragraph_file 
             const generalComment = reviewsContent.general_comment 
@@ -193,17 +196,18 @@ if(ArticleId && reviewer){
     
 
         }else{
-            alert(data.reviewContent)
-            window.location.href = `${parentDirectoryName}/Dashboard`
+        
+            alert(data.message)
+            // window.location.href = `${parentDirectoryName}/Dashboard`
         }
 
 
     })
   
 }else{
-    window.location.href = `${parentDirectoryName}/Dashboard`
+window.location.href = `${parentDirectoryName}/view?a=${ArticleId}`
 }
 
 }else{
-    window.location.href = `${parentDirectoryName}/workflow/accounts/login`
+   window.location.href = `${parentDirectoryName}/view?a=${ArticleId}`
 }

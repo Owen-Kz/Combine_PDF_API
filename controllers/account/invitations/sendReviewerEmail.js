@@ -17,9 +17,10 @@ cloudinary.config({
 });
 
 const inviteReviewerEmail = async (req, res) => {
-  upload.array("attachments")(req, res, async (err) => {
+  upload.array("attachments[]")(req, res, async (err) => {
     if (err) {
-      return res.status(500).json({ error: "File upload failed" });
+      console.log(err)
+      return res.status(500).json({ error:"error", message: "File upload failed" });
     }
 
     try {
@@ -28,12 +29,12 @@ const inviteReviewerEmail = async (req, res) => {
       apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 
       if (!req.cookies.userRegistered) {
-        return res.status(401).json({ error: "User not logged in" });
+        return res.status(401).json({ error:"error", message: "User not logged in" });
       }
 
       const editorId = req.user.id;
       if (!(await isAdminAccount(editorId))) {
-        return res.status(403).json({ error: "Not Admin" });
+        return res.status(403).json({ error:"error", message: "Not Admin" });
       }
 
       const { articleId, reviewerEmail, subject, message, ccEmail, bccEmail } = req.body;
@@ -58,7 +59,7 @@ const inviteReviewerEmail = async (req, res) => {
             )
           );
         } catch (err) {
-          return res.status(500).json({ error: "Error uploading files to Cloudinary" });
+          return res.status(500).json({ error:"error", message: "Error uploading files to Cloudinary" });
         }
       }
 
@@ -76,7 +77,7 @@ const inviteReviewerEmail = async (req, res) => {
           );
         });
       } catch (error) {
-        return res.status(403).json({ error: "Unauthorized account" });
+        return res.status(403).json({ error:"error", message: "Unauthorized account" });
       }
 
       const isAuthor = await new Promise((resolve, reject) => {
@@ -90,7 +91,7 @@ const inviteReviewerEmail = async (req, res) => {
         );
       });
       if (isAuthor) {
-        return res.status(400).json({ error: "The invited reviewer is an author on this article" });
+        return res.status(400).json({ error:"error", message: "The invited reviewer is an author on this article" });
       }
 
       const existingInvitation = await new Promise((resolve, reject) => {
@@ -165,10 +166,10 @@ const inviteReviewerEmail = async (req, res) => {
 
         return res.json({ status: "success", message: "Email has been sent" });
       } catch (error) {
-        return res.status(500).json({ error: "Email sending failed" });
+        return res.status(500).json({ error:"error", message: "Email sending failed" });
       }
     } catch (error) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ error:"error", message: error.message });
     }
   });
 };

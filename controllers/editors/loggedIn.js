@@ -33,6 +33,7 @@ const EditorLoggedIn = async (req, res, next) => {
       req.user = result[0];
       writeCookie(req,res, "editor_account_type", req.user.editorial_level)
       writeCookie(req,res, "editor", result[0].id)
+
       next();
     });
 }else{

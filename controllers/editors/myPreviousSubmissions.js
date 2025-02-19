@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 const myPreviousSubmissions = async (req, res) => {
   const data = req.body;
-  const adminId = req.session.user_email;
+  const adminId = req.user.email;
   let revisionID = data.revision_id;
   let mainId = revisionID;
 

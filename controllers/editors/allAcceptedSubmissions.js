@@ -5,6 +5,10 @@ const allAcceptedSubmissions = async (req,res) =>{
 try{
     if(req.cookies.userRegistered){
     const id = req.user.id
+    const page = req.query.page ? parseInt(req.query.page) : 1; // Default to page 1
+    const pageSize = 5; // Number of records per page
+    const offset = (page - 1) * pageSize;
+
 
     if(await isAdminAccount(id)){
     db.query(`WITH RankedSubmissions AS (
@@ -20,7 +24,8 @@ try{
                 SELECT *
                 FROM RankedSubmissions
                 WHERE row_num = 1
-                ORDER BY process_start_date DESC;`, async(error, data) =>{
+                ORDER BY process_start_date DESC LIMIT ? OFFSET ?;`, 
+                [pageSize, offset], async(error, data) =>{
                     if(error){
                         console.log(error)
                         return res.json({error:error})
@@ -28,7 +33,8 @@ try{
                     if(data[0]){
                         return res.json({success:"Admin Account",  submissions:data})
                     }else{
-                        console.log("sFN")
+                   
+                        return res.json({success:"Admin Account",  submissions:data})
                     }
                 })
 

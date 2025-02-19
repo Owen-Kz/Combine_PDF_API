@@ -4,6 +4,9 @@ const isAdminAccount = require("./isAdminAccount")
 const ArchivedSubmissions = async (req,res) =>{
 try{
     const id = req.user.id
+    const page = req.query.page ? parseInt(req.query.page) : 1; // Default to page 1
+    const pageSize = 5; // Number of records per page
+    const offset = (page - 1) * pageSize;
     if(await isAdminAccount(id)){
     
 

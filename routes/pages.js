@@ -86,6 +86,7 @@ const { sendBulkEmail } = require("../controllers/account/invitations/sendBullEm
 const clearCookie = require("../controllers/utils/clearCookie");
 const countAllEditorInvites = require("../controllers/editors/countAllEditorInvites");
 const archiveSubmission = require("../controllers/editors/archiveSubmission");
+const viewReviewPage = require("../controllers/editors/pages/viewReviewPage");
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -146,7 +147,7 @@ router.post("/editors/allsubmissions", EditorLoggedIn, allSubmissions)
 router.post("/editors/archivedSubmissions", EditorLoggedIn, ArchivedSubmissions)
 router.post("/editors/allPreviousSubmissions", EditorLoggedIn, allPreviousSubmissions)
 
-router.post("/editors/mySubmisions", EditorLoggedIn, mySubmissions)
+router.post("/editors/mySubmissions", EditorLoggedIn, mySubmissions)
 router.post("/editors/myPreviousSubmissions", EditorLoggedIn,myPreviousSubmissions)
 
 
@@ -223,7 +224,7 @@ router.post("/editors/email/returnPaper", EditorLoggedIn, ReturnPaper)
 router.post("/editors/email/revisePaper", EditorLoggedIn, RevisePaper)
 router.post("/editors/email/rejectPaper", EditorLoggedIn, RejectPaper)
 router.post("/editors/email/bulkEmail", EditorLoggedIn, sendBulkEmail)
-
+router.get("/editors/Reviews", EditorLoggedIn, viewReviewPage)
 
 router.post("/editors/isEditor", EditorLoggedIn, (req,res) =>{
   res.json({success:"Editor", account:req.user})

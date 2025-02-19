@@ -23,7 +23,7 @@ const AcceptPaper = async (req, res) => {
   try {
     // Multer middleware as a promise
     await new Promise((resolve, reject) => {
-      upload.array("attachments")(req, res, (err) => {
+      upload.array("attachments[]")(req, res, (err) => {
         if (err) reject(err);
         else resolve();
       });

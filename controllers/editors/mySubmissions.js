@@ -5,14 +5,17 @@ const isAdminAccount = require("./isAdminAccount");
 
 const mySubmissions = async (req, res) => {
     const data = req.body;
-    const adminId = req.session.user_email;
+    const adminId = req.user.email;
+    const page = req.query.page ? parseInt(req.query.page) : 1; // Default to page 1
+    const pageSize = 5; // Number of records per page
+    const offset = (page - 1) * pageSize;
     
     if (!adminId) {
         return res.status(400).json({ error: "Invalid Parameters" });
     }
 
     try {
-        const isAdmin = await isAdminAccount(req.session.user_id);
+        const isAdmin = await isAdminAccount(req.user.id);
 
         if (isAdmin) {
             // Admin account: Query for submissions
@@ -22,10 +25,10 @@ const mySubmissions = async (req, res) => {
                   AND status != 'revision_saved' 
                   AND status != 'returned' 
                   AND title != '' 
-                ORDER BY id DESC
-            `;
+                ORDER BY process_start_date DESC LIMIT ? OFFSET ? 
+                `;
             
-            db.execute(query, (err, results) => {
+            db.execute(query,[pageSize, offset], (err, results) => {
                 if (err) {
                     return res.status(500).json({ error: err.message });
                 }
