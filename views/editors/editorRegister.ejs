@@ -17,51 +17,108 @@
 </head>
 
 <body>
-	<div class="container-fluid">
-		<div class="row">
-			<div class="col-lg-6 col-md-6 col-sm-12 base-login-container base-form-holder">
-                <div class="form-holder">
+	<div class="container-fluid" >
+		<div class="row" >
+			<div class="col-lg-6 col-md-6 col-sm-12 base-login-container base-form-holder" style="overflow: auto; padding: 10px 0px;" >
+                <div class="form-holder" style="overflow: visible; height: 100vh;" >
                     <div class="bwt-logo">
                         AFRICAN SCIENCE FRONTIERS INITIATIES RESEARCH JOURNAL | <span>Admin</span>
                     </div>
                     
 
-<form method="post" id="login-form">
+<form onsubmit="return false" id="registerForm" style="overflow: scroll !important;">
     <input type='hidden' name='csrfmiddlewaretoken' value='D2JjUI9uNcJpHA0P1qC2WFtu9H13Bz1rvhU2PCYjffmoMzvE7M6ksy1JqRv6HPpn' />
     
     <div id="loginMessage"></div>
     <fieldset class="form-group">
-        <input class="form-control form-control-lg" type="password" id="username" name="username" placeholder="SecurePass">
+        <input class="form-control form-control-lg" type="text" id="token" name="token" placeholder="SecurePass" readonly value="<%= articleId %>">
     </fieldset>
-    <fieldset class="form-group">
-        <input class="form-control form-control-lg" type="text" id="username" name="username" placeholder="Firstname">
-    </fieldset>
-    <fieldset class="form-group">
-        <input class="form-control form-control-lg" type="text" id="username" name="username" placeholder="Lastname">
-    </fieldset>
-    <fieldset class="form-group">
-        <input class="form-control form-control-lg" type="text" id="username" name="username" placeholder="Username">
-    </fieldset>
-    <fieldset class="form-group">
-        <input class="form-control form-control-lg" type="password" id="username" name="username" placeholder="Password">
-    </fieldset>
-    <fieldset class="form-group">
-    
-        <select name="" id="" class="form-control form-control-lg">
-            <option value="">Select Title</option>
-            <option value="">Editor-in-Chief</option>
-            <option value="">Editorial Assistant</option>
+     <fieldset class="form-group">
+           <select name="prefix" id="prefix" class="form-control form-control-lg" required>
+            <option value="">Select Preferred Prefix</option>
+            <option value="Prof.">Prof.</option>
+            <option value="Dr.">Dr.</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
         </select>
+     </fieldset>
+    <fieldset class="form-group">
+        <input class="form-control form-control-lg" type="text" id="firstname" name="firstname" placeholder="Firstname" required>
+    </fieldset>
+    <fieldset class="form-group">
+        <input class="form-control form-control-lg" type="text" id="lastname" name="lastname" placeholder="Lastname" required>
+    </fieldset>
+    <fieldset class="form-group">
+        <input class="form-control form-control-lg" type="text" id="othername" name="othername" placeholder="Other name(s)">
+    </fieldset>
+    <fieldset class="form-group">
+        <input class="form-control form-control-lg" type="text" id="email" name="email" placeholder="email" required>
+    </fieldset>
+    <fieldset class="form-group" style="display: flex; align-items: center; justify-content: space-between;">
+        <input class="form-control form-control-lg" type="password" id="password" name="password" placeholder="Password" required>
+        <span id="showPassword"><i class="fa fa-eye"></i></span>
+    </fieldset>
+    <fieldset class="form-group">
+        <input type="hidden" class="form-control form-control-lg" id="editorial_level" value="sectional_editor" readonly>
+    
     </fieldset>
   
+  
+    
+    <fieldset class="form-group">
+        <input type="text" class="form-control" placeholder="Affiliation" id="affiliation" name="affiliation" required>
+    </fieldset>
+    <fieldset class="form-group">
+        <input type="text" class="form-control" placeholder="Affiliation Country" id="affiliation_country" name="affiliation_country" required>
+    </fieldset>
+    <fieldset class="form-group">
+        <input type="text" class="form-control" placeholder="Affiliation City" id="affiliation_city" name="affiliation_city" required>
+    </fieldset>
+    <fieldset class="form-group">
+        <input type="text" class="form-control" placeholder="Orcid Id" name="orcid_id" id="orcid_id" >
+    </fieldset>
+    <fieldset class="form-group">
+        
+        <select id="discipline" name="discipline" class="form-control discipline" required>
+            <option value="">Select a Discipline</option>
+            <option value="Agricultural sciences">Agricultural sciences</option>
+            <option value="Allied Health Sciences">Allied Health Sciences</option>
+            <option value="Anthropology">Anthropology</option>
+            <option value="Arts">Arts</option>
+            <option value="Biology">Biology</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Climate Change">Climate Change</option>
+            <option value="Computer and Information Sciences">Computer and Information Sciences</option>
+            <option value="Earth Sciences">Earth Sciences</option>
+            <option value="Engineering and Technology">Engineering and Technology</option>
+            <option value="Environmental Sciences">Environmental Sciences</option>
+            <option value="Epidemiology">Epidemiology</option>
+            <option value="Humanities">Humanities</option>
+            <option value="Leadership and Management">Leadership and Management</option>
+            <option value="Life Sciences">Life Sciences</option>
+            <option value="Materials Science">Materials Science</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Medicine">Medicine</option>
+            <option value="Physics and Astronomy">Physics and Astronomy</option>
+            <option value="Politics">Politics</option>
+            <option value="Public & Global Health">Public & Global Health</option>
+            <option value="Social and Behavioral Sciences">Social and Behavioral Sciences</option>
+            <option value="Statistics">Statistics</option>
+            <option value="Theology">Theology</option>
+            <option value="Other">Other (please specify)</option>
+        </select>
+        <div id="disciplineContainer"></div>
+    </fieldset>
+
 
    
     <fieldset class="form-group">
-       <a href="/login/"><span class="btn btn-primary btn-md submit-btn" id="loginButton">Register</span></a>
+       <button type="submit" class="btn btn-primary btn-md submit-btn" id="loginButton">Register</button>
        <!-- <input class="btn btn-primary btn-md submit-btn" id="loginButton" type="submit" value="Sign In" /> -->
     </fieldset>
 </form>
-<p class="text-center forgotten-password">Already have Account | <a href="../login/">Login</a></p>
+<p class="text-center forgotten-password">Already have Account | <a href="/login/">Login</a></p>
 
 
                 </div>
@@ -73,6 +130,7 @@
 	</div>
     <script src="/editorStatic/cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
     <script src="/editorStatic/www.sakimura.org/test/openidconnect.js"></script>
+    <script src="/editorStatic/js/routes/queries/editorRegister.js"></script>
 </body>
 
 

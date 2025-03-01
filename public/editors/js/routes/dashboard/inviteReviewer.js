@@ -80,23 +80,23 @@ if(accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant
             linksContainer.innerHTML = `<span>* Click on the link to Copy</span>`
         linksContainer.innerHTML += `
         <ul>
-        <li>Accept Link: <a href="#" class="copy-link" data-link="${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes">
-                        ${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes
+        <li>Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes">
+                        ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes
                     </a>
         </li>
-        <li>Reject Link: <a href="#" class="copy-link" data-link="${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes">
-                        ${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes
+        <li>Reject Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes">
+                        ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes
                     </a>
         </li>
 
         `
-        acceptLinkContainer.innerHTML += `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes">
-                        ${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes
+        acceptLinkContainer.innerHTML += `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes">
+                        ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&accept=yes
                     </a>"
        `;
 
-        declineLinkContainer.innerHTML += ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes">
-                        ${domainN}/manuscripts/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes
+        declineLinkContainer.innerHTML += ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes">
+                        ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=review&reject=yes
                     </a>
         "`;
 

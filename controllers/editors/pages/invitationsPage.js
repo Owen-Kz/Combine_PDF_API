@@ -3,9 +3,9 @@ const reviewerInvitation = require("../../account/invitations/reviewerINvite")
 
 const InvitationsPage = async (req,res) =>{
     try{
-        if(req.query.invite_for){
-            const invite = req.query.invite_for
-
+        if(req.query.do){
+            const invite = req.query.do
+            console.log(invite)
             if(invite == "review"){
                 return reviewerInvitation(req,res)
             }else if(invite == "edit"){

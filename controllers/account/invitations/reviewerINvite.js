@@ -9,7 +9,15 @@ const isValidRequest = (action, invitationFor, aId, uId) => {
 
 // GET endpoint for handling invitations
 const reviewerInvitation =  (req, res) => {
-  const { action, invite_for: invitationFor, a_id: articleId, u_id: userEmail } = req.query;
+  const accept = req.query.accept 
+  const reject = req.query.reject
+  let action = ""
+  if(accept && accept === "yes"){
+    action = "accept"
+  }else if(reject && reject === "yes"){
+    action = "reject"
+  }
+  const { do: invitationFor, a: articleId, e: userEmail } = req.query;
 
   // Check if all necessary query parameters are provided
   if (!isValidRequest(action, invitationFor, articleId, userEmail)) {

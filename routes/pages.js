@@ -90,6 +90,7 @@ const viewReviewPage = require("../controllers/editors/pages/viewReviewPage");
 const VerifyAuthorAccount = require("../controllers/editors/verifyAuthorAccount");
 const DeleteAuthorAccount = require("../controllers/editors/deleteAuthorAccount");
 const MigrateAccount = require("../controllers/editors/migrateAuthorAccount");
+const editorSignUp = require("../controllers/account/editorSignup");
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -222,7 +223,7 @@ router.post("/editors/getReviewerEmailTemplate", EditorLoggedIn, reviewerEmailTe
 router.get("/editors/listOfAuthorsForSuggestions", EditorLoggedIn, listOfAuthorsForSuggestions)
 router.post("/editors/listOfReviewerEmails", EditorLoggedIn, listOfReviewerEmails)
 router.post("/editors/listOfEditorEmails", EditorLoggedIn, listofEditorEmails)
-router.get("/manuscripts/invitations", InvitationsPage)
+router.get("/papers/invitations", InvitationsPage)
 router.post("/editors/email/inviteEditor", EditorLoggedIn, inviteEditorEMail)
 router.post("/editors/email/InviteReviewer", EditorLoggedIn, inviteReviewerEmail)
 router.post("/editors/email/acceptPaper", EditorLoggedIn, AcceptPaper)
@@ -231,9 +232,18 @@ router.post("/editors/email/revisePaper", EditorLoggedIn, RevisePaper)
 router.post("/editors/email/rejectPaper", EditorLoggedIn, RejectPaper)
 router.post("/editors/email/bulkEmail", EditorLoggedIn, sendBulkEmail)
 router.get("/editors/Reviews", EditorLoggedIn, viewReviewPage)
+router.post("/editors/createAccount", editorSignUp)
 
 router.post("/editors/isEditor", EditorLoggedIn, (req,res) =>{
   res.json({success:"Editor", account:req.user})
+})
+router.get("/editors/signup", (req,res)=>{
+  // if(req.cookies.userRegistered){
+  //   res.redirect("/editors/dashboard")
+  // }else{
+  const article = req.query.a ? req.query.a : ""
+    res.render("editorRegister", {articleId:article})
+  // }
 })
 
 router.get("/editors/logout", (req,res) =>{

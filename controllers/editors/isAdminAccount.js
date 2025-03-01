@@ -11,7 +11,7 @@ const isAdminAccount = async (id) =>{
                 if(data[0]){
                     resolve(true)
                 }else{
-                    reject(false)
+                    resolve(false)
                 }
             })
         })

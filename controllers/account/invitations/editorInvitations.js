@@ -1,4 +1,5 @@
 const db = require("../../../routes/db.config");
+const createEditorAccount = require("./createEditorAccount");
 
 
 
@@ -9,7 +10,16 @@ const isValidRequest = (action, invitationFor, aId, uId) => {
 
 // GET endpoint for handling invitations
 const editorInvitations = async (req,res) =>{
-  const { action, invite_for: invitationFor, a_id: articleId, u_id: userEmail } = req.query;
+  const accept = req.query.accept 
+  const reject = req.query.reject
+  let action = ""
+  if(accept && accept === "yes"){
+    action = "accept"
+  }else if(reject && reject === "yes"){
+    action = "reject"
+  }
+  const { do: invitationFor, a: articleId, e: userEmail } = req.query;
+
 
   // Check if all necessary query parameters are provided
   if (!isValidRequest(action, invitationFor, articleId, userEmail)) {
@@ -40,21 +50,38 @@ const editorInvitations = async (req,res) =>{
           }
           return res.status(400).json({ status: 'error', message: 'Oops, This invitation link has expired' });
         });
+        console.log(invitationStatus)
         return;
       }
-
+      console.log(action)
       // If invitation is accepted or rejected
       if (action === 'accept') {
+
         db.query('UPDATE `invitations` SET `invitation_status` = "edit_invitation_accepted" WHERE `invitation_link` = ? AND `invited_user` = ?', [articleId, userEmail], (err) => {
           if (err) {
             return res.status(500).json({ status: 'error', message: 'Failed to accept invitation' });
           }
           // Update edit process
-          db.query('UPDATE `submitted_for_edit` SET `status` = "edit_invitation_accepted" WHERE `article_id` = ? AND `editor_email` = ?', [invitationId, invitedUserEmail], (err) => {
+          db.query('UPDATE `submitted_for_edit` SET `status` = "edit_invitation_accepted" WHERE `article_id` = ? AND `editor_email` = ?', [invitationId, invitedUserEmail], async(err) => {
             if (err) {
               return res.status(500).json({ status: 'error', message: 'Failed to update edit process' });
             }
-            return res.redirect(`/editors/View?a=${invitationId}`)
+            db.query("SELECT * FROM authors_account WHERE email =?", [invitedUserEmail], async(err, authorExists)=>{
+              if(err){
+                console.log(err)
+                return res.json({status:"error", message:err})
+              }
+              if(authorExists[0]){
+                if(await createEditorAccount(invitedUserEmail)){
+                  return res.redirect(`/editors/View?a=${invitationId}`)
+                  }else{
+                    return res.json({status:"error", message:"Your Invitation has been accepted but the editor account could not be created"})
+                  }
+              }else{
+                res.redirect(`/editors/signup?a=${invitationId}`)
+              }
+            })
+         
             // return res.status(200).json({
             //   status: 'success',
             //   message: `Invitation accepted successfully, redirecting to create account for ${invitedUserEmail}`,
@@ -76,6 +103,8 @@ const editorInvitations = async (req,res) =>{
          
           });
         });
+      }else{
+    return res.status(400).json({ status: 'error', message: 'Invalid Request' });
       }
     } else {
       return res.status(404).json({ status: 'error', message: 'Data Does not Exist' });
