@@ -7,12 +7,12 @@ const verifyAccount = async (req, res) => {
     const emailHash = req.query.e;
 
     if (!emailHash) {
-        return res.status(400).json({ error:"Verification Failed", message: "Invalid request", status:"error"  });
+        return res.render("verify", { error:"Verification Failed",message: "Invalid request", status:"error"  });
     }
 
     try {
         // Check if user exists
-        db.query("SELECT * FROM authors_account WHERE MD5(email) = ?", [emailHash], (err, result) => {
+        db.query("SELECT * FROM authors_account WHERE md5(email) = ?", [emailHash], (err, result) => {
             if (err) {
                 console.error("Database error:", err);
                 return res.render("verify", { error:"Verification Failed", message: "Database query failed", status:"error"  });
