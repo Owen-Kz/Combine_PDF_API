@@ -59,7 +59,7 @@ const admin_nav = `<ul id="sidebarnav">
                             <a class="sidebar-link waves-effect waves-dark sidebar-link" href="/editors/AcceptedPapers"
                                 aria-expanded="false">
                                 <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                                <span class="hide-menu">Accepted Papers</span>
+                                <span class="hide-menu">Descisioned</span>
                             </a>
                         </li>
                         <li class="sidebar-item">

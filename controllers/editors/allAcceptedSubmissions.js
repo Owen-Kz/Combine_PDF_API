@@ -19,7 +19,7 @@ try{
                             ORDER BY s.revision_id DESC, s.process_start_date DESC
                         ) AS row_num
                     FROM submissions s
-                    WHERE s.title != '' AND status = 'Accepted'
+                    WHERE s.title != '' AND (status = 'Accepted' OR status = 'Rejected' OR status = 'rejected')
                 )
                 SELECT *
                 FROM RankedSubmissions
