@@ -5,7 +5,6 @@ const remindReviewer = async (req,res) =>{
         
         // const useremail = req.params.email 
         const {manuscriptId, reviewerEmail, manuscriptTitle } = req.body
-        console.log(req.body)
         const  editor_email = req.user.email
           // Convert comma-separated CC and BCC to arrays
 
