@@ -1,6 +1,6 @@
 const inviteReviewerPage = async (req,res) =>{
     try{
-        if(req.cookies.userRegistered){
+        if(req.cookies.asfirj_userRegistered){
             res.render("inviteReviewer", {user:req.user})
         }else{
             res.render("editorLogin")

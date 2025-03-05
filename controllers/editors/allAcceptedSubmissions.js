@@ -3,7 +3,7 @@ const isAdminAccount = require("./isAdminAccount")
 
 const allAcceptedSubmissions = async (req,res) =>{
 try{
-    if(req.cookies.userRegistered){
+    if(req.cookies.asfirj_userRegistered){
     const id = req.user.id
     const page = req.query.page ? parseInt(req.query.page) : 1; // Default to page 1
     const pageSize = 5; // Number of records per page

@@ -1,6 +1,6 @@
 const viewSubmission = async (req,res) =>{
     try{
-        if(req.cookies.userRegistered){
+        if(req.cookies.asfirj_userRegistered){
             res.render("viewSubmission", {user:req.user})
         }else{
             res.render("editorLogin")

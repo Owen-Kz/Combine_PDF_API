@@ -5,7 +5,7 @@ const writeCookie = require("../utils/writeCookie");
 
 const EditorLoggedIn = async (req, res, next) => {
   // RestartConnection()
-  if (!req.cookies.userRegistered) {
+  if (!req.cookies.asfirj_userRegistered) {
     // Redirect to home if user is not logged in
     if (req.path === '/becomeInstructor') {
         // Skip the middleware for the '/becomeInstructor' route
@@ -19,9 +19,9 @@ const EditorLoggedIn = async (req, res, next) => {
   try {
     // Decrypt the cookie and retrieve user data with the id
   
-    if(req.cookies.userRegistered){
+    if(req.cookies.asfirj_userRegistered){
        
-    const decoded = jwt.verify(req.cookies.userRegistered, process.env.JWT_SECRET);
+    const decoded = jwt.verify(req.cookies.asfirj_userRegistered, process.env.JWT_SECRET);
     
 
     db.query("SELECT id, fullname, email, editorial_level, editorial_section FROM editors WHERE id = ? ", [decoded.id], (err, result) => {

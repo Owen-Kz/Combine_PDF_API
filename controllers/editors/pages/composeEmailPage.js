@@ -1,6 +1,6 @@
 const composeEmailPage = async (req,res) =>{
     try{
-        if(req.cookies.userRegistered){
+        if(req.cookies.asfirj_userRegistered){
             res.render("composeEmail", {user:req.user})
         }else{
             res.render("editorLogin")

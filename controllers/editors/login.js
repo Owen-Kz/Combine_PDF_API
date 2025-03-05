@@ -47,7 +47,7 @@ const EditorLogin = async (req, res) => {
             });
 
             // Write token to cookie
-            writeCookie(req, res, "userRegistered", token);
+            writeCookie(req, res, "asfirj_userRegistered", token);
             writeCookie(req,res, "editor", user.id)
 
             // Redirect user to dashboard

@@ -91,6 +91,7 @@ const VerifyAuthorAccount = require("../controllers/editors/verifyAuthorAccount"
 const DeleteAuthorAccount = require("../controllers/editors/deleteAuthorAccount");
 const MigrateAccount = require("../controllers/editors/migrateAuthorAccount");
 const editorSignUp = require("../controllers/account/editorSignup");
+const remindReviewer = require("../controllers/account/invitations/remindReviewers");
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -188,6 +189,7 @@ router.get("/editors/backend/editors/countEditorInvites", EditorLoggedIn, countE
 router.get("/editors/backend/editors/countAllEditorInvites", EditorLoggedIn, countAllEditorInvites)
 
 router.post("/editors/allAcceptedSubmissions", EditorLoggedIn, allAcceptedSubmissions)
+
 router.get("/editors/view", EditorLoggedIn, viewSubmission)
 
 router.post("/editors/getKeywords", EditorLoggedIn, getSubmisionKeywords)
@@ -233,12 +235,13 @@ router.post("/editors/email/rejectPaper", EditorLoggedIn, RejectPaper)
 router.post("/editors/email/bulkEmail", EditorLoggedIn, sendBulkEmail)
 router.get("/editors/Reviews", EditorLoggedIn, viewReviewPage)
 router.post("/editors/createAccount", editorSignUp)
+router.post("/editors/remindReviewer", EditorLoggedIn, remindReviewer)
 
 router.post("/editors/isEditor", EditorLoggedIn, (req,res) =>{
   res.json({success:"Editor", account:req.user})
 })
 router.get("/editors/signup", (req,res)=>{
-  // if(req.cookies.userRegistered){
+  // if(req.cookies.asfirj_userRegistered){
   //   res.redirect("/editors/dashboard")
   // }else{
   const article = req.query.a ? req.query.a : ""
@@ -247,7 +250,7 @@ router.get("/editors/signup", (req,res)=>{
 })
 
 router.get("/editors/logout", (req,res) =>{
-  clearCookie(req,res,'userRegistered')
+  clearCookie(req,res,'asfirj_userRegistered')
   clearCookie(req,res,'editor_account_type')
   clearCookie(req,res,'editor')
   res.redirect("/editors/dashboard")

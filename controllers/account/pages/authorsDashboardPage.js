@@ -1,6 +1,6 @@
 const authorsDashboardPage = async (req,res) =>{
     try{
-        if(req.cookies.userRegistered || req.cookies.authorAccount){
+        if(req.cookies.asfirj_userRegistered || req.cookies.authorAccount){
             res.render("authorDashboard", {user:req.user})
         }else{
             res.render("authorsLogin")

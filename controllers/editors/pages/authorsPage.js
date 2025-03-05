@@ -1,6 +1,6 @@
 const authorsPage = async (req,res) =>{
     try{
-        if(req.cookies.userRegistered){
+        if(req.cookies.asfirj_userRegistered){
             res.render("authors", {user:req.user})
         }else{
             res.render("editorLogin")

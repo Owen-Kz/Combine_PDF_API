@@ -20,6 +20,7 @@ const ReviewsContaienr = document.getElementById('reviewsContainer')
 
 if(ArticleId){
    const ArticleData = await GetSubmissionData(ArticleId)
+   const title = ArticleData.title
 //    Get the Reveiws for the ARticles 
 // First Get the list of review invitaions sent 
 fetch(`${submissionsEndpoint}/articleinvitations`,{
@@ -50,20 +51,30 @@ fetch(`${submissionsEndpoint}/articleinvitations`,{
                                  </td>`
                 ReviewAction = ` <td>
                                     <form class="form" action="#" >
-                                    <input type="hidden" name="a" value=${ArticleId} readonly/>
-                                    <input type="hidden" name="r" value=${review.reviewer_email} readonly/>
+                                    <input type="hidden" name="a" value="${ArticleId}" readonly/>
+                                    <input type="hidden" name="r" value="${review.reviewer_email}" readonly/>
 
                                     <select class="action-box">
                                         <option>Actions</option>
                                         <option>View</option>
                                     </select>
                                     </form>
+                                
+
                                 </td>`
             }else    if(review.status === "submitted_for_review"){
                 ReviewStatus = ` <td class="status">
                                       <span class="status-text status-orange">Awaiting Reviewer's Response</span>
                                     </td>`
-                ReviewAction = ``
+                ReviewAction = `    <td>
+                <form class="remindReviewerForm" onSubmit="return false">
+                                      <input type="hidden" name="manuscriptId" value="${ArticleId}" readonly/>
+                                      <input type="hidden" name="manuscriptTitle" value="${title}" readonly/>
+
+                                    <input type="hidden" class='reviewerEmailContainer' name="reviewerEmail" value="${review.reviewer_email}" readonly/>
+                                    <button class='combine_file'>Remind Reviewer</button>
+                                    </form>
+                                    </td>`
             }else if(review.status === "review_request_rejected" || review.status === "invitation_rejected"){
                 ReviewStatus = ` <td class="status">
                                    <span class="status-text status-red">Invitation Rejected</span>
@@ -113,6 +124,37 @@ fetch(`${submissionsEndpoint}/articleinvitations`,{
                 }
             })
         })
+
+        const RemindReviewerForm = document.querySelectorAll(".remindReviewerForm")
+    
+        RemindReviewerForm.forEach(form =>{
+            form.addEventListener("submit", (e) =>{
+                const formData = new FormData(form)
+                const reviewerEmail = form.querySelector(".reviewerEmailContainer")
+                const data = {
+                    manuscriptId:ArticleId,
+                    reviewerEmail:reviewerEmail.value,
+                    manuscriptTitle:title,
+                }
+                e.preventDefault()
+               
+                fetch(`/editors/remindReviewer`, {
+                    method:"POST",
+                    headers:{
+                        "Content-type" : "application/JSON"
+                    },
+                    body: JSON.stringify(data)
+                }).then(res => res.json())
+                .then(data =>{
+                    if(data.success){
+                        alert(data.success)
+                    }else{
+                        alert(data.error)
+                    }
+                })
+            })
+        })
+
 
         const ArticleIdMain = GetParameters(window.location.href).get("a")
         const reviewerEmailMain = GetParameters(window.location.href).get("r")

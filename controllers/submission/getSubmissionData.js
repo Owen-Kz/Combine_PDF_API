@@ -2,7 +2,7 @@ const db = require("../../routes/db.config")
 
 const getSubmissionData = async (req,res) =>{
 try{
-    if(req.cookies.userRegistered){
+    if(req.cookies.asfirj_userRegistered){
     const {id} = req.body 
     if(!id){
         return res.status(400).json({error:"Invalid Parameters"})

@@ -28,7 +28,7 @@ const inviteEditorEMail = async (req, res) => {
       const apiInstance = new Brevo.TransactionalEmailsApi();
       apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 
-      if (!req.cookies.userRegistered) {
+      if (!req.cookies.asfirj_userRegistered) {
         return res.status(401).json({ error:"error", message: "User not logged in" });
       }
 
