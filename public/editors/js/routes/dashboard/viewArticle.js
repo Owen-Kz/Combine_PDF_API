@@ -88,7 +88,7 @@ if (user) {
                         DOCUMENTFILE += `<br> <a href="https://process.asfirj.org/doc?url=${filesArray[i]}" style="color:#333; text-decoration: underline;" target=_blank>View ${filesArray[i].substring(filesArray[i].lastIndexOf("/") + 1)}</a>
                          `
                     } else {
-                        DOCUMENTFILE += `<br> <a href="${filesArray[i]}" style="color:#333; text-decoration: underline;" target=_blank>View ${filesArray[i].substring(filesArray[i].lastIndexOf("/") + 1)}</a>`
+                        DOCUMENTFILE += `<br> <a href="https://cp.asfirj.org${filesArray[i]}" style="color:#333; text-decoration: underline;" target=_blank>View ${filesArray[i]}</a>`
                     }
 
                 }
