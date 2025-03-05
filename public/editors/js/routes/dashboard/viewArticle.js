@@ -35,18 +35,18 @@ if (user) {
             let DOCUMENTFILE = ""
             let MANUSCRIPT_FILE = ""
             if (ArticleData.date_submitted < "2025-01-07") {
-                MANUSCRIPT_FILE = `<li>Manuscript File: <a href="${submissionsEndpoint}/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
+                MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://cp.asfirj.org/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
 
                 if (ArticleData.document_file !== "dummy.pdf") {
                     documentFile = ArticleData.document_file;
-                    DOCUMENTFILE = `<li>Document File: <a href="${submissionsEndpoint}/uploadedFiles/${documentFile}">${documentFile}</a></li>`;
+                    DOCUMENTFILE = `<li>Document File: <a href="https://cp.asfirj.org/uploadedFiles/${documentFile}">${documentFile}</a></li>`;
                 }
             } else {
                 if(ArticleData.manuscript_file && ArticleData.manuscript_file !== null){
                 if (ArticleData.manuscript_file.slice(0, 26) === 'https://res.cloudinary.com') {
                     MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://process.asfirj.org/doc?url=${ArticleData.manuscript_file}">${ArticleData.manuscript_file.slice(78)}</a></li>`
                 } else {
-                    MANUSCRIPT_FILE = `<li>Manuscript File: <a href="${submissionsEndpoint}/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
+                    MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://cp.asfirj.org/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
                 }
             }else{
                 MANUSCRIPT_FILE = "<li>No Manuscript has been submitted</li>"
