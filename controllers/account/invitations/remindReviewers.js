@@ -10,7 +10,17 @@ const remindReviewer = async (req,res) =>{
 
     const subject = `REMINDER: ASFRIJ Reviewer Invitation Reminder`
     const message = `<p>Hello ${reviewerEmail},</p>
-    <p>This is a reminder to submit your review on ${manuscriptTitle} (${manuscriptId})</p>`
+    <p>This is a reminder to submit your review on ${manuscriptTitle} (${manuscriptId})</p>
+    <ul>
+    <li>
+    Accept Link: https://process.asfirj.org/papers/invitations?a=${manuscriptId}&e=${reviewerEmail}&do=review&accept=yes
+    </li>
+    <li>
+    Reject Link: https://process.asfirj.org/papers/invitations?a=${manuscriptId}&e=${reviewerEmail}&do=review&reject=yes
+    </li>
+    </ul>
+
+    `
 
      
         await sendEmailReminder(reviewerEmail, subject, message)
