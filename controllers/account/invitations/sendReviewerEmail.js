@@ -5,6 +5,8 @@ const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
 const isAdminAccount = require("../../editors/isAdminAccount");
 const db = require("../../../routes/db.config");
+const { QuillDeltaToHtmlConverter } = require("quill-delta-to-html");
+
 
 dotenv.config();
 
@@ -122,12 +124,21 @@ const inviteReviewerEmail = async (req, res) => {
       saveEmailDetails(reviewerEmail, subject, message, editorEmail, articleId, ccEmail?.split(","), bccEmail?.split(","), attachments, invitedFor);
 
       const senderEmail = process.env.BREVO_EMAIL;
-      console.log(reviewerEmail)
+      let messageHtml;
+      try {
+        const messageDelta = JSON.parse(message); // Ensure it's parsed correctly
+        const converter = new QuillDeltaToHtmlConverter(messageDelta.ops, {});
+        messageHtml = converter.convert();
+      } catch (error) {
+        console.error("Error converting Quill delta to HTML:", error);
+        messageHtml = `<p>${message}</p>`; // Fallback in case of error
+      }
+
       const emailData = {
         sender: { email: senderEmail, name: "ASFI Research Journal" },
         to: [{ email: reviewerEmail }],
         subject,
-        htmlContent: `<p>${message}</p>`,
+        htmlContent: messageHtml,
         ...(ccEmail && { cc: ccEmail.split(",").map((email) => ({ email })) }),
         ...(bccEmail && { bcc: bccEmail.split(",").map((email) => ({ email })) }),
         ...(attachments.length > 0 && {
