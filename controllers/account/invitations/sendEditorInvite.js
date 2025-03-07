@@ -5,7 +5,7 @@ const dotenv = require("dotenv");
 const db = require("../../../routes/db.config");
 const isAdminAccount = require("../../editors/isAdminAccount");
 const saveEmailDetails = require("./saveEmail");
-const { QuillDeltaToHtmlConverter } = require("quill-delta-to-html");
+const convertQUILLTOHTML = require("./convertHTML");
 
 
 dotenv.config();
@@ -148,16 +148,7 @@ const inviteEditorEMail = async (req, res) => {
       }
 
       const senderEmail = process.env.BREVO_EMAIL;
-      let messageHtml;
-      try {
-        const messageDelta = JSON.parse(message); // Ensure it's parsed correctly
-        const converter = new QuillDeltaToHtmlConverter(messageDelta.ops, {});
-        messageHtml = converter.convert();
-      } catch (error) {
-        console.error("Error converting Quill delta to HTML:", error);
-        messageHtml = `<p>${message}</p>`; // Fallback in case of error
-      }
-      
+      const messageHtml = convertQUILLTOHTML(JSON.parse(message))
       
       
       // Send Email
