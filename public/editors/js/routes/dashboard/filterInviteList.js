@@ -59,7 +59,7 @@ function renderEmailList(filteredEmails) {
                 emailList.style.display = 'none';
                 if(emailInput.value !== ""){
                     linksContainer.innerHTML = `<span>* Click on the link to Copy</span>`
-                linksContainer.innerHTML += `
+                linksContainer.innerHTML = `
                 <ul>
                 <li>Accept Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
                                 ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes
@@ -71,12 +71,12 @@ function renderEmailList(filteredEmails) {
                 </li>
         
                 `
-                acceptLinkContainer.innerHTML += `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
+                acceptLinkContainer.innerHTML = `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
                                 ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes
                             </a>"
                `;
         
-                declineLinkContainer.innerHTML += ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes">
+                declineLinkContainer.innerHTML = ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes">
                                 ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes
                             </a>
                 "`;

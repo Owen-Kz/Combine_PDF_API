@@ -77,7 +77,7 @@ if(accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant
     Recipient.addEventListener("change", function() {
         if(Recipient.value !== ""){
             linksContainer.innerHTML = `<span>* Click on the link to Copy</span>`
-        linksContainer.innerHTML += `
+        linksContainer.innerHTML = `
         <ul>
         <li>Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&accept=yes">
                         ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&accept=yes
@@ -89,12 +89,12 @@ if(accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant
         </li>
 
         `
-        acceptLinkContainer.innerHTML += `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&accept=yes">
+        acceptLinkContainer.innerHTML = `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&accept=yes">
                         ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&accept=yes
                     </a>"
        `;
 
-        declineLinkContainer.innerHTML += ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&reject=yes">
+        declineLinkContainer.innerHTML = ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&reject=yes">
                         ${domainN}/papers/invitations?a=${ArticleId}&e=${Recipient.value}&do=edit&reject=yes
                     </a>
         "`;
