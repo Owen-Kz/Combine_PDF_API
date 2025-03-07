@@ -92,6 +92,7 @@ const DeleteAuthorAccount = require("../controllers/editors/deleteAuthorAccount"
 const MigrateAccount = require("../controllers/editors/migrateAuthorAccount");
 const editorSignUp = require("../controllers/account/editorSignup");
 const remindReviewer = require("../controllers/account/invitations/remindReviewers");
+const reviewerSignup = require("../controllers/account/reviewerSignup");
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -237,6 +238,7 @@ router.get("/editors/Reviews", EditorLoggedIn, viewReviewPage)
 router.post("/editors/createAccount", editorSignUp)
 router.post("/editors/remindReviewer", EditorLoggedIn, remindReviewer)
 
+
 router.post("/editors/isEditor", EditorLoggedIn, (req,res) =>{
   res.json({success:"Editor", account:req.user})
 })
@@ -260,6 +262,19 @@ router.get("/editors/logout", (req,res) =>{
 router.get("/editors/*", async (req,res) =>{
   res.redirect("/editors/dashboard")
 }) 
+
+
+// For reiewers 
+router.get("/reviewers/signup/:e", async (req,res)=>{
+  if(req.params.e){
+  res.render("reviewerSignUp", {email:req.params.e})
+  }else{
+    // res.redirect("https://asfirj.org/dasboard")
+  }
+})
+router.post("/backend/reviewers/createReviewerAccount", reviewerSignup)
+
+
 router.get("*", async (req,res) =>{
     res.redirect("https://asfirj.org")
 }) 

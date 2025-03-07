@@ -26,11 +26,15 @@ app.use(express.json());
 
 app.set("view engine", "ejs");
 
-app.set("views", ["./views", "./views/editors", "./views/authors"]);
+app.set("views", ["./views", "./views/editors", "./views/authors", "./views/reviewers"]);
 app.use("/css", express.static(__dirname + "/public/css", { type: 'text/css' }));
+app.use("/fonts", express.static(__dirname + "/public/css/fonts", { type: 'text/css' }));
+
 app.use("/js", express.static(__dirname + "/public/js"));
 app.use("/assets", express.static(__dirname + "/public/assets"));
 app.use("/editorStatic/", express.static(__dirname + "/public/editors"))
+// app.use("/mainDashboard/", express.static(__dirname + "/public/mainDashboard"))
+
 
 
 // const io = require("socket.io")(server, {
