@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
 const isAdminAccount = require("../../editors/isAdminAccount");
 const db = require("../../../routes/db.config");
+const convertQUILLTOHTML = require("./convertHTML");
 
 
 dotenv.config();
@@ -123,6 +124,7 @@ const inviteReviewerEmail = async (req, res) => {
       saveEmailDetails(reviewerEmail, subject, message, editorEmail, articleId, ccEmail?.split(","), bccEmail?.split(","), attachments, invitedFor);
 
       const senderEmail = process.env.BREVO_EMAIL;
+      
       const messageHtml = convertQUILLTOHTML(JSON.parse(message))
 
 
