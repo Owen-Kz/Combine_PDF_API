@@ -207,7 +207,7 @@ const uploadArticlePage = async (req, res) => {
                             tables: ArticleData.tables,
                             figures: ArticleData.figures,
                             graphic_abstract: ArticleData.graphic_abstract,
-                            supplementaryMaterials: ArticleData.supplementary_materials,
+                            supplementaryMaterials: ArticleData?.supplementary_materials ?? "not-found",
                             correspondingAuthor: ArticleData.corresponding_authors_email,
                             article_id: ArticleData.article_id,
                             previousId: ArticleData.article_id,

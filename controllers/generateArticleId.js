@@ -12,7 +12,7 @@ const generateArticleId = async (req,res) => {
 
                 let submissionsCount;
                 if (rows.length > 0) {
-                    const countSub = rows[0].id + 1;
+                    const countSub = new Number(rows[0].id) + 1;
                     if (countSub < 10) {
                         submissionsCount = `00000${countSub}`;
                     } else if (countSub < 100) {

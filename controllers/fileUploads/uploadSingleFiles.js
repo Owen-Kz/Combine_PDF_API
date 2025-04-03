@@ -32,7 +32,7 @@ const uploadSingleFile = (req,res) =>{
           if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({ error: 'One or more files exceed the maximum allowed size of 5MB' });
           }
-          return res.status(500).json({ error: 'File upload failed' });
+          return res.status(500).json({ error: 'File upload failed, One or more files exceed the maximum allowed size of 5MB'});
         }
       
     try {
@@ -109,7 +109,7 @@ const uploadSingleFile = (req,res) =>{
         } )
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ error: "File upload failed", details: error.message });
+        return res.status(500).json({ error: `File upload failed Plese check file size`, details: error.message });
     }
 })
 }catch(error){
