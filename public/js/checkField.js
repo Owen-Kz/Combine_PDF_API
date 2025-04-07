@@ -32,50 +32,104 @@ article_type_nav.setAttribute("onclick","NavigationNext('article-type', 'article
 }
 })
 
-document.addEventListener('DOMContentLoaded', function() {
-    const articleTypeSelect = document.getElementById('article_type');
-    const disciplineSelect = document.getElementById('discipline');
-    const nextButton = document.querySelector('.nextManuscript');
+// document.addEventListener('DOMContentLoaded', function() {
+//     const articleTypeSelect = document.getElementById('article_type');
+//     const disciplineSelect = document.getElementById('discipline');
+//     const nextButton = document.querySelector('.nextManuscript');
+    
+// const isYesChecked = document.getElementById("is_women_in_contemporary_science_yes").checked;
+// const isNotChecked = document.getElementById("is_women_in_contemporary_science_no").checked;
   
-    // Function to check if both fields are selected
-    function checkSelection() {
-      // Check if both article type and discipline are selected
-      if (articleTypeSelect.value !== '' && disciplineSelect.value !== '') {
-        nextButton.classList.remove("disabled")
-        nextButton.disabled = false; // Enable the Next button
-      } else if(articleTypeSelect.value === ""){
-        showErrorPopup('Please select Article Type before proceeding.');
-        nextButton.classList.add("disabled")
-        nextButton.disabled = true;
-      }else if(disciplineSelect.value === ""){
-        showErrorPopup('Please select Discipline before proceeding.');
-        nextButton.classList.add("disabled")
-        nextButton.disabled = true;
-      }
-       else {
-        nextButton.classList.add("disabled")
-        nextButton.disabled = true; // Disable the Next button if either is not selected
-      }
+//     // Function to check if both fields are selected
+//     function checkSelection() {
+//       // Check if both article type and discipline are selected
+//       if (articleTypeSelect.value !== '' && disciplineSelect.value !== '' && isYesChecked !== false || isNotChecked !== false) {
+//         nextButton.classList.remove("disabled")
+//         nextButton.disabled = false; // Enable the Next button
+//       } else if(articleTypeSelect.value === ""){
+//         showErrorPopup('Please select Article Type before proceeding.');
+//         nextButton.classList.add("disabled")
+//         nextButton.disabled = true;
+//       }else if(disciplineSelect.value === ""){
+//         showErrorPopup('Please select Discipline before proceeding.');
+//         nextButton.classList.add("disabled")
+//         nextButton.disabled = true;
+//       }else if(isYesChecked === false || isNotChecked === false){
+//         showErrorPopup('Please select Yes or No for Women in Contemporary Science before proceeding.');
+//         nextButton.classList.add("disabled")
+//         nextButton.disabled = true;
+//       }
+//        else {
+//         nextButton.classList.add("disabled")
+//         nextButton.disabled = true; // Disable the Next button if either is not selected
+//       }
+//     }
+  
+//     // Event listener for change on both select fields
+//     articleTypeSelect.addEventListener('change', checkSelection);
+//     disciplineSelect.addEventListener('change', checkSelection);
+  
+//     // Event listener for Next button click
+//     nextButton.addEventListener('click', function() {
+//       // Prevent form submission if fields are not selected
+//       if (articleTypeSelect.value === '' && !articleTypeSelect.value) {
+//         showErrorPopup('Please select Article Type before proceeding.');
+        
+//        // Alert user
+//       }
+//       if (disciplineSelect.value === '' && !disciplineSelect.value) {
+//         showErrorPopup('Please select Discipline before proceeding.');
+        
+//       }
+//     });
+//   });
+
+document.addEventListener('DOMContentLoaded', function () {
+  const articleTypeSelect = document.getElementById('article_type');
+  const disciplineSelect = document.getElementById('discipline');
+  const nextButton = document.querySelector('.nextManuscript');
+
+  // Function to check if all necessary fields are selected
+  function checkSelection() {
+    const isYesChecked = document.getElementById("is_women_in_contemporary_science_yes").checked;
+    const isNotChecked = document.getElementById("is_women_in_contemporary_science_no").checked;
+
+    if (
+      articleTypeSelect.value !== '' &&
+      disciplineSelect.value !== '' &&
+      (isYesChecked || isNotChecked)
+    ) {
+      nextButton.classList.remove("disabled");
+      nextButton.disabled = false;
+    } else {
+      nextButton.classList.add("disabled");
+      nextButton.disabled = true;
     }
-  
-    // Event listener for change on both select fields
-    articleTypeSelect.addEventListener('change', checkSelection);
-    disciplineSelect.addEventListener('change', checkSelection);
-  
-    // Event listener for Next button click
-    nextButton.addEventListener('click', function() {
-      // Prevent form submission if fields are not selected
-      if (articleTypeSelect.value === '' && !articleTypeSelect.value) {
-        showErrorPopup('Please select Article Type before proceeding.');
-        
-       // Alert user
-      }
-      if (disciplineSelect.value === '' && !disciplineSelect.value) {
-        showErrorPopup('Please select Discipline before proceeding.');
-        
-      }
-    });
+  }
+
+  // Event listeners for input changes
+  articleTypeSelect.addEventListener('change', checkSelection);
+  disciplineSelect.addEventListener('change', checkSelection);
+  document.getElementById("is_women_in_contemporary_science_yes").addEventListener('change', checkSelection);
+  document.getElementById("is_women_in_contemporary_science_no").addEventListener('change', checkSelection);
+
+  // Next button validation
+  nextButton.addEventListener('click', function () {
+    if (articleTypeSelect.value === '') {
+      showErrorPopup('Please select Article Type before proceeding.');
+    }
+    if (disciplineSelect.value === '') {
+      showErrorPopup('Please select Discipline before proceeding.');
+    }
+
+    const isYesChecked = document.getElementById("is_women_in_contemporary_science_yes").checked;
+    const isNotChecked = document.getElementById("is_women_in_contemporary_science_no").checked;
+
+    if (!isYesChecked && !isNotChecked) {
+      showErrorPopup('Please select Yes or No for Women in Contemporary Science before proceeding.');
+    }
   });
+});
 
 
 const headerMessageContainer = document.getElementById("headerMessage")
