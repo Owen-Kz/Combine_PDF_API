@@ -109,10 +109,11 @@ headerMessageContainer.innerHTML = headerMessages[0]
 const submitArticleType = document.getElementById("submitArticleType")
 const article_idCOntainer = submitArticleType.querySelector("input[name='manuscript_id']")
 const submissionStatus = submitArticleType.querySelector("input[name='submissionStatus']")
-const is_women_in_contemporary_science = submitArticleType.querySelector("input[name='is_women_in_contemporary_science']")
+
+
 submitArticleType.addEventListener("submit", function(e){
     e.preventDefault()
-    
+    const is_women_in_contemporary_science = submitArticleType.querySelector("input[name='is_women_in_contemporary_science']:checked");
     const data = {
         article_id: article_idCOntainer.value,
         discipline:discipline.value,

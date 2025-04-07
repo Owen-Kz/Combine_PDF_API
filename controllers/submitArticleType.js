@@ -9,7 +9,6 @@ const submitArticleType = async (req,res) =>{
         // Check if the manuscript Exists 
         
         const {article_id, article_type, discipline, previous_manuscript_id, is_women_in_contemporary_science, submissionStatus} = req.body 
-        
         if(!article_id || !article_type || !discipline || !submissionStatus){
             return res.json({error:`All fields are required ${article_id, article_type, discipline, previous_manuscript_id, submissionStatus}`})
         }
