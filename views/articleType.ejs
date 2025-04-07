@@ -70,8 +70,8 @@
     </select> <br>
    
     <label for=""><span style="color: #e22424;">*</span> Is this manuscript being submitted to the "Women in Contemporary Science in Africa" special issue?</label> <br>
-    Yes <input type="radio" name="is_women_in_contemporary_science" id="is_women_in_contemporary_science_yes"> <br>
-    No <input type="radio" name="is_women_in_contemporary_science" id="is_women_in_contemporary_science_no"> <br>
+    Yes <input type="radio" name="is_women_in_contemporary_science" value="yes" id="is_women_in_contemporary_science_yes"> <br>
+    No <input type="radio" name="is_women_in_contemporary_science" value="no" id="is_women_in_contemporary_science_no"> <br>
 
     <label for=""><span style="color: #e22424;">*</span>Has this manuscript been submitted previously to ASFIRJ? Click yes if this is a revision or correction.</label> <br>
 Yes <input type="radio" name="prevsub" id="prevsub_yes" onclick="toggleInputField()"> <br>
@@ -109,6 +109,7 @@ headerMessageContainer.innerHTML = headerMessages[0]
 const submitArticleType = document.getElementById("submitArticleType")
 const article_idCOntainer = submitArticleType.querySelector("input[name='manuscript_id']")
 const submissionStatus = submitArticleType.querySelector("input[name='submissionStatus']")
+const is_women_in_contemporary_science = submitArticleType.querySelector("input[name='is_women_in_contemporary_science']")
 submitArticleType.addEventListener("submit", function(e){
     e.preventDefault()
     
@@ -117,7 +118,8 @@ submitArticleType.addEventListener("submit", function(e){
         discipline:discipline.value,
         article_type:article_type.value,
         previous_manuscript_id: previous_manuscript_id.value,
-        submissionStatus: submissionStatus.value
+        submissionStatus: submissionStatus.value,
+        is_women_in_contemporary_science: is_women_in_contemporary_science.value
     }
    fetch(`/submitArticleType`, {
     method:"POST",
