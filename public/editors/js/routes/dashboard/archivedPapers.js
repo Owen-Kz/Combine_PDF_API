@@ -109,7 +109,12 @@ if (user) {
             for (const submission of SubmissionsArray) {
                 const submissionRow = document.createElement('tr');
                 const id = submission.revision_id;
-
+                const isWomenInContemporarySCience = submission.is_women_in_contemporary_science
+                let womenContemporaryScience = "";
+                if(isWomenInContemporarySCience === 'yes'){
+                    womenContemporaryScience = `<span class="isWomenIScience">Women in Contemporary Science in Africa<span>` 
+                    // submissionRow.classList.add("womenInScience");
+                }
                 // Fetch editor and reviewer invitations
                 editorInvitations = `
                     <ul>
@@ -246,6 +251,7 @@ if (user) {
                     <td>
                         <p>Title</p>
                         <p>${submission.title}</p>
+                        <p>${womenContemporaryScience}</p>
                     </td>
                     <td>
                         <p>${formatTimestamp(submission.date_submitted)}</p>
