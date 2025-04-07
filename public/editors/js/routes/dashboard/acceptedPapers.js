@@ -248,7 +248,7 @@ if (user) {
 
                 // Add content to the row
                 submissionRow.innerHTML = `
-                    <td>
+                    <td style="width: 400px; max-width:400px; min-width: 300px;">
                         <p>Title</p>
                         <p>${submission.title}</p>
                         <p>${womenContemporaryScience}</p>
