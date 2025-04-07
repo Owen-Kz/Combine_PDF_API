@@ -8,7 +8,7 @@ const submitArticleType = async (req,res) =>{
 
         // Check if the manuscript Exists 
         
-        const {article_id, article_type, discipline, previous_manuscript_id, submissionStatus} = req.body 
+        const {article_id, article_type, discipline, previous_manuscript_id, is_women_in_contemporary_science, submissionStatus} = req.body 
         
         if(!article_id || !article_type || !discipline || !submissionStatus){
             return res.json({error:`All fields are required ${article_id, article_type, discipline, previous_manuscript_id, submissionStatus}`})
@@ -54,7 +54,7 @@ const submitArticleType = async (req,res) =>{
             if(data[0]){
             
                 // update the submissoin if it already exists 
-                db.query("UPDATE submissions SET article_type = ?, discipline = ?, previous_manuscript_id = ?, status = ? WHERE revision_id = ?", [article_type, discipline, previous_manuscript_id,submissionStatus, articleID], async(err, update) =>{
+                db.query("UPDATE submissions SET article_type = ?, discipline = ?, previous_manuscript_id = ?, is_women_in_contemporary_science = ?, status = ? WHERE revision_id = ?", [article_type, discipline, previous_manuscript_id,is_women_in_contemporary_science, submissionStatus, articleID], async(err, update) =>{
                     if(err){
                         console.log(err)
                         return res.json({error:err})
@@ -68,7 +68,7 @@ const submitArticleType = async (req,res) =>{
                 })
             }else{
                 // Create a new submission 
-                db.query("INSERT INTO submissions SET ?", {article_id:article_id, revision_id:articleID, article_type:article_type, discipline:discipline, corresponding_authors_email:correspondingAuthor, status:submissionStatus}, async(err, insert) =>{
+                db.query("INSERT INTO submissions SET ?", {article_id:article_id, revision_id:articleID, article_type:article_type, discipline:discipline, corresponding_authors_email:correspondingAuthor, is_women_in_contemporary_science:is_women_in_contemporary_science, status:submissionStatus}, async(err, insert) =>{
                     if(err){
                         console.log(err)
                         return res.json({error:err})
