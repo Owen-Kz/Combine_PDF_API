@@ -5,8 +5,10 @@ const mysql = require("mysql2/promise");
 const saveEmailDetails = require("./saveEmail");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const { uploadToCloudinary } = require("./uploadToCloudinary");
+const { config } = require("dotenv");
 
 const upload = multer({ dest: "uploads/" });
+config()
 
 const dbConfig = {
   host: process.env.D_HOST,
@@ -53,7 +55,7 @@ const RejectPaper = async (req, res) => {
 
     // Check if email was already sent
     const [existingEmails] = await connection.execute(
-      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ?",
+      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ? AND email_for = 'reject_paper' ",
       [articleId, editor_email, subject]
     );
 
@@ -85,16 +87,18 @@ const RejectPaper = async (req, res) => {
     const bccEmails = bccEmail ? bccEmail.split(",") : [];
 
     // Update article status
+    console.log(articleId)
     await connection.execute("UPDATE submissions SET status = 'rejected' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "");
-
+    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "reject_paper");
+    
     // Send email to reviewer
     const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
+    if (emailSent.status !== "success") {
+    // await ReviewerAccountEmail("company@weperch.live", "Error Sending Email", `[{insert:<p>Error Sending Email tO ${reviewerEmail}}]`, "bensonmichaelowen@gmail.com", new Date(), [], [], []);
 
-    if (!emailSent) {
-      res.status(500).json({ status: "error", message: "Could not send email" });
+      res.status(500).json({ status: "error", message: emailSent.message });
       responseSent = true;
       return;
     }

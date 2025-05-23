@@ -1,10 +1,11 @@
 const express = require("express");
 const multer = require("multer");
 const mysql = require("mysql2/promise");
-
 const saveEmailDetails = require("./saveEmail");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const { uploadToCloudinary } = require("./uploadToCloudinary");
+const { config } = require("dotenv");
+config()
 
 const upload = multer({ dest: "uploads/" });
 
@@ -53,7 +54,7 @@ const ReturnPaper = async (req, res) => {
 
     // Check if email was already sent
     const [existingEmails] = await connection.execute(
-      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ?",
+      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ? AND email_for = 'return_for_correction'",
       [articleId, editor_email, subject]
     );
 
@@ -88,15 +89,16 @@ const ReturnPaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'returned_for_correction' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "");
+    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_correction");
 
     // Send email to reviewer
     const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
 
-    if (!emailSent) {
-      res.status(500).json({ status: "error", message: "Could not send email" });
-      responseSent = true;
-      return;
+    if (emailSent.status !== "success") {
+      responseSent = true
+     return res.status(500).json({ status: "error", message: "Could not send email" });
+      // responseSent = true;
+      // return;
     }
 
     // Mark email as sent
@@ -109,14 +111,14 @@ const ReturnPaper = async (req, res) => {
     
 
     if (!responseSent) {
-      res.json({ status: "success", message: "Email has been sent" });
+     return res.json({ status: "success", message: "Email has been sent" });
       responseSent = true;
     }
 
   } catch (error) {
     console.error("Error:", error);
     if (!responseSent) {
-      res.status(500).json({ status: "error", message: "Internal server error" });
+     return res.status(500).json({ status: "error", message: "Internal server error" });
     }
   } finally {
     if (connection) {

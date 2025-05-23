@@ -152,7 +152,7 @@
                                 <div class="projects-inner" id="articlesContainer">
                                    
                                 <form onsubmit="return false" id="sendMail">
-                                    <input type="hidden" id="articleIdContainer" name="articleId" readonly>
+                                    <input type="hidden" id="articleId" name="articleId" value="<%=articleData.revision_id%>" readonly>
                                     <input type="hidden" id="editor" name="editor" readonly>
 
                                       <!-- Section  -->
@@ -265,6 +265,8 @@
     <!-- ============================================================== -->
     <!-- All Jquery -->
     <!-- ============================================================== -->
+       <link rel="stylesheet" href="/assets/global/css/iziToast.min.css">
+  <script src="/assets/global/js/iziToast.min.js"></script>
     <script src="/editorStatic/plugins/bower_components/jquery/dist/jquery.min.js"></script>
     <!-- Bootstrap tether Core JavaScript -->
     <script src="/editorStatic/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -282,10 +284,28 @@
     <script src="/editorStatic/plugins/bower_components/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script>
     <script src="/editorStatic/js/pages/dashboards/dashboard1.js"></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js'></script>
-    <script type="module" src="/editorStatic/js/routes/quill.js"></script>
-    <script type="module" src="/editorStatic/js/routes/dashboard/inviteEditor.js"></script>
-    <script type="module" src="/editorStatic/js/routes/dashboard/filterinviteEditorsList.js"></script>
-    <script type="module" src="/editorStatic/js/routes/dashboard/addFileAttachment.js"></script>
+       <script>
+
+const quill = new Quill('#quilleditor', {
+    modules: {
+      toolbar: [
+        ['bold', 'italic'],
+        ['link', 'blockquote', 'code-block', 'image'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        [{ 'header': [1, 2, false] }],
+        [{ 'color': [] }],                             // add color picker 
+        ['clean']
+      ],
+    },
+    theme: 'snow',
+  });
+  
+var delta = JSON.parse(<%- messageBody %>); // don't quote it; already a JSON object
+  quill.setContents(delta);
+    </script>
+    <script src="/editorStatic/js/routes/dashboard/inviteEditor.js"></script>
+    <script src="/editorStatic/js/routes/dashboard/filterinviteEditorsList.js"></script>
+    <script src="/editorStatic/js/routes/dashboard/addFileAttachment.js"></script>
 </body>
 
 </html>

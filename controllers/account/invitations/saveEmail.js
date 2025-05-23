@@ -1,4 +1,5 @@
 const db = require("../../../routes/db.config");
+const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 
 const saveEmailDetails = async (
   recipientEmail,
@@ -16,8 +17,8 @@ const saveEmailDetails = async (
     const existingEmailsQuery = () =>{
       return new Promise((resolve, reject) => {
         db.query(
-          "SELECT id FROM sent_emails WHERE recipient = ? AND subject = ? AND sender = ? AND article_id = ?",
-          [recipientEmail, subject, senderEmail, articleId],
+          "SELECT id FROM sent_emails WHERE recipient = ? AND subject = ? AND sender = ? AND article_id = ? AND email_for = ?",
+          [recipientEmail, subject, senderEmail, articleId, invitedFor],
           (err, result) => {
             if (err) {
               console.log(err)
@@ -38,7 +39,7 @@ const saveEmailDetails = async (
     } else {
       // Save main email details only if it doesn't exist
       const emailQuery =
-        "INSERT INTO sent_emails (`recipient`, `subject`, `body`, `sender`, `article_id`, `email_for`, `status`) VALUES (?, ?, ?, ?, ?, ?, 'Delivered')";
+        "INSERT INTO sent_emails (`recipient`, `subject`, `body`, `sender`, `article_id`, `email_for`, `status`) VALUES (?, ?, ?, ?, ?, ?, 'Sent')";
       const emailValues = [recipientEmail, subject, message, senderEmail, articleId, invitedFor];
 
       const emailResult = await new Promise((resolve, reject) => {
@@ -78,7 +79,7 @@ const saveEmailDetails = async (
           });
         });
       }
-
+  
       // Save attachments
       if (attachments && attachments.length > 0) {
         const attachmentQuery = "INSERT INTO email_attachments (email_id, file_name, file_path) VALUES ?";
@@ -92,7 +93,7 @@ const saveEmailDetails = async (
         });
       }
     }
-
+    // await ReviewerAccountEmail()
     console.log("Email details saved successfully");
   } catch (error) {
     console.error("Error saving email details:", error);

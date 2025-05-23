@@ -11,6 +11,7 @@ const dbConfig = {
   database: process.env.D_NAME,
 };
 
+
 // Initialize Brevo API
 const senderEmail = process.env.BREVO_EMAIL;
 const apiKey = process.env.BREVO_API_KEY;
@@ -72,10 +73,10 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
       [article_id, editor_email, subject]
     );
 
-    if (rows.length > 0 && rows[0].status === "Delivered") {
-      await connection.end();
-      return { status: "warning", message: "Email already sent" };
-    }
+    // if (rows.length > 0 && rows[0].status === "Delivered") {
+    //   await connection.end();
+    //   return { status: "warning", message: "Email already sent" };
+    // }
 
     const contentArray = JSON.parse(message);
     const htmlContent = convertToHTML(contentArray);
@@ -97,8 +98,10 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
       to: [{ email: RecipientEmail }],
       subject,
       htmlContent: emailContent,
-      ...(ccEmails?.length && { cc: ccEmails.split(",").map((email) => ({ email })) }),
-      ...(bccEmails?.length && { bcc: bccEmails.split(",").map((email) => ({ email })) }),
+      ...(ccEmails?.length && {cc: (typeof ccEmails === 'string' ? ccEmails.split(',') : ccEmails)
+    .map(email => ({ email: email.trim() })) }),
+      ...(bccEmails?.length && { bcc: (typeof bccEmails === 'string' ? bccEmails.split(',') : bccEmails)
+    .map(email => ({ email: email.trim() }))}),
       ...(attachments?.length && {
         attachment: attachments.map((file) => ({
           url: file.url,
@@ -106,7 +109,6 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
         })),
       }),
     };
-
     await apiInstance.sendTransacEmail(emailData);
 
     // **Update database status after sending**
@@ -118,7 +120,7 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
     await connection.end();
     return { status: "success", message: "Email sent successfully" };
   } catch (error) {
-    console.error("Brevo API Error:", error.message);
+    console.error("Brevo API Error:", error);
     if (connection) await connection.end();
     return { status: "error", message: error.message };
   }

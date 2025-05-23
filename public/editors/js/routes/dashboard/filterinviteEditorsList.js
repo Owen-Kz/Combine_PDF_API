@@ -1,13 +1,11 @@
-import { GetParameters, submissionsEndpoint } from "../constants.js";
-import { GetCookie } from "../setCookie.js";
 
+const submissionsEndpoint = "/editors"
 // Get a List of Availabel Reviewers 
-const userID = GetCookie("editor")
+const userID = ""
 const linksContainer = document.getElementById("invitationLink")
-const meetingIdContaienr = document.getElementById("meetingIdContainer");
 const acceptLinkContainer = document.getElementById("acceptLinkContainer")
 const declineLinkContainer = document.getElementById("declineLinkContainer")
-const articleID = GetParameters(window.location.href).get("a")
+const articleID = document.getElementById("articleId")
 async function AllReviewersList(){
     return fetch(`${submissionsEndpoint}/listOfEditorEmails`, {
         method: "POST",
@@ -40,7 +38,10 @@ async function ReviewersList() {
     return NotAuthorsOfThisManuscript
 }
 
-const emails = await ReviewersList();
+( async () => {
+   const emails = await ReviewersList();
+
+
 const emailList = document.getElementById('emailList');
 const emailInput = document.getElementById('email');
 
@@ -111,3 +112,5 @@ emailInput.addEventListener("keyup", function(e){
     e.preventDefault()
     filterEmailList()
 })
+
+})();

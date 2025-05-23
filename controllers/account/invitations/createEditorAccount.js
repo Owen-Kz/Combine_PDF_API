@@ -32,7 +32,7 @@ const createEditorAccount = async (accountEMail) =>{
                                 resolve(false)
                             }
                             if(created.insertId){
-                                db.query("UPDATE authors_account SET is_editor = 'yes' AND is_reviewer = 'yes' WHERE email = ?", [accountEMail], async (err, update) =>{
+                                db.query("UPDATE authors_account SET is_editor = 'yes', is_reviewer = 'yes', is_available_for_review = 'yes' WHERE email = ?", [accountEMail], async (err, update) =>{
                                     if(err){
                                         console.lof(err)
                                         resolve(false)

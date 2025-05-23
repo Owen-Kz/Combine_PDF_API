@@ -1,16 +1,18 @@
-import { domainN, GetParameters, submissionsEndpoint } from "../constants.js";
-import { GetCookie } from "../setCookie.js";
+// import { GetCookie } from "../setCookie.js";
 
 
 // Get a List of Availabel Reviewers 
-const userID = GetCookie("editor")
-const articleID = GetParameters(window.location.href).get("a")
+
+// const userID = GetCookie("editor")
+// const domainN = "https://process.asfirj.org/"
+const articleID = document.getElementById("articleId").value
+
 async function AllReviewersList(){
-    return fetch(`${submissionsEndpoint}/listOfReviewerEmails`, {
+    return fetch(`/editors/listOfReviewerEmails`, {
         method: "POST",
-        body: JSON.stringify({
-            editorId: userID,
-        })
+        // body: JSON.stringify({
+        //     editorId: userID,
+        // })
     }).then(res => res.json())
     .then(data => {
         if (data.success) {
@@ -22,7 +24,7 @@ async function AllReviewersList(){
     });
 }
 async function ReviewersList() {
-    const res = await fetch(`${submissionsEndpoint}/listOfAuthorsForSuggestions?articleID=${articleID}`);
+    const res = await fetch(`/editors/listOfAuthorsForSuggestions?articleID=${articleID}`);
     const data = await res.json();
     const AuthorsList = data.authorsList;
     const AllReviewers = await AllReviewersList()
@@ -38,15 +40,16 @@ async function ReviewersList() {
 }
 
 // Usage
-const emails = await ReviewersList();
+( async () => {
+   const emails = await ReviewersList();
+
+
 
 
 const emailList = document.getElementById('emailList');
 const emailInput = document.getElementById('email');
-const linksContainer = document.getElementById("invitationLink")
-const meetingIdContaienr = document.getElementById("meetingIdContainer");
-const acceptLinkContainer = document.getElementById("acceptLinkContainer")
-const declineLinkContainer = document.getElementById("declineLinkContainer")
+// const acceptLinkContainer = document.getElementById("acceptLinkContainer")
+// const declineLinkContainer = document.getElementById("declineLinkContainer")
 
 function renderEmailList(filteredEmails) {
     emailList.innerHTML = '';
@@ -61,23 +64,23 @@ function renderEmailList(filteredEmails) {
                     linksContainer.innerHTML = `<span>* Click on the link to Copy</span>`
                 linksContainer.innerHTML = `
                 <ul>
-                <li>Accept Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
-                                ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes
+                <li>Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
+                                ${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes
                             </a>
                 </li>
-                <li>Reject Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes">
-                                ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes
+                <li>Reject Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes">
+                                ${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes
                             </a>
                 </li>
         
                 `
-                acceptLinkContainer.innerHTML = `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
-                                ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes
+                acceptLinkContainer.innerHTML = `       "Accept Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes">
+                                ${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&accept=yes
                             </a>"
                `;
         
-                declineLinkContainer.innerHTML = ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes">
-                                ${domainN}/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes
+                declineLinkContainer.innerHTML = ` "Reject Link: <a href="#" class="copy-link" data-link="${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes">
+                                ${domainN}/papers/invitations?a=${articleID}&e=${emailInput.value}&do=review&reject=yes
                             </a>
                 "`;
         
@@ -116,9 +119,19 @@ function CopyText(){
             event.preventDefault();
             const linkText = this.getAttribute('data-link');
             navigator.clipboard.writeText(linkText).then(() => {
-                alert('Text copied to clipboard: ' + linkText);
+                // alert('Text copied to clipboard: ' + linkText);
+            iziToast.success({
+            title: `Text Copied To Clipoard`,
+            message: `${linkText}`,
+            position: 'topCenter'
+        });
             }).catch(err => {
                 console.error('Failed to copy link: ', err);
+                                iziToast.error({
+            title: `Failed to copy link`,
+            message: `${err}`,
+            position: 'topCenter'
+        });
             });
         });
     })
@@ -129,3 +142,5 @@ emailInput.addEventListener("keyup", function(e){
     e.preventDefault()
     filterEmailList()
 })
+
+})();

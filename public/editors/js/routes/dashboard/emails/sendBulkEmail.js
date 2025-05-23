@@ -1,10 +1,3 @@
-
-import { GetParameters, domainN, parentDirectoryName, submissionsEndpoint } from "../../constants.js"
-import { formatTimestamp } from "../../formatDate.js"
-import { quill } from "../../quill.js"
-import { GetCookie } from "../../setCookie.js"
-import { validateLogin } from "../../validateLogin.js"
-
 const confirmationModal = document.getElementById("exampleModal")
 const shareButton = document.getElementById("shareButton")
 const confirmButton  = document.getElementById("confirmButton")
@@ -15,31 +8,17 @@ closeModal.addEventListener("click", function(){
     confirmationModal.click()
 })
 
-const userFullnameContainer = document.querySelectorAll(".userFullnameContainer")
-const submissionsContainer = document.getElementById("submissionsContainer")
-const ArticleId = GetParameters(window.location.href).get("a")
-const subjectContainer = document.getElementById("subject")
+
+const ArticleId = document.getElementById("articleId").value
+
 
 const sendMail = document.getElementById("sendMail")
 const editor = document.getElementById("editor")
 const articleIDContainer = document.getElementById("articleIdContainer")
-const user = GetCookie("editor")
-if(user){
-const AccountData = await validateLogin(user)
 
 editor.value = user
 articleIDContainer.value = ArticleId
 
-const userFullname = AccountData.fullname 
-const email = AccountData.email 
-const accoount_type = AccountData.editorial_level
-
-userFullnameContainer.forEach(container =>{
-    container.innerText= userFullname
-}) 
-
-
-if(accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant" || accoount_type === "associate_editor"){
 
 
 CopyText()
@@ -60,14 +39,24 @@ sendMail.addEventListener("submit", function(e){
         body:formData,
     }).then(res=>res.json())
     .then(data=>{
-        if(data.status === "success"){
-            alert(data.message)
+   if(data.status === "success"){
+            // alert(data.message)
+              iziToast.success({
+            title: `Success`,
+            message: `${data.message}`,
+            position: 'topCenter'
+        });
             // window.location.href = `${parentDirectoryName}/../Dashboard`
             preloader.setAttribute("style", "display:none;")
 
 
         }else{
-            alert(data.message)
+            // alert(data.message)
+              iziToast.error({
+            title: `Error`,
+            message: `${data.message}`,
+            position: 'topCenter'
+        });
             preloader.setAttribute("style", "display:none;")
         }
     })
@@ -82,9 +71,20 @@ function CopyText(){
             event.preventDefault();
             const linkText = this.getAttribute('data-link');
             navigator.clipboard.writeText(linkText).then(() => {
-                alert('Text copied to clipboard: ' + linkText);
+                // alert('Text copied to clipboard: ' + linkText);
+
+       iziToast.success({
+            title: `Text Copied To Clipoard`,
+            message: `${linkText}`,
+            position: 'topCenter'
+        });
             }).catch(err => {
                 console.error('Failed to copy link: ', err);
+                                iziToast.error({
+            title: `Failed to copy link`,
+            message: `${err}`,
+            position: 'topCenter'
+        });
             });
         });
     })
@@ -92,11 +92,3 @@ function CopyText(){
 
 
 
-
-}
-
-
-}else{
-
-    window.location.href = `${parentDirectoryName}/workflow/accounts/login`
-}

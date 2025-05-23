@@ -5,9 +5,10 @@ const mysql = require("mysql2/promise");
 const saveEmailDetails = require("./saveEmail");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const { uploadToCloudinary } = require("./uploadToCloudinary");
+const { config } = require("dotenv");
 
 const upload = multer({ dest: "uploads/" });
-
+config()
 const dbConfig = {
   host: process.env.D_HOST,
   user: process.env.D_USER,
@@ -54,7 +55,7 @@ const RevisePaper = async (req, res) => {
 
     // Check if email was already sent
     const [existingEmails] = await connection.execute(
-      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ?",
+      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ? AND email_for = 'return_for_revision' ",
       [articleId, editor_email, subject]
     );
 
@@ -89,15 +90,15 @@ const RevisePaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'returned_for_revision' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "");
+    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_revision");
 
     // Send email to reviewer
     const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
 
-    if (!emailSent) {
-      res.status(500).json({ status: "error", message: "Could not send email" });
+    if (emailSent.status !== "success") {
       responseSent = true;
-      return;
+
+      return res.status(500).json({ status: "error", message: "Could not send email" });
     }
 
     // // Mark email as sent

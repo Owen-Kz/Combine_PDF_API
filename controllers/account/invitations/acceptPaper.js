@@ -6,6 +6,8 @@ const saveEmailDetails = require("./saveEmail");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const { AcceptanceEmailToEditor } = require("./acceptanceEMailToEDitor");
 const { uploadToCloudinary } = require("./uploadToCloudinary");
+const { config } = require("dotenv");
+config()
 
 const upload = multer({ dest: "uploads/" });
 
@@ -54,7 +56,7 @@ const AcceptPaper = async (req, res) => {
 
     // Check if email was already sent
     const [existingEmails] = await connection.execute(
-      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ?",
+      "SELECT status FROM sent_emails WHERE article_id = ? AND sender = ? AND subject = ? AND email_for = 'accept_paper' ",
       [articleId, editor_email, subject]
     );
 
@@ -89,12 +91,12 @@ const AcceptPaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'accepted' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "");
+    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "accept_paper");
 
     // Send email to reviewer
     const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
 
-    if (!emailSent) {
+    if (emailSent.status !== "success") {
       res.status(500).json({ status: "error", message: "Could not send email" });
       responseSent = true;
       return;

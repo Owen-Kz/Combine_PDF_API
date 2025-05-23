@@ -5,7 +5,6 @@ const InvitationsPage = async (req,res) =>{
     try{
         if(req.query.do){
             const invite = req.query.do
-            console.log(invite)
             if(invite == "review"){
                 return reviewerInvitation(req,res)
             }else if(invite == "edit"){

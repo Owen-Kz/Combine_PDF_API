@@ -154,14 +154,14 @@
                                 <div class="projects-inner" id="articlesContainer">
                                    
                                 <form onsubmit="return false" id="sendMail">
-                                    <input type="hidden" id="articleIdContainer" name="articleId" readonly>
+                                    <input type="hidden" id="articleId" name="articleId" value="<%=articleData.revision_id%>" readonly>
                                     <input type="hidden" id="editor" name="editor" readonly>
 
                                       <!-- Section  -->
                                       <div class="d-md-flex mb-3" style="flex-direction: column;">
                                         <h4 class="box-title mb-0">Recipient</h4>
                                         <div>
-                                            <input class="form-control" type="email" name="reviewerEmail" id="email" placeholder="Enter Recipient email" required>
+                                            <input class="form-control" type="text" name="reviewerEmail" id="email" value="<%= articleData.corresponding_authors_email %>" placeholder="Enter Recipient email" required readonly>
 
                                             <input class="form-control" type="text" name="ccEmail" id="ccEmail" placeholder="CC">
                                   
@@ -176,15 +176,26 @@
                                         </div>
                                             <ul id="emailList"></ul>
         
-                                        <div id="invitationLink">* This Email field has been auto filled with the Editor-In-Chief's Email
-                                        </div>
+                                        <div id="invitationLink"><span>* Click on an Item to Copy</span>`
+
+                        <ul>
+                          <li>Manuscript Title And Id <a href="#" class="copy-link" data-link="<%=articleData.title%> (<%=articleData.revision_id%>)">
+                              <%=articleData.title%> (<%=articleData.revision_id%>)
+                            </a>
+                          </li>
+                          <li>Corresponding Author's Name: <a href="#" class="copy-link" data-link="<%= CorrespondingAuthorsName %>">
+                              <%= CorrespondingAuthorsName %>
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
                                     
                                     </div>
                                     <!-- End Section  -->
                                          <!-- Section  -->
                                          <div class="d-md-flex mb-3" style="flex-direction: column;">
                                             <h4 class="box-title mb-0">Subject</h4>
-                                            <div><input class="form-control" type="text" name="subject" id="subject" placeholder="Enter Subject" required></div>
+                                            <div><input class="form-control" type="text" name="subject" id="subject" placeholder="Enter Subject" value="Accept: <%=articleData.title%> (<%=articleData.revision_id%>)"  required></div>
                                         </div>
                                         <!-- End Section  -->
 
@@ -275,6 +286,8 @@
     <!-- ============================================================== -->
     <!-- All Jquery -->
     <!-- ============================================================== -->
+        <link rel="stylesheet" href="/assets/global/css/iziToast.min.css">
+  <script src="/assets/global/js/iziToast.min.js"></script>
     <script src="/editorStatic/plugins/bower_components/jquery/dist/jquery.min.js"></script>
     <!-- Bootstrap tether Core JavaScript -->
     <script src="/editorStatic/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -292,9 +305,27 @@
     <script src="/editorStatic/plugins/bower_components/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script>
     <script src="/editorStatic/js/pages/dashboards/dashboard1.js"></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js'></script>
-    <script type="module" src="/editorStatic/js/routes/quill.js"></script>
-    <script type="module" src="/editorStatic/js/routes/dashboard/emails/acceptPaper.js"></script>
-    <script type="module" src="/editorStatic/js/routes/dashboard/filterinviteEditorsList.js"></script>
+    <script>
+
+const quill = new Quill('#quilleditor', {
+    modules: {
+      toolbar: [
+        ['bold', 'italic'],
+        ['link', 'blockquote', 'code-block', 'image'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        [{ 'header': [1, 2, false] }],
+        [{ 'color': [] }],                             // add color picker 
+        ['clean']
+      ],
+    },
+    theme: 'snow',
+  });
+  
+var delta = JSON.parse(<%- messageBody %>); // don't quote it; already a JSON object
+  quill.setContents(delta);
+    </script>
+    <script src="/editorStatic/js/routes/dashboard/emails/acceptPaper.js"></script>
+    <script src="/editorStatic/js/routes/dashboard/filterinviteEditorsList.js"></script>
     <script src="/editorStatic/js/routes/dashboard/addFileAttachment.js"></script>
 </body>
 

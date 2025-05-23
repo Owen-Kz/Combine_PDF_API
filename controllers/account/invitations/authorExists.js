@@ -8,7 +8,7 @@ const authorExists = async (email) =>{
                 reject(err)
             }
             if(data[0]){
-                db.query("UPDATE authors_account SET is_reviewer = 'yes' AND is_available_for_review = 'yes' AND reviewer_invite_status = 'accepted' WHERE email = ?", [email], (err, update) =>{
+                db.query("UPDATE authors_account SET is_reviewer = 'yes', is_available_for_review = 'yes', reviewer_invite_status = 'accepted' WHERE email = ?", [email], (err, update) =>{
                     if(err){
                         console.log(err)
                         reject(err)

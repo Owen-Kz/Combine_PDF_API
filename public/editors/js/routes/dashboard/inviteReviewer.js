@@ -1,9 +1,3 @@
-import { GetParameters, domainN, parentDirectoryName, submissionsEndpoint } from "../constants.js"
-import { formatTimestamp } from "../formatDate.js"
-import { GetSubmissionData } from "../queries/getSubmissionData.js"
-import { quill } from "../quill.js"
-import { GetCookie } from "../setCookie.js"
-import { validateLogin } from "../validateLogin.js"
 
 const confirmationModal = document.getElementById("exampleModal")
 const shareButton = document.getElementById("shareButton")
@@ -15,64 +9,16 @@ closeModal.addEventListener("click", function(){
     confirmationModal.click()
 })
 
+const domainN = "https://process.asfirj.org"
 
-const userFullnameContainer = document.querySelectorAll(".userFullnameContainer")
-const submissionsContainer = document.getElementById("submissionsContainer")
-const ArticleId = GetParameters(window.location.href).get("a")
-const subjectContainer = document.getElementById("subject")
+const ArticleId = document.getElementById("articleId").value
 const Recipient = document.getElementById("email")
 const linksContainer = document.getElementById("invitationLink")
-const meetingIdContaienr = document.getElementById("meetingIdContainer");
 const acceptLinkContainer = document.getElementById("acceptLinkContainer")
 const declineLinkContainer = document.getElementById("declineLinkContainer")
 const sendMail = document.getElementById("sendMail")
-const editor = document.getElementById("editor")
-const articleIDContainer = document.getElementById("articleIdContainer")
-const user = GetCookie("editor")
-if(user){
-const AccountData = await validateLogin(user)
-
-editor.value = user
-articleIDContainer.value = ArticleId
-
-const userFullname = AccountData.fullname 
-const email = AccountData.email 
-const accoount_type = AccountData.editorial_level
-
-userFullnameContainer.forEach(container =>{
-    container.innerText= userFullname
-}) 
 
 
-if(accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant" || accoount_type === "associate_editor" || accoount_type === "sectional_editor"){
-    const ArticleData = await GetSubmissionData(ArticleId)
-    if(ArticleData){
-    const Title = ArticleData.title
-    meetingIdContaienr.innerHTML += ` "<a href="#" class="copy-link" data-link="${ArticleId}">
-                      ${ArticleId}
-                    </a> "`
-
-    // Get the Email tmplate for reviewers 
-    fetch(`${submissionsEndpoint}/getReviewerEmailTemplate`, {
-        method:"POST",
-        body:JSON.stringify({id:user, emailFor:"reviewer_invitation"}),
-        headers:{
-            "Content-type" : "application/JSON"
-        }
-    }).then(res=>res.json())
-    .then(data=>{
-        if(data.success){
-            const emailContent = data.emailContent 
-            const subject = emailContent.subject
-            const messagebody = emailContent.message_body
-
-            subjectContainer.value = `${subject} (${Title})`
-         // Set the content as Quill Delta and extract the HTML
-    quill.setContents(JSON.parse(messagebody));
-        }else{
-            alert(data.error)
-        }
-    })
 
     // add the Links to the DOM when the recipient Email has changed 
     Recipient.addEventListener("change", function() {
@@ -121,7 +67,7 @@ sendMail.addEventListener("submit", function(e){
 
     const formData = new FormData(sendMail);
     formData.append('message', JSON.stringify(quill.getContents().ops))
-    fetch(`${submissionsEndpoint}/email/inviteReviewer`,{
+    fetch(`/editors/email/inviteReviewer`,{
         method:"POST",
         body:formData,
     }).then(res=>res.json())
@@ -145,9 +91,20 @@ function CopyText(){
             event.preventDefault();
             const linkText = this.getAttribute('data-link');
             navigator.clipboard.writeText(linkText).then(() => {
-                alert('Text copied to clipboard: ' + linkText);
+                // alert('Text copied to clipboard: ' + linkText);
+
+        iziToast.success({
+            title: `Text Copied To Clipoard`,
+            message: `${linkText}`,
+            position: 'topCenter'
+        });
             }).catch(err => {
                 console.error('Failed to copy link: ', err);
+                                iziToast.error({
+            title: `Failed to copy link`,
+            message: `${err}`,
+            position: 'topCenter'
+        });
             });
         });
     })
@@ -155,12 +112,3 @@ function CopyText(){
 
 
 
-    }
-
-}
-
-
-}else{
-
-    window.location.href = `${parentDirectoryName}/workflow/accounts/login`
-}

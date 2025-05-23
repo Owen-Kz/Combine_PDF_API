@@ -1,10 +1,18 @@
-import { parentDirectoryName, submissionsEndpoint } from "./constants.js";
-import { GetCookie, SetCookies, hoursToKeep } from "./setCookie.js";
+const hoursToKeep = 1;  // Desired duration in hours
+const daysToKeep = hoursToKeep / 24;  // Convert hours to days
+const expirationDays = daysToKeep > 0 ? daysToKeep : 1;  // Ensure a minimum of 1 day
 
+ 
+
+
+const  SetCookies = function setCookie(name, value, daysToExpire) {
+    const date = new Date();
+    date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
+    const expires = 'expires=' + date.toUTCString();
+    document.cookie = name + '=' + value + '; ' + expires + '; path=/';
+}
 const LoginForm = document.getElementById("login-form")
  
-// check if the user is logged in 
-const editor = GetCookie("editor")
 
 if(LoginForm){
 
@@ -15,7 +23,7 @@ if(LoginForm){
             pass: password.value
         }
 
-        fetch(`${submissionsEndpoint}/editorsLogin`, {
+        fetch(`/editors/editorsLogin`, {
             method:"POST",
             body: JSON.stringify(formData),
             headers:{
@@ -27,13 +35,28 @@ if(LoginForm){
             if(data.status === "success"){
                 const userId = data.id 
                 SetCookies("editor", userId, hoursToKeep);
+                    iziToast.success({
+            title: `Success`,
+            message: `Logged In Successfully`,
+            position: 'topCenter'
+        });
                 window.location.reload()
                 // window.location.href = `${parentDirectoryName}/dashboard`
             }else{
-                alert(data.message)
+            iziToast.error({
+            title: `Error`,
+            message: `${data.message}`,
+            position: 'topCenter'
+        });
+                
             }
         }else{
-            console.error("No data")
+            // console.error("No data")
+                iziToast.error({
+            title: `Error`,
+            message: `Internal Server Error!`,
+            position: 'topCenter'
+        });
         }
         })
     
