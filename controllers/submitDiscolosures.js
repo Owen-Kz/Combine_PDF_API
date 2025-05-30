@@ -4,6 +4,7 @@ const clearCookie = require("./utils/clearCookie");
 const SendNewSubmissionEmail = require("./utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("./utils/SendHandlerEmail");
 const CoAuthors = require("./CoAuthors");
+const dbPromise = require("../routes/dbPromise.config");
 const upload = multer();
 
 const SubmitDisclosures = async (req, res) => {
@@ -14,7 +15,11 @@ const SubmitDisclosures = async (req, res) => {
         }
         try {
             const articleId = req.cookies._sessionID
-            const {review_status} = req.body
+            const {manuscript_id, review_status, current_process} = req.body
+            let is_previous_submission_status = current_process;
+
+// Output: "correction_submitted"
+            console.log(req.body)
             db.query("SELECT * FROM submissions WHERE revision_id =?", [articleId], (err, paper) =>{
                 if(err){
                     return res.json({error:err})
@@ -27,12 +32,11 @@ const SubmitDisclosures = async (req, res) => {
                     }else{
 
                     if(review_status === "submitted"){
-                    SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
-                    sendEmailToHandler(sendEmailToHandler("submissions@asfirj.org", manuscriptTitle, manuscriptId))
-                    CoAuthors(req,res, manuscriptId)
+                    // SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
+                    // sendEmailToHandler(sendEmailToHandler("submissions@asfirj.org", manuscriptTitle, manuscriptId))
+                    // CoAuthors(req,res, manuscriptId)
                     
                     }
-
           
             db.query("UPDATE submissions SET status = ? WHERE revision_id = ?", [review_status, articleId], async (err, data) =>{
                 if(err){
@@ -40,6 +44,9 @@ const SubmitDisclosures = async (req, res) => {
                 }
                 if(data.affectedRows > 0){
                     if(review_status === "submitted"){
+                    is_previous_submission_status = current_process.replace('saved', 'submitted');
+
+                    await dbPromise.query("UPDATE submissions SET status = ? WHERE article_id = ? AND revision_id != ?", [is_previous_submission_status, manuscript_id, articleId])
                     clearCookie(req, res, "_sessionID")
                     clearCookie(req, res, "_abstract")
                     clearCookie(req, res, "_manFile")

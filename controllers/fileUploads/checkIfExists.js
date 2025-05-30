@@ -1,10 +1,11 @@
 const db = require("../../routes/db.config")
 
 const checkIfFIleExists = async (req,res,field, fieldname,  cookie) =>{
+    
     try{
 
 
-        if(field != undefined && field != null && field != 'j:null' && (cookie === 0 || !cookie || cookie === undefined)){
+        if(field != undefined && field != null && field != 'j:null' && field != 'undefined' && (cookie === 0 || !cookie || cookie === undefined)){
             const articleId = req.cookies._sessionID
             const new_revisionID = req.cookies.new_revisionID
          

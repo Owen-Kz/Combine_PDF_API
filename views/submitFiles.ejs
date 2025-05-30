@@ -118,7 +118,7 @@
     <div>
       <label for="">Supplementary Material:</label>
       <div class="fileControls">
-        <% if(supplementaryMaterials && supplementaryMaterials !== null) { %>
+        <% if(supplementaryMaterials && supplementaryMaterials !== null && supplementaryMaterials !== 'not-found') { %>
           <a href="/doc?url=<%=supplementaryMaterials%>" target="_blank">Supplementary Material</a>
           <span class="delete_button" onclick="createPlainField('supplementary_material', 'Supplmenetary Material', 4)"><i class="fa fa-trash"></i> Remove File</span>
           <% }else{ %>

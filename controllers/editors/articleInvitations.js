@@ -4,7 +4,7 @@ const db = require("../../routes/db.config");
 const getInvitations = async (req, res) => {
     try {
         const { article_id } = req.body;
-        console.log(req.body)
+   
 
         if (!article_id) {
             return res.status(400).json({ error: "Invalid Parameters" });

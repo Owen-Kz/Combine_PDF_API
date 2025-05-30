@@ -35,7 +35,6 @@ const uploadArticlePage = async (req, res) => {
         const asfi_membership_id = req.user.asfi_membership_id
 
 
-
         if (req.query.a) {
             // ArticleId =  await findRevisionId(req.query.a, req.cookies._uem);
             ArticleId = req.query.a;

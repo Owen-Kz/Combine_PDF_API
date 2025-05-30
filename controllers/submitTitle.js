@@ -25,7 +25,6 @@ const submitTitle = async (req,res) =>{
           
         
          
-
                checkIfFIleExists(req,res, req.cookies.exist_man,"manuscript_file",  req.cookies.new_manuscript)
                 
                 checkIfFIleExists(req,res, req.cookies.exist_cover,"cover_letter_File", req.cookies.new_cover_letter)

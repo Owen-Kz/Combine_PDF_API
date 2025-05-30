@@ -29,7 +29,7 @@ const generateArticleId = async (req,res) => {
                 }
 
                 const articleID = `ASFIRJ-${new Date().getFullYear()}-${submissionsCount}`;
-                console.log("Generated Article ID:", articleID);
+                // console.log("Generated Article ID:", articleID);
                 const cookieOptions = {
                     expiresIn: new Date(Date.now() + process.env.COOKIE_EXPIRES * 24 * 60 * 60 * 1000),
                     httpOnly: false

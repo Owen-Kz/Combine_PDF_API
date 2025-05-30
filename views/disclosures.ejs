@@ -54,6 +54,7 @@
 
     <input type="hidden" name="review_status" hidden>
     <input type="submit" id="submitDisclosure" disabled hidden>
+    <input type="hidden" name="current_process" value="<%= currentProcess%>" readonly>
     
     <div style="display: flex; justify-content: space-between;">
       <button type="button" name="review_stat" style="margin: 20px; border:2px solid blueviolet; color:blueviolet; padding: 10px 20px 10px 20px; font-weight: bold; text-align: center;" onclick="setStatus('<%=currentProcess%>')" hidden> 

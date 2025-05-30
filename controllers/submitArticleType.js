@@ -30,7 +30,7 @@ const submitArticleType = async (req,res) =>{
             }else{
                 articleID = req.cookies._sessionID
             }
-            console.log(req.cookies._sessionID)
+            // console.log(req.cookies._sessionID)
 
           
             let revisionsCount = 0 
@@ -75,6 +75,7 @@ const submitArticleType = async (req,res) =>{
                         db.query("UPDATE submissions SET revisions_count = ? AND corrections_count = ? WHERE article_id = ?AND revision_id != ?", [revisionsCount, correctionsCount, article_id, articleID], (err, data) =>{
                             if(err){
                                 console.log(err)
+                                return res.json({error:"Could not Update submission count"})
                             }else{
                                 console.log(data.affectedRows)
                             }

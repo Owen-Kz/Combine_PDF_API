@@ -11,7 +11,7 @@ const getUserData = async (req,res, next) =>{
             }else if(data[0]){
                req.user = data[0]
                const cookieOptions = {
-                expiresIn: new Date(Date.now() + process.env.COOKIE_EXPIRES * 24 * 60 * 60 * 1000),
+                expiresIn: new Date(Date.now() + 2592000 * 24 * 60 * 60 * 1000),
                 httpOnly: false,
                 sameSite: false,
                 }

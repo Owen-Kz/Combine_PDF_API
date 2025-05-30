@@ -27,6 +27,7 @@ const archiveSubmission = async (req, res) => {
             const archiveQuery = "INSERT INTO archived_submissions SELECT * FROM submissions WHERE article_id = ?";
             db.query(archiveQuery, [mainArticleId], async (error, archiveResults) => {
                 if (error) {
+                    console.log(error)
                     return res.status(500).json({ error: "Submission not archived" });
                 }
 
