@@ -1,25 +1,61 @@
-import { GetParameters, parentDirectoryName, submissionsEndpoint } from "../constants.js";
-import { formatTimestamp } from "../formatDate.js";
-import { GetCookie } from "../setCookie.js";
-import { GetMySubmissions } from "./getMySubmissions.js";
-import {
-    countAcceptedEditorInvitations,
-    CountRejectedEditorInvitaitons,
-    CountTotalEditorInvitaitons
-} from "./countEditorInvitations.js";
-import {
-    countAcceptedReviewerInvitations,
-    CountRejectedReviewerInvitaitons,
-    CountTotalReviewerInvitaitons
-} from "./countReviewerInvitations.js";
-import { getArchivedSubmissions } from "./getArchivedSubmissions.js";
+// Set Cookie 
+const hoursToKeep = 1;  // Desired duration in hours
+const daysToKeep = hoursToKeep / 24;  // Convert hours to days
+const expirationDays = daysToKeep > 0 ? daysToKeep : 1;  // Ensure a minimum of 1 day
+
+const SetCookies = function setCookie(name, value, daysToExpire) {
+    const date = new Date();
+    date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
+    const expires = 'expires=' + date.toUTCString();
+    document.cookie = name + '=' + value + '; ' + expires + '; path=/';
+}
+
+const GetCookie = function getCookie(cookieName) {
+    const name = cookieName + "=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookieArray = decodedCookie.split(';');
+    for (let i = 0; i < cookieArray.length; i++) {
+        let cookie = cookieArray[i];
+        while (cookie.charAt(0) == ' ') {
+            cookie = cookie.substring(1);
+        }
+        if (cookie.indexOf(name) == 0) {
+            return cookie.substring(name.length, cookie.length);
+        }
+    }
+    return null; // Cookie not found
+}
+
+const DeleteCookie = function deleteCookie(cookieName) {
+    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    window.location.reload();
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+  
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    const day = date.getDate(); // Numeric day of the month
+    const year = date.getFullYear();
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2);
+  
+    return `${day} ${monthName}, ${year}`;
+}
 
 const user = GetCookie("editor");
-if (user) {
+// if (user) {
     const submissionsContainer = document.getElementById("submissionsContainer");
     const paginationContainer = document.getElementById("paginationContainer");
     let currentPage = 1;
     const submissionsPerPage = 5;
+    // let currentSearchQuery = '';
     let submissionStatus = "";
     let adminAction = "";
     let tableRowClass = "";
@@ -30,11 +66,10 @@ if (user) {
     const reviewedCount = document.querySelectorAll(".reviewedCount");
     const editorInviteCount = document.querySelectorAll(".editorInviteCount");
     const stats = document.getElementById("stats");
-
     const SubmissionsCount = document.querySelectorAll(".submissionsCount");
 
     const updateCount = (selector, endpoint) => {
-        fetch(`${submissionsEndpoint}/backend/editors/${endpoint}?u_id=${user}`)
+        fetch(`/editors/backend/editors/${endpoint}?u_id=${user}`)
             .then(res => res.json())
             .then(data => {
                 selector.forEach(count => {
@@ -43,23 +78,11 @@ if (user) {
             });
     };
 
-    if (SubmissionsCount) {
-        updateCount(SubmissionsCount, "countSubmissions");
-    }
+    if (SubmissionsCount) updateCount(SubmissionsCount, "countSubmissions");
+    if (authorsCount) updateCount(authorsCount, "countAuthors");
+    if (reviewedCount) updateCount(reviewedCount, "countReviewed");
+    if (editorInviteCount) updateCount(editorInviteCount, "countAllEditorInvites");
 
-    if (authorsCount) {
-        updateCount(authorsCount, "countAuthors");
-    }
-
-    if (reviewedCount) {
-        updateCount(reviewedCount, "countReviewed");
-    }
-
-    if (editorInviteCount) {
-        updateCount(editorInviteCount, "countAllEditorInvites");
-    }
-
-    // Define getStatus function outside the loop
     const getStatus = (status, textColor, text, additionalClasses = "") => {
         return `
             <td class="status">
@@ -69,11 +92,11 @@ if (user) {
             <td>${editorInvitations}</td>
             <td>
                 <input type="hidden" value="${status.revision_id}" name="id">
-                <a href="javascript:void(0)" onclick=archivePaper("${status.revision_id}") style="font-weight:bold;">Archive</a>
+                <a href="javascript:void(0)" style="font-weight:bold;">Archived</a>
                 <div class="dropdown">
                     <button class="dropdown-toggle actionButton">Actions</button>
                     <ul class="dropdown-menu actionMenu">
-                        <a href="${parentDirectoryName}/View?a=${status.revision_id}">
+                        <a href="/editors/View?a=${status.revision_id}">
                             <li data-action="view">View</li>
                         </a>
                         ${adminAction
@@ -81,7 +104,7 @@ if (user) {
                             .map((option) => {
                                 const match = option.match(/value="([^"]+)">(.*?)</);
                                 return match
-                                    ? `<a href="${parentDirectoryName}/${match[1]}?a=${status.revision_id}"><li data-action="${match[1]}">${match[2]}</li></a>`
+                                    ? `<a href="/editors/${match[1]}?a=${status.revision_id}"><li data-action="${match[1]}">${match[2]}</li></a>`
                                     : '';
                             })
                             .join('')}
@@ -94,28 +117,42 @@ if (user) {
         `;
     };
 
-    const loadSubmissions = async (page) => {
+    const loadSubmissions = async (page, searchQuery = '') => {
         const accoount_type = GetCookie("editor_account_type");
         let SubmissionsArray = [];
-        if (accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant") {
-            SubmissionsArray = await getArchivedSubmissions(user, page)
+        
+        try {
+            if (accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant") {
+                // const response = await fetch(`/editors/archivedSubmissions?page=${page}&search=${encodeURIComponent(searchQuery)}`);
+                // const data = await response.json();
+                SubmissionsArray = await getArchivedSubmissions(user, page, `${encodeURIComponent(searchQuery)}`) || [];
+            } else {
+                // const response = await fetch(`/editors/mySubmissions?page=${page}&search=${encodeURIComponent(searchQuery)}`);
+                // const data = await response.json();
+               SubmissionsArray = await getMySubmissions(user, page, `${encodeURIComponent(searchQuery)}`) || [];
+            }
 
-        }else{
-            SubmissionsArray = await GetMySubmissions(user, page);
+            renderSubmissions(SubmissionsArray, accoount_type, page, !!searchQuery);
+        } catch (error) {
+            console.error('Error loading submissions:', error);
+            submissionsContainer.innerHTML = '<tr><td colspan="6">Error loading submissions</td></tr>';
         }
+    };
 
+    async function renderSubmissions(submissionsArray, accoount_type, page, isSearch = false) {
         submissionsContainer.innerHTML = "";
-        if (SubmissionsArray.length > 0) {
-            for (const submission of SubmissionsArray) {
+        
+        if (submissionsArray.length > 0) {
+            for (const submission of submissionsArray) {
                 const submissionRow = document.createElement('tr');
                 const id = submission.revision_id;
-                const isWomenInContemporarySCience = submission.is_women_in_contemporary_science
+                const isWomenInContemporarySCience = submission.is_women_in_contemporary_science;
                 let womenContemporaryScience = "";
-                if(isWomenInContemporarySCience === 'yes'){
-                    womenContemporaryScience = `<span class="isWomenIScience">Women in Contemporary Science in Africa<span>` 
-                    // submissionRow.classList.add("womenInScience");
+                
+                if(isWomenInContemporarySCience === 'yes') {
+                    womenContemporaryScience = `<span class="isWomenIScience">Women in Contemporary Science in Africa<span>`;
                 }
-                // Fetch editor and reviewer invitations
+
                 editorInvitations = `
                     <ul>
                         <li>Accepted: ${await countAcceptedEditorInvitations(id)}</li>
@@ -123,6 +160,7 @@ if (user) {
                         <li>Pending: ${await CountTotalEditorInvitaitons(id)}</li>
                     </ul>
                 `;
+                
                 reviewerInvitaitons = `
                     <ul>
                         <li>Accepted: ${await countAcceptedReviewerInvitations(id)}</li>
@@ -131,7 +169,6 @@ if (user) {
                     </ul>
                 `;
 
-                // Define admin actions based on account type
                 adminAction = accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant" ?
                     `
                         <option value="returnPaper">Return For Correction</option>
@@ -148,7 +185,6 @@ if (user) {
                         <option value="rejectPaper">Reject</option>
                     `;
 
-                // Define submission status
                 switch (submission.status) {
                     case "submitted_for_review":
                         submissionStatus = getStatus(submission, "status-orange", "Awaiting to be Reviewed");
@@ -246,7 +282,6 @@ if (user) {
                         break;
                 }
 
-                // Add content to the row
                 submissionRow.innerHTML = `
                     <td style="width: 400px; max-width:400px; min-width: 300px;">
                         <p>Title</p>
@@ -260,61 +295,72 @@ if (user) {
                     ${submissionStatus}
                 `;
 
-                // Append the row to the container
                 submissionsContainer.appendChild(submissionRow);
             }
-
-            // Set up dropdowns after all rows are added
+            
             setupDropdowns();
         } else {
-            submissionsContainer.innerHTML = "<tr><td colspan='6'>No submissions available.</td></tr>";
+            const message = isSearch ? 
+                `No archived submissions found for "${currentSearchQuery}"` : 
+                'No archived submissions available';
+            submissionsContainer.innerHTML = `<tr><td colspan="6">${message}</td></tr>`;
         }
+        
+        updatePagination(page, isSearch);
+    }
 
-        updatePagination(page);
-    };
-
-    const updatePagination = (page) => {
+    const updatePagination = (page, isSearch = false) => {
         paginationContainer.innerHTML = "";
+        
         const prevButton = document.createElement("button");
         prevButton.textContent = "Previous";
         prevButton.disabled = page <= 1;
-        prevButton.addEventListener("click", () => loadSubmissions(page - 1));
+        prevButton.addEventListener("click", () => {
+            loadSubmissions(page - 1, isSearch ? currentSearchQuery : '');
+        });
 
-        const pageIndicator = document.createElement("span");
-        pageIndicator.textContent = ` Page ${page} `;
+        const pageInfo = document.createElement("span");
+        pageInfo.textContent = `Page ${page}`;
 
         const nextButton = document.createElement("button");
         nextButton.textContent = "Next";
-        nextButton.addEventListener("click", () => loadSubmissions(page + 1));
+        nextButton.addEventListener("click", () => {
+            loadSubmissions(page + 1, isSearch ? currentSearchQuery : '');
+        });
 
         paginationContainer.appendChild(prevButton);
-        paginationContainer.appendChild(pageIndicator);
+        paginationContainer.appendChild(pageInfo);
         paginationContainer.appendChild(nextButton);
     };
 
-    loadSubmissions(currentPage);
-} else {
-    window.location.href = `${parentDirectoryName}/dashboard`;
-}
+    function setupDropdowns() {
+        document.querySelectorAll(".dropdown").forEach((dropdown) => {
+            const button = dropdown.querySelector(".actionButton");
+            const menu = dropdown.querySelector(".actionMenu");
 
-function setupDropdowns() {
-    document.querySelectorAll(".dropdown").forEach((dropdown) => {
-        const button = dropdown.querySelector(".actionButton");
-        const menu = dropdown.querySelector(".actionMenu");
-
-        button.addEventListener("click", (event) => {
-            event.stopPropagation();
-            document.querySelectorAll(".actionMenu").forEach((m) => {
-                if (m !== menu) m.classList.remove("show");
+            button.addEventListener("click", (event) => {
+                event.stopPropagation();
+                document.querySelectorAll(".actionMenu").forEach((m) => {
+                    if (m !== menu) m.classList.remove("show");
+                });
+                menu.classList.toggle("show");
             });
-            menu.classList.toggle("show");
         });
-    });
 
-    // Close dropdowns when clicking outside
-    document.addEventListener("click", () => {
-        document.querySelectorAll(".actionMenu").forEach((menu) => {
-            menu.classList.remove("show");
+        document.addEventListener("click", () => {
+            document.querySelectorAll(".actionMenu").forEach((menu) => {
+                menu.classList.remove("show");
+            });
         });
-    });
-}
+    }
+
+    // Handle search functionality from external file
+    window.handleSearch = (searchQuery) => {
+        currentSearchQuery = searchQuery;
+        loadSubmissions(1, searchQuery);
+    };
+
+    loadSubmissions(currentPage);
+// } else {
+//     window.location.href = `/editors/dashboard`;
+// }

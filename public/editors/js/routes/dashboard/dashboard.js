@@ -1,21 +1,102 @@
-import { GetParameters, parentDirectoryName, submissionsEndpoint } from "../constants.js";
-import { formatTimestamp } from "../formatDate.js";
-import { GetCookie } from "../setCookie.js";
-import { GetAdminSubmissions } from "./getAdminSubmissions.js";
-import { GetMySubmissions } from "./getMySubmissions.js";
-import {
-    countAcceptedEditorInvitations,
-    CountRejectedEditorInvitaitons,
-    CountTotalEditorInvitaitons
-} from "./countEditorInvitations.js";
-import {
-    countAcceptedReviewerInvitations,
-    CountRejectedReviewerInvitaitons,
-    CountTotalReviewerInvitaitons
-} from "./countReviewerInvitations.js";
+// Add this near the top of your script
+document.addEventListener('DOMContentLoaded', function() {
+    // Event delegation for dropdowns
+    document.body.addEventListener('click', function(event) {
+        // Check if click is on a dropdown button
+        if (event.target.matches('.dropdown-toggle.actionButton') || 
+            event.target.closest('.dropdown-toggle.actionButton')) {
+            const button = event.target.matches('.dropdown-toggle.actionButton') ? 
+                event.target : 
+                event.target.closest('.dropdown-toggle.actionButton');
+            const dropdown = button.closest('.dropdown');
+            const menu = dropdown.querySelector('.actionMenu');
+            
+            event.stopPropagation();
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.actionMenu').forEach(m => {
+                if (m !== menu) m.classList.remove('show');
+            });
+            
+            // Toggle current dropdown
+            menu.classList.toggle('show');
+        }
+        // Close dropdowns when clicking outside
+        else if (!event.target.closest('.dropdown')) {
+            document.querySelectorAll('.actionMenu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
+});
+
+// Set Cookie 
+const hoursToKeep = 1;  // Desired duration in hours
+const daysToKeep = hoursToKeep / 24;  // Convert hours to days
+const expirationDays = daysToKeep > 0 ? daysToKeep : 1;  // Ensure a minimum of 1 day
+
+const  SetCookies = function setCookie(name, value, daysToExpire) {
+    const date = new Date();
+    date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
+    const expires = 'expires=' + date.toUTCString();
+    document.cookie = name + '=' + value + '; ' + expires + '; path=/';
+}
+
+const GetCookie = function getCookie(cookieName) {
+    const name = cookieName + "=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookieArray = decodedCookie.split(';');
+    for (let i = 0; i < cookieArray.length; i++) {
+        let cookie = cookieArray[i];
+        while (cookie.charAt(0) == ' ') {
+            cookie = cookie.substring(1);
+        }
+        if (cookie.indexOf(name) == 0) {
+            return cookie.substring(name.length, cookie.length);
+        }
+    }
+    return null; // Cookie not found
+}
+
+const DeleteCookie = function deleteCookie(cookieName) {
+    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    window.location.reload()
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+  
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    const day = date.getDate(); // Numeric day of the month
+    const year = date.getFullYear();
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2);
+  
+    return `${day} ${monthName}, ${year}`;
+  }
+
+// import { GetCookie } from "../setCookie.js";
+// import { GetAdminSubmissions } from "./getAdminSubmissions.js";
+// import { GetMySubmissions } from "./getMySubmissions.js";
+// import {
+//     countAcceptedEditorInvitations,
+//     CountRejectedEditorInvitaitons,
+//     CountTotalEditorInvitaitons
+// } from "./countEditorInvitations.js";
+// import {
+//     countAcceptedReviewerInvitations,
+//     CountRejectedReviewerInvitaitons,
+//     CountTotalReviewerInvitaitons
+// } from "./countReviewerInvitations.js";
 
 const user = GetCookie("editor");
-if (user) {
+// if (user) {
     const submissionsContainer = document.getElementById("submissionsContainer");
     const paginationContainer = document.getElementById("paginationContainer");
     let currentPage = 1;
@@ -34,7 +115,7 @@ if (user) {
     const SubmissionsCount = document.querySelectorAll(".submissionsCount");
 
     const updateCount = (selector, endpoint) => {
-        fetch(`${submissionsEndpoint}/backend/editors/${endpoint}?u_id=${user}`)
+        fetch(`/editors/backend/editors/${endpoint}?u_id=${user}`)
             .then(res => res.json())
             .then(data => {
                 selector.forEach(count => {
@@ -60,52 +141,63 @@ if (user) {
     }
 
     // Define getStatus function outside the loop
-    const getStatus = (status, textColor, text, additionalClasses = "") => {
-        return `
-            <td class="status">
-                <span class="status-text ${textColor}">${text}</span>
-            </td>
-            <td>${reviewerInvitaitons}</td>
-            <td>${editorInvitations}</td>
-            <td>
-                <input type="hidden" value="${status.revision_id}" name="id">
-                <a href="javascript:void(0)" onclick=archivePaper("${status.revision_id}") style="font-weight:bold;">Archive</a>
-                <div class="dropdown">
-                    <button class="dropdown-toggle actionButton">Actions</button>
-                    <ul class="dropdown-menu actionMenu">
-                        <a href="${parentDirectoryName}/View?a=${status.revision_id}">
-                            <li data-action="view">View</li>
-                        </a>
-                        ${adminAction
-                            .split('\n')
-                            .map((option) => {
-                                const match = option.match(/value="([^"]+)">(.*?)</);
-                                return match
-                                    ? `<a href="${parentDirectoryName}/${match[1]}?a=${status.revision_id}"><li data-action="${match[1]}">${match[2]}</li></a>`
-                                    : '';
-                            })
-                            .join('')}
-                    </ul>
-                </div>
-            </td>
-            <td>
-                <a href="/editors/View/?a=${status.revision_id}" style="font-weight:bold;">View</a>
-            </td>
-        `;
-    };
+ const getStatus = (status, textColor, text, additionalClasses = "") => {
+    return `
+        <td class="status">
+            <span class="status-text ${textColor}">${text}</span>
+        </td>
+        <td>${reviewerInvitaitons}</td>
+        <td>${editorInvitations}</td>
+        <td>
+            <a href="/editors/View/?a=${status.revision_id}" style="font-weight:bold;">View</a>
+        </td>
+        <td>
+            <input type="hidden" value="${status.revision_id}" name="id">
+            <a href="javascript:void(0)" onclick=archivePaper("${status.revision_id}") style="font-weight:bold;">Archive</a>
+            <div class="dropdown">
+                <button class="dropdown-toggle actionButton" type="button">Actions</button>
+                <ul class="dropdown-menu actionMenu">
+                    <li><a href="/editors/View?a=${status.revision_id}">View</a></li>
+                    ${adminAction
+                        .split('\n')
+                        .map((option) => {
+                            const match = option.match(/value="([^"]+)">(.*?)</);
+                            return match
+                                ? `<li><a href="/editors/${match[1]}?a=${status.revision_id}">${match[2]}</a></li>`
+                                : '';
+                        })
+                        .join('')}
+                </ul>
+            </div>
+        </td>
+    `;
+};
 
-    const loadSubmissions = async (page) => {
-        const accoount_type = GetCookie("editor_account_type");
-        let SubmissionsArray = [];
+ // Modify your loadSubmissions function to accept search query
+const loadSubmissions = async (page, searchQuery = '') => {
+    const accoount_type = GetCookie("editor_account_type");
+    let SubmissionsArray = [];
+    
+    try {
         if (accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant") {
-            SubmissionsArray = await GetAdminSubmissions(user, page);
+            SubmissionsArray = await GetAdminSubmissions(user, page, searchQuery);
         } else {
-            SubmissionsArray = await GetMySubmissions(user, page);
+            SubmissionsArray = await GetMySubmissions(user, page, searchQuery);
         }
 
-        submissionsContainer.innerHTML = "";
-        if (SubmissionsArray.length > 0) {
-            for (const submission of SubmissionsArray) {
+        renderSubmissions(SubmissionsArray,accoount_type, page, !!searchQuery);
+    } catch (error) {
+        console.error('Error loading submissions:', error);
+        submissionsContainer.innerHTML = '<tr><td colspan="6">Error loading submissions</td></tr>';
+    }
+};
+
+async function renderSubmissions(submissionsArray, accoount_type, page, isSearch = false) {
+    submissionsContainer.innerHTML = "";
+    
+    if (submissionsArray.length > 0) {
+          if (submissionsArray.length > 0) {
+            for (const submission of submissionsArray) {
                 const submissionRow = document.createElement('tr');
                 const id = submission.revision_id;
                 const isWomenInContemporarySCience = submission.is_women_in_contemporary_science
@@ -272,52 +364,87 @@ if (user) {
         } else {
             submissionsContainer.innerHTML = "<tr><td colspan='6'>No submissions available.</td></tr>";
         }
-
-        updatePagination(page);
-    };
-
-    const updatePagination = (page) => {
-        paginationContainer.innerHTML = "";
-        const prevButton = document.createElement("button");
-        prevButton.textContent = "Previous";
-        prevButton.disabled = page <= 1;
-        prevButton.addEventListener("click", () => loadSubmissions(page - 1));
-
-        const pageIndicator = document.createElement("span");
-        pageIndicator.textContent = ` Page ${page} `;
-
-        const nextButton = document.createElement("button");
-        nextButton.textContent = "Next";
-        nextButton.addEventListener("click", () => loadSubmissions(page + 1));
-
-        paginationContainer.appendChild(prevButton);
-        paginationContainer.appendChild(pageIndicator);
-        paginationContainer.appendChild(nextButton);
-    };
-
-    loadSubmissions(currentPage);
-} else {
-    window.location.href = `${parentDirectoryName}/dashboard`;
+        
+        setupDropdowns();
+    } else {
+        const message = isSearch ? 
+            `No results found for "${currentSearchQuery}"` : 
+            'No submissions available';
+        submissionsContainer.innerHTML = `<tr><td colspan="6">${message}</td></tr>`;
+    }
+    
+    updatePagination(page, isSearch);
 }
-
-function setupDropdowns() {
-    document.querySelectorAll(".dropdown").forEach((dropdown) => {
-        const button = dropdown.querySelector(".actionButton");
-        const menu = dropdown.querySelector(".actionMenu");
-
-        button.addEventListener("click", (event) => {
-            event.stopPropagation();
-            document.querySelectorAll(".actionMenu").forEach((m) => {
-                if (m !== menu) m.classList.remove("show");
-            });
-            menu.classList.toggle("show");
-        });
+// Update your pagination function
+const updatePagination = (page, isSearch = false) => {
+    paginationContainer.innerHTML = "";
+    
+    const prevButton = document.createElement("button");
+    prevButton.textContent = "Previous";
+    prevButton.disabled = page <= 1;
+    prevButton.addEventListener("click", () => {
+        loadSubmissions(page - 1, isSearch ? currentSearchQuery : '');
     });
 
-    // Close dropdowns when clicking outside
-    document.addEventListener("click", () => {
-        document.querySelectorAll(".actionMenu").forEach((menu) => {
-            menu.classList.remove("show");
-        });
+    const pageIndicator = document.createElement("span");
+    pageIndicator.textContent = ` Page ${page} `;
+
+    const nextButton = document.createElement("button");
+    nextButton.textContent = "Next";
+    nextButton.addEventListener("click", () => {
+        loadSubmissions(page + 1, isSearch ? currentSearchQuery : '');
+    });
+
+    paginationContainer.appendChild(prevButton);
+    paginationContainer.appendChild(pageIndicator);
+    paginationContainer.appendChild(nextButton);
+};
+
+   
+    // initializeSearch();
+    loadSubmissions(currentPage);
+    // setupDropdowns();
+
+// } else {
+//     window.location.href = `/editors/dashboard`;
+// }
+
+function setupDropdowns() {
+    // Remove existing event listeners to prevent duplicates
+    document.querySelectorAll(".dropdown-toggle.actionButton").forEach(button => {
+        button.removeEventListener("click", handleDropdownClick);
+    });
+    
+    document.removeEventListener("click", handleDocumentClick);
+
+    // Add new event listeners
+    document.querySelectorAll(".dropdown-toggle.actionButton").forEach(button => {
+        button.addEventListener("click", handleDropdownClick);
+    });
+    
+    document.addEventListener("click", handleDocumentClick);
+}
+
+// Separate handler functions for better management
+function handleDropdownClick(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    const dropdown = this.closest(".dropdown");
+    const menu = dropdown.querySelector(".actionMenu");
+    
+    // Close all other dropdowns
+    document.querySelectorAll(".actionMenu").forEach(m => {
+        if (m !== menu) m.classList.remove("show");
+    });
+    
+    // Toggle current dropdown
+    menu.classList.toggle("show");
+}
+
+function handleDocumentClick() {
+    // Close all dropdowns when clicking outside
+    document.querySelectorAll(".actionMenu").forEach(menu => {
+        menu.classList.remove("show");
     });
 }

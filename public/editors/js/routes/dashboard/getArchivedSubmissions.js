@@ -1,7 +1,7 @@
-import { submissionsEndpoint } from "../constants.js";
+// import { submissionsEndpoint } from "../constants.js";
 
-function getArchivedSubmissions(id, page){
-   return fetch(`${submissionsEndpoint}/archivedSubmissions?page=${page}`, {
+function getArchivedSubmissions(id, page, searchQuery = ''){
+   return fetch(`/editors/archivedSubmissions?page=${page}&search=${searchQuery}`, {
         method: "POST",
         body:JSON.stringify({admin_id:id}),
         headers:{
@@ -20,6 +20,6 @@ function getArchivedSubmissions(id, page){
 }
 
 
-export {
-    getArchivedSubmissions
-} 
+// export {
+//     getArchivedSubmissions
+// } 

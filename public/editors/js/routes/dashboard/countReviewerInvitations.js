@@ -1,8 +1,8 @@
-import { submissionsEndpoint } from "../constants.js"
-
+// import { submissionsEndpoint } from "../constants.js"
+// 
 
 async function countAcceptedReviewerInvitations(article_id){
-    return fetch(`${submissionsEndpoint}/countAcceptedReviewerInvitations?a_id=${article_id}`,{})
+    return fetch(`/editors/countAcceptedReviewerInvitations?a_id=${article_id}`,{})
     .then(res=>res.json())
     .then(data=>{
         if(data.success){
@@ -15,7 +15,7 @@ async function countAcceptedReviewerInvitations(article_id){
 }
 
 async function CountRejectedReviewerInvitaitons(article_id){
-    return fetch(`${submissionsEndpoint}/countRejectedReviewerInvitations?a_id=${article_id}`,{})
+    return fetch(`/editors/countRejectedReviewerInvitations?a_id=${article_id}`,{})
     .then(res=>res.json())
     .then(data=>{
         if(data.success){
@@ -27,7 +27,7 @@ async function CountRejectedReviewerInvitaitons(article_id){
 }
 
 async function CountTotalReviewerInvitaitons(article_id){
-    return fetch(`${submissionsEndpoint}/countTotalReviewerInvitations?a_id=${article_id}`,{})
+    return fetch(`/editors/countTotalReviewerInvitations?a_id=${article_id}`,{})
     .then(res=>res.json())
     .then(data=>{
         if(data.success){
@@ -37,8 +37,8 @@ async function CountTotalReviewerInvitaitons(article_id){
         }
     })
 }
-export {
-    countAcceptedReviewerInvitations,
-    CountRejectedReviewerInvitaitons,
-    CountTotalReviewerInvitaitons
-}
+// export {
+//     countAcceptedReviewerInvitations,
+//     CountRejectedReviewerInvitaitons,
+//     CountTotalReviewerInvitaitons
+// }
