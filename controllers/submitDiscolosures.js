@@ -33,7 +33,7 @@ const SubmitDisclosures = async (req, res) => {
 
                     if(review_status === "submitted"){
                     SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
-                    sendEmailToHandler(sendEmailToHandler("ajibolaoladejo95@gmail.com", manuscriptTitle, manuscriptId))
+                    sendEmailToHandler(sendEmailToHandler("submissions@asfirj.org", manuscriptTitle, manuscriptId))
                     CoAuthors(req,res, manuscriptId)
                     
                     }
