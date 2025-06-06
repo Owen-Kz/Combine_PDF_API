@@ -19,7 +19,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId)
         // API key and sender email from environment variables
         const apiKey = process.env.BREVO_API_KEY;
         const senderEmail = process.env.BREVO_EMAIL;
-        const recipientName = "Submissions@asfirj.org";
+        const recipientName = "ajibolaoladejo95@gmail.com";
 
         // Configure Brevo API
         const apiInstance = new Brevo.TransactionalEmailsApi();
@@ -46,7 +46,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId)
                 <p>Sincerely,</p>
 
                 <p>ASFIRJ Editorial Office<br>
-                <a href="mailto:submissions@asfirj.org">submissions@asfirj.org</a></p>
+                <a href="mailto:ajibolaoladejo95@gmail.com">ajibolaoladejo95@gmail.com</a></p>
 
                 <p>ASFI Research Journal<br>
                 Excellence. Quality. Impact<br>
