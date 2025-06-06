@@ -1,4 +1,3 @@
-// import { submissionsEndpoint } from "../constants.js";
 
 function getArchivedSubmissions(id, page, searchQuery = ''){
    return fetch(`/editors/archivedSubmissions?page=${page}&search=${searchQuery}`, {
@@ -19,7 +18,3 @@ function getArchivedSubmissions(id, page, searchQuery = ''){
     })
 }
 
-
-// export {
-//     getArchivedSubmissions
-// } 

@@ -1,5 +1,4 @@
-// import { submissionsEndpoint } from "../constants.js"
-// 
+
 
 async function countAcceptedReviewerInvitations(article_id){
     return fetch(`/editors/countAcceptedReviewerInvitations?a_id=${article_id}`,{})
@@ -37,8 +36,3 @@ async function CountTotalReviewerInvitaitons(article_id){
         }
     })
 }
-// export {
-//     countAcceptedReviewerInvitations,
-//     CountRejectedReviewerInvitaitons,
-//     CountTotalReviewerInvitaitons
-// }

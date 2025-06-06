@@ -1,4 +1,3 @@
-// import { submissionsEndpoint } from "../constants.js";
 
 function getAcceptedSubmissions(id, page, search=''){
    return fetch(`/editors/allAcceptedSubmissions?page=${page}&search=${search}`, {
@@ -20,6 +19,3 @@ function getAcceptedSubmissions(id, page, search=''){
 }
 
 
-// export {
-//     getAcceptedSubmissions
-// } 

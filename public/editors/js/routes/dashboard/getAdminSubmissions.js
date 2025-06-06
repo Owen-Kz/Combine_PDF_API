@@ -1,4 +1,4 @@
-// import { submissionsEndpoint } from "../constants.js";
+
 
 // Modify your existing GetAdminSubmissions function
 function GetAdminSubmissions(id, page, searchQuery = '') {
@@ -23,6 +23,3 @@ function GetAdminSubmissions(id, page, searchQuery = '') {
 }
 
 
-// export {
-//     GetAdminSubmissions
-// } 
