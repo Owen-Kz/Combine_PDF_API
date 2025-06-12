@@ -14,10 +14,11 @@ const ArchivedSubmissions = async (req, res) => {
             let params = [];
             
             if (searchQuery && searchQuery.length >= 2) {
-                query += ` AND (title LIKE ? OR revision_id LIKE ? OR status LIKE ?)`;
+                query += ` AND (title LIKE ? OR revision_id = ? OR article_id = ? OR status LIKE ?)`;
                 params.push(
                     `%${searchQuery}%`,
-                    `%${searchQuery}%`,
+                    `${searchQuery}`,
+                    `${searchQuery}`,
                     `%${searchQuery}%`
                 );
             }
@@ -39,10 +40,11 @@ const ArchivedSubmissions = async (req, res) => {
                 let countParams = [];
                 
                 if (searchQuery && searchQuery.length >= 2) {
-                    countQuery += ` AND (title LIKE ? OR revision_id LIKE ? OR status LIKE ?)`;
+                    countQuery += ` AND (title LIKE ? OR revision_id = ? OR article_id = ? OR status LIKE ?)`;
                     countParams.push(
                         `%${searchQuery}%`,
-                        `%${searchQuery}%`,
+                        `${searchQuery}`,
+                        `${searchQuery}`,
                         `%${searchQuery}%`
                     );
                 }

@@ -30,12 +30,14 @@ const allSubmissions = async (req, res) => {
                 if (searchQuery && searchQuery.length >= 2) {
                     whereClause = ` AND (
                         s.title LIKE ? OR 
-                        s.revision_id LIKE ? OR 
+                        s.revision_id = ? OR 
+                        s.article_id = ? OR
                         s.status LIKE ?
                     )`;
                     queryParams.push(
                         `%${searchQuery}%`,
-                        `%${searchQuery}%`,
+                        `${searchQuery}`,
+                        `${searchQuery}`,
                         `%${searchQuery}%`
                     );
                 }

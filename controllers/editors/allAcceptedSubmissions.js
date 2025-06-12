@@ -29,15 +29,15 @@ try{
         if (searchQuery && searchQuery.length >= 2) {
             whereClause = ` AND (
                 s.title LIKE ? OR 
-                s.revision_id LIKE ? OR 
+                s.revision_id = ? OR 
                 s.status LIKE ? OR
-                s.article_id LIKE ?
+                s.article_id = ?
             )`;
             queryParams.push(
                 `%${searchQuery}%`,
+                `${searchQuery}`,
                 `%${searchQuery}%`,
-                `%${searchQuery}%`,
-                `%${searchQuery}%`
+                `${searchQuery}`
             );
         }
 

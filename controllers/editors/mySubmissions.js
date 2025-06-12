@@ -34,18 +34,20 @@ const mySubmissions = async (req, res) => {
             if (searchQuery && searchQuery.length >= 2) {
                 query += ` AND (
                     title LIKE ? OR 
-                    revision_id LIKE ? OR 
+                    revision_id = ? OR 
+                    article_id = ? OR
                     status LIKE ?
                 )`;
                 countQuery += ` AND (
                     title LIKE ? OR 
-                    revision_id LIKE ? OR 
+                    revision_id = ? OR
+                    article_id = ? OR
                     status LIKE ?
                 )`;
                 
                 const searchParam = `%${searchQuery}%`;
-                queryParams.push(searchParam, searchParam, searchParam);
-                countParams.push(searchParam, searchParam, searchParam);
+                queryParams.push(searchParam, searchQuery, searchQuery, searchParam);
+                countParams.push(searchParam, searchQuery, searchQuery, searchParam);
             }
 
             query += ` ORDER BY process_start_date DESC LIMIT ? OFFSET ?`;
@@ -94,14 +96,15 @@ const mySubmissions = async (req, res) => {
                         SELECT revision_id FROM submissions 
                         WHERE (
                             title LIKE ? OR 
-                            revision_id LIKE ? OR 
+                            revision_id = ? OR article_id = ?
                             status LIKE ?
                         )
                     )
                 `;
                 inviteQueryParams.push(
                     `%${searchQuery}%`,
-                    `%${searchQuery}%`,
+                    `${searchQuery}`,
+                    `${searchQuery}`,
                     `%${searchQuery}%`
                 );
             }
@@ -121,9 +124,9 @@ const mySubmissions = async (req, res) => {
                             const querySubmissions = `
                                 SELECT * FROM submissions 
                                 WHERE status NOT IN ('saved_for_later', 'revision_saved') 
-                                AND revision_id = ?`;
+                                AND (revision_id = ? OR article_id = ?)`;
 
-                            db.execute(querySubmissions, [row.article_id], (err, submissionResults) => {
+                            db.execute(querySubmissions, [row.article_id, row.article_id], (err, submissionResults) => {
                                 if (err) return reject(err);
                                 resolve(submissionResults.length > 0 ? submissionResults[0] : null);
                             });
@@ -146,14 +149,15 @@ const mySubmissions = async (req, res) => {
                                     SELECT revision_id FROM submissions 
                                     WHERE (
                                         title LIKE ? OR 
-                                        revision_id LIKE ? OR 
+                                        revision_id = ? OR article_id = ?
                                         status LIKE ?
                                     )
                                 )
                             `;
                             countParams.push(
                                 `%${searchQuery}%`,
-                                `%${searchQuery}%`,
+                                `${searchQuery}`,
+                                `${searchQuery}`,
                                 `%${searchQuery}%`
                             );
                         }
