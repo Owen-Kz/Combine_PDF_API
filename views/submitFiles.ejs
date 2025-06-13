@@ -6,17 +6,21 @@
     /* background-color: blue; */
     height: 50px;
   }
-  .fileControls a{
-    color:rebeccapurple !important;
+
+  .fileControls a {
+    color: rebeccapurple !important;
   }
-  .disabled{
+
+  .disabled {
     opacity: 0.7;
   }
-  .delete_button{
-    color:red;
+
+  .delete_button {
+    color: red;
     cursor: pointer;
     user-select: none;
   }
+
   .spinner {
     display: inline-block;
     width: 16px;
@@ -58,21 +62,21 @@
 <div id="upload-manuscript" class="form-section hidden">
   <form onsubmit="return false" enctype="multipart/form-data" id="submitFiles">
     <div>
-      
+
       <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
 
-    
+
       <h3 class="manu_head">Upload Manuscript Files</h3> <br>
 
       <label for=""><span style="color: #e22424;">*</span>Main Manuscript File:</label>
       <div class="fileControls">
         <% if(manuscript_file) { %>
-          <a href="/doc?url=<%=manuscript_file%>" target="_blank">manuscript_file</a>
-          <span class="delete_button" onclick="createPlainField('manuscript_file', 'Manuscript File', 0)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=manuscript_file%>" target="_blank">manuscript_file</a>
+        <span class="delete_button" onclick="createPlainField('manuscript_file', 'Manuscript File', 0)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control requiredFiles" name="manuscript_file" accept=".docx, .pdf, .doc">
         <input type="button" class="submitFile" onclick="UploadSingleFile('manuscript_file', 'Manuscript File')" value='Upload File'>
-          <% } %>
+        <% } %>
       </div>
     </div>
 
@@ -80,12 +84,12 @@
       <label for=""><span style="color: #e22424;">*</span>Cover Letter:</label>
       <div class="fileControls">
         <% if(coverLetter && coverLetter !== null && coverLetter !== "N/A") { %>
-          <a href="/doc?url=<%=coverLetter%>" target="_blank">Cover Letter</a>
-          <span class="delete_button" onclick="createPlainField('cover_letter_file', 'Cover Letter', 1)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=coverLetter%>" target="_blank">Cover Letter</a>
+        <span class="delete_button" onclick="createPlainField('cover_letter_file', 'Cover Letter', 1)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control requiredFiles" name="cover_letter_file">
         <input type="button" class="submitFile" onclick="UploadSingleFile('cover_letter_file', 'Cover letter')" value='Upload File'>
-     <% } %>
+        <% } %>
       </div>
     </div>
 
@@ -93,12 +97,12 @@
       <label for="">Tables:</label>
       <div class="fileControls">
         <% if(tables && tables !== null) { %>
-          <a href="/doc?url=<%=tables%>" target="_blank">Tables</a>
-          <span class="delete_button" onclick="createPlainField('tables', 'Tables', 2)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=tables%>" target="_blank">Tables</a>
+        <span class="delete_button" onclick="createPlainField('tables', 'Tables', 2)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control" name="tables">
         <input type="button" class="submitFile" onclick="UploadSingleFile('tables', 'Tables')" value='Upload File'>
-      <% } %>
+        <% } %>
       </div>
     </div>
 
@@ -106,12 +110,12 @@
       <label for="">Figures:</label>
       <div class="fileControls">
         <% if(figures && figures !== null) { %>
-          <a href="/doc?url=<%=figures%>" target="_blank">Figures</a>
-          <span class="delete_button" onclick="createPlainField('figures', 'Figures', 3)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=figures%>" target="_blank">Figures</a>
+        <span class="delete_button" onclick="createPlainField('figures', 'Figures', 3)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control" name="figures">
         <input type="button" class="submitFile" onclick="UploadSingleFile('figures', 'Figures')" value='Upload File'>
-      <% } %>
+        <% } %>
       </div>
     </div>
 
@@ -119,12 +123,12 @@
       <label for="">Supplementary Material:</label>
       <div class="fileControls">
         <% if(supplementaryMaterials && supplementaryMaterials !== null && supplementaryMaterials !== 'not-found') { %>
-          <a href="/doc?url=<%=supplementaryMaterials%>" target="_blank">Supplementary Material</a>
-          <span class="delete_button" onclick="createPlainField('supplementary_material', 'Supplmenetary Material', 4)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=supplementaryMaterials%>" target="_blank">Supplementary Material</a>
+        <span class="delete_button" onclick="createPlainField('supplementary_material', 'Supplmenetary Material', 4)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control" name="supplementary_material">
         <input type="button" class="submitFile" onclick="UploadSingleFile('supplementary_material', 'Supplementary Materials')" value='Upload File'>
-     <% } %>
+        <% } %>
       </div>
     </div>
 
@@ -133,24 +137,24 @@
       <label for="">Point-by-Point Response to Reviewers (for revised manuscripts):</label>
       <div class="fileControls">
         <% if(graphic_abstract && graphic_abstract!== null) { %>
-          <a href="/doc?url=<%=graphic_abstract%>" target="_blank">Graphic Abstract</a>
-          <span class="delete_button" onclick="createPlainField('graphic_abstract', 'Graphic Abstract', 5)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=graphic_abstract%>" target="_blank">Graphic Abstract</a>
+        <span class="delete_button" onclick="createPlainField('graphic_abstract', 'Graphic Abstract', 5)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control" name="graphic_abstract">
         <input type="button" class="submitFile" onclick="UploadSingleFile('graphic_abstract', 'Point by point response')" value='Upload File'>
-     <% } %>
+        <% } %>
       </div>
     </div>
     <div>
       <label for="">Main Manuscript File with Tracked Changes (for revised manuscripts):</label>
       <div class="fileControls">
         <% if(tracked_manuscript_file && tracked_manuscript_file !== null) { %>
-          <a href="/doc?url=<%=tracked_manuscript_file%>" target="_blank">Tracked Manuscript File</a>
-          <span class="delete_button" onclick="createPlainField('tracked_manuscript_file', 'Tracked Manuscript File', 6)"><i class="fa fa-trash"></i> Remove File</span>
-          <% }else{ %>
+        <a href="/doc?url=<%=tracked_manuscript_file%>" target="_blank">Tracked Manuscript File</a>
+        <span class="delete_button" onclick="createPlainField('tracked_manuscript_file', 'Tracked Manuscript File', 6)"><i class="fa fa-trash"></i> Remove File</span>
+        <% }else{ %>
         <input type="file" class="form-control" name="tracked_manuscript_file">
         <input type="button" class="submitFile" onclick="UploadSingleFile('tracked_manuscript_file', 'Tracked Manuscript File')" value='Upload File'>
-    <% } %>
+        <% } %>
       </div>
     </div>
     <p style="color: #e22424;">* Indicates Mandatory Fields</p>
@@ -170,17 +174,17 @@
 
 
 <script>
-  let manuscriptFileUploaded = getCookie("_manFile") ? getCookie("_manFile"): 0
+  let manuscriptFileUploaded = getCookie("_manFile") ? getCookie("_manFile") : 0
   let coverLetterUploaded = getCookie("_covFile") ? getCookie("_covFile") : 0
-  
-  function createFileField(fieldname, publicName, buttonIndex){
+
+  function createFileField(fieldname, publicName, buttonIndex) {
     const fileControls = buttonIndex
     fileControls.innerHTML = ` <input type="file" class="form-control" name="${fieldname}">
         <input type="button" class="submitFile" onclick="UploadSingleFile('${fieldname}', '${publicName}')" value='Upload File'>
       `
   }
 
-  function createPlainField(fieldname, publicName, buttonIndex){
+  function createPlainField(fieldname, publicName, buttonIndex) {
     const fileControls = document.querySelectorAll(".fileControls")[buttonIndex]
     fileControls.innerHTML = ` <input type="file" class="form-control" name="${fieldname}">
         <input type="button" class="submitFile" onclick="UploadSingleFile('${fieldname}', '${publicName}')" value='Upload File'>
@@ -195,18 +199,26 @@
 
     // Check if manuscript file is uploaded
     // if (manuscriptFile || manuscriptFileUploaded) {
-      if ((manuscriptFile && manuscriptFile.files.length === 0) || manuscriptFileUploaded === 0) {
-        showErrorPopup('Please upload your manuscript file.');
-        return; // Exit function if manuscript file is missing
-      }
+    if ((manuscriptFile && manuscriptFile.files.length === 0) || manuscriptFileUploaded === 0) {
+      // showErrorPopup('Please upload your manuscript file.');
+      iziToast.error({
+        message: 'Please upload your manuscript file',
+        position: "topRight"
+      })
+      return; // Exit function if manuscript file is missing
+    }
     // }
 
     // Check if cover letter is uploaded
     // if (coverLetterFile || coverLetterUploaded) {
-      if ((coverLetterFile && coverLetterFile.files.length === 0) || coverLetterUploaded === 0) {
-        showErrorPopup('Please upload your cover letter file.');
-        return; // Exit function if cover letter is missing
-      }
+    if ((coverLetterFile && coverLetterFile.files.length === 0) || coverLetterUploaded === 0) {
+      // showErrorPopup('Please upload your cover letter file.');
+      iziToast.error({
+        message: 'Please upload your cover letter file.',
+        position: "topRight"
+      })
+      return; // Exit function if cover letter is missing
+    }
     // }
 
     // Proceed to the next step if both files are uploaded
@@ -220,8 +232,12 @@
     var file = fileInput.files[0];
 
     if (!file) {
-        showErrorPopup(`Please upload your ${publicName} file.`);
-        return;
+      // showErrorPopup(`Please upload your ${publicName} file.`);
+      iziToast.error({
+        message: `Please upload your ${publicName} file.`,
+        position: "topRight"
+      })
+      return;
     }
 
     var allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]; // PDF & Word
@@ -229,14 +245,21 @@
 
     // Check file type
     if (!allowedTypes.includes(file.type)) {
-        showErrorPopup("Invalid file type. Please upload a PDF or Word document.");
-        return;
+      // showErrorPopup();
+      iziToast.error({
+        message: "Invalid file type. Please upload a PDF or Word document.",
+        position: "topRight"
+      })
+      return;
     }
 
     // Check file size
     if (file.size > maxSize) {
-        showErrorPopup("File size exceeds 50MB. Please upload a smaller file.");
-        return;
+      iziToast.error({
+        message: "File size exceeds 50MB. Please upload a smaller file.",
+        position: "topRight"
+      })
+      return;
     }
 
     var formData = new FormData();
@@ -253,51 +276,57 @@
     spinner.className = "spinner";
     uploadButton.parentNode.insertBefore(spinner, uploadButton.nextSibling);
 
-    fetch(`/uploadSingleFile/${fieldName}`, {
+    fetch(`/uploadSingleFile/${fieldName}?_uid=${uid.value}&prg=true`, {
         method: "POST",
         body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
+      })
+      .then(res => res.json())
+      .then(data => {
         // Remove spinner
         spinner.remove();
 
         if (data.success) {
-            const fileUrl = data.fileUrl;
-            const fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+          const fileUrl = data.fileUrl;
+          const fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
 
-            // Update the fileControls container dynamically
-            fileControlContainer.innerHTML = `
+          // Update the fileControls container dynamically
+          fileControlContainer.innerHTML = `
                 <a href="/doc?url=${fileUrl}" target="_blank">${fileName}</a>
                 <span class="delete_button"><i class="fa fa-trash"></i> Remove File</span>
             `;
 
-            // Attach delete event dynamically
-            fileControlContainer.querySelector(".delete_button").addEventListener("click", () => {
-                createFileField(fieldName, publicName, fileControlContainer);
-            });
-            if(fieldName === 'manuscript_file'){
-              manuscriptFileUploaded += 1
-            }
-            if(fieldName === 'cover_letter_file'){
-              coverLetterUploaded += 1
-            }
+          // Attach delete event dynamically
+          fileControlContainer.querySelector(".delete_button").addEventListener("click", () => {
+            createFileField(fieldName, publicName, fileControlContainer);
+          });
+          if (fieldName === 'manuscript_file') {
+            manuscriptFileUploaded += 1
+          }
+          if (fieldName === 'cover_letter_file') {
+            coverLetterUploaded += 1
+          }
 
-            showProgressSavedPopup();
+          showProgressSavedPopup();
         } else {
-            showErrorPopup(data.error || "Internal Server Error");
+
+          iziToast.error({
+            message: `${data.error ? data.error: data.error.message }` || "Internal Server Error",
+            position: "topRight"
+          })
         }
 
         uploadButton.disabled = false;
         uploadButton.value = "Upload File";
-    })
-    .catch(error => {
-      console.log(error)
+      })
+      .catch(error => {
+        console.log(error)
         spinner.remove();
-        showErrorPopup("Upload failed. Please try again.");
+        iziToast.error({
+          message: "Upload failed. Please try again.",
+          position: "topRight"
+        })
         uploadButton.disabled = false;
         uploadButton.value = "Upload File";
-    });
-}
-
+      });
+  }
 </script>

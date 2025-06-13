@@ -158,7 +158,8 @@
       // let KeywordsSubmitted = getCookie("_KeyCount")? getCookie("_KeyCount") : 0
 
       keywordInputs.forEach(keyword =>{
-        fetch(`/submitKeyword`,{
+        if(keyword.value !== ""){
+        fetch(`/submitKeyword?_uid=${uid.value}&prg=true`,{
           method:"POST",
           headers:{
             "Content-type":"application/JSON"
@@ -171,11 +172,15 @@
         showProgressSavedPopup();
 
           }else if(data.error){
-            showErrorPopup(data.error)
+            iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
           }else{
             showErrorPopup("Keywords Could not be saved")
           }
         })
+      }
       })
       // console.log(KeywordsSubmitted)
       // if(KeywordsSubmitted > 2){

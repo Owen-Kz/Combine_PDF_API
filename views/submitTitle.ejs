@@ -33,7 +33,7 @@
         manuscript_full_title:title.value
       }
       if(title && title.value !== ""){
-        fetch(`/submitManuscriptTitle`, {
+        fetch(`/submitManuscriptTitle?_uid=${uid.value}&prg=true`, {
           method:"POST",
           headers:{
             "Content-type":"application/JSON"
@@ -43,7 +43,10 @@
         .then(data =>{
           
           if(data.error){
-            showErrorPopup(data.error)
+            iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
           }else if(data.success){
 
             showProgressSavedPopup()

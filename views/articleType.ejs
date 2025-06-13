@@ -5,9 +5,9 @@
 
     <h3 class="manu_head">Article Type & Discipline</h3>
     <span class="manu_head"><span style="color: #e22424;">*</span>Choose Article Type:</span>
-
-    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
-    <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly hidden>
+    <input type="text" name="_article_id" id="_article_id" value="<%=article_id%>" readonly>
+    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly >
+    <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly >
     <select name="article_type" id="article_type" class="form-control" required>
       <!-- <option value="">Select an Option</option> -->
       <% if(article_type && article_type !== null) { %>
@@ -70,9 +70,17 @@
     </select> <br>
    
     <label for=""><span style="color: #e22424;">*</span> Is this manuscript being submitted to the "Women in Contemporary Science in Africa" special issue?</label> <br>
+    <%if (is_women_in_contemporary === "yes"){ %>
+    Yes <input type="radio" name="is_women_in_contemporary_science" value="yes" id="is_women_in_contemporary_science_yes" checked> <br>
+    No <input type="radio" name="is_women_in_contemporary_science" value="no" id="is_women_in_contemporary_science_no"> <br>
+    <%}else if(is_women_in_contemporary === "no") {%>
+    Yes <input type="radio" name="is_women_in_contemporary_science" value="yes" id="is_women_in_contemporary_science_yes"> <br>
+    No <input type="radio" name="is_women_in_contemporary_science" value="no" id="is_women_in_contemporary_science_no" checked> <br>
+      <% }else{ %>
+
     Yes <input type="radio" name="is_women_in_contemporary_science" value="yes" id="is_women_in_contemporary_science_yes"> <br>
     No <input type="radio" name="is_women_in_contemporary_science" value="no" id="is_women_in_contemporary_science_no"> <br>
-
+        <% } %>
     <label for=""><span style="color: #e22424;">*</span>Has this manuscript been submitted previously to ASFIRJ? Click yes if this is a revision or correction.</label> <br>
 Yes <input type="radio" name="prevsub" id="prevsub_yes" onclick="toggleInputField()"> <br>
 No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField()"> <br>
@@ -103,11 +111,14 @@ No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField(
 
   <script>
  const headerMessageContainer = document.getElementById("headerMessage")
+    const uid = document.getElementById("uid")
+    const _article_id = document.getElementById("_article_id")
+
 
 headerMessageContainer.innerHTML = headerMessages[0]
 
 const submitArticleType = document.getElementById("submitArticleType")
-const article_idCOntainer = submitArticleType.querySelector("input[name='manuscript_id']")
+const article_idCOntainer = submitArticleType.querySelector("input[name='_article_id']")
 const submissionStatus = submitArticleType.querySelector("input[name='submissionStatus']")
 
 
@@ -115,6 +126,7 @@ submitArticleType.addEventListener("submit", function(e){
     e.preventDefault()
     const is_women_in_contemporary_science = submitArticleType.querySelector("input[name='is_women_in_contemporary_science']:checked");
     const data = {
+        _article_id: _article_id.value,
         article_id: article_idCOntainer.value,
         discipline:discipline.value,
         article_type:article_type.value,
@@ -122,7 +134,7 @@ submitArticleType.addEventListener("submit", function(e){
         submissionStatus: submissionStatus.value,
         is_women_in_contemporary_science: is_women_in_contemporary_science.value
     }
-   fetch(`/submitArticleType`, {
+   fetch(`/submitArticleType?_uid=${uid.value}&prg=true`, {
     method:"POST",
     headers:{
         "Content-type":"application/JSON"
@@ -131,10 +143,17 @@ submitArticleType.addEventListener("submit", function(e){
    }).then(res =>res.json())
    .then(data =>{
     if(data.success){
+    
+  const url = new URL(window.location.href);
+url.searchParams.set('prg', 'true'); // Adds or updates ?prg=true
+history.pushState({}, '', url.toString());
         showProgressSavedPopup()
         showNext('upload-manuscript', 'article-type', 'article_type_nav', 'upload_manuscript_nav', 0, 1,'submitType')
     }else if(data.error){
-        showErrorPopup(data.error)
+        iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
     }else{
     
         showErrorPopup("Internal Server Error")

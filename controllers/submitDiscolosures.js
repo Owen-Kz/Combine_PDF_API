@@ -1,6 +1,5 @@
 const db = require("../routes/db.config");
 const multer = require("multer");
-const clearCookie = require("./utils/clearCookie");
 const SendNewSubmissionEmail = require("./utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("./utils/SendHandlerEmail");
 const CoAuthors = require("./CoAuthors");
@@ -8,71 +7,103 @@ const dbPromise = require("../routes/dbPromise.config");
 const upload = multer();
 
 const SubmitDisclosures = async (req, res) => {
-  
     upload.none()(req, res, async (err) => {
         if (err) {
-            return res.json({ status: "error", error: "Multer error" });
+            console.error("Multer error:", err);
+            return res.status(400).json({ 
+                status: "error", 
+                error: "Invalid form data format" 
+            });
         }
+
         try {
-            const articleId = req.cookies._sessionID
-            const {manuscript_id, review_status, current_process} = req.body
-            let is_previous_submission_status = current_process;
-
-// Output: "correction_submitted"
-            console.log(req.body)
-            db.query("SELECT * FROM submissions WHERE revision_id =?", [articleId], (err, paper) =>{
-                if(err){
-                    return res.json({error:err})
-                }else if(paper[0]){
-                    const RecipientEmail = paper[0].corresponding_authors_email
-                    const manuscriptTitle = paper[0].title 
-                    const manuscriptId = paper[0].revision_id
-                    if(!paper[0].manuscript_file || paper[0].manuscript_file === null || paper[0].manuscript_file === ""){
-                        return res.json({error:"Upload a Manuscript file to continue"})
-                    }else{
-
-                    if(review_status === "submitted"){
-                    SendNewSubmissionEmail(RecipientEmail, manuscriptTitle, manuscriptId)
-                    sendEmailToHandler(sendEmailToHandler("ajibolaoladejo95@gmail.com", manuscriptTitle, manuscriptId))
-                    CoAuthors(req,res, manuscriptId)
-                    
-                    }
-          
-            db.query("UPDATE submissions SET status = ? WHERE revision_id = ?", [review_status, articleId], async (err, data) =>{
-                if(err){
-                    return res.json({error:err})
-                }
-                if(data.affectedRows > 0){
-                    if(review_status === "submitted"){
-                    is_previous_submission_status = current_process.replace('saved', 'submitted');
-
-                    await dbPromise.query("UPDATE submissions SET status = ? WHERE article_id = ? AND revision_id != ?", [is_previous_submission_status, manuscript_id, articleId])
-                    clearCookie(req, res, "_sessionID")
-                    clearCookie(req, res, "_abstract")
-                    clearCookie(req, res, "_manFile")
-                    clearCookie(req, res, "__KeyCount")
-                    clearCookie(req,res, "_process")
-                    clearCookie(req,res, "_abstract")
-                    clearCookie(req,res, "_covFile")
-                    return  res.json({success:"Manuscript Saved"})
-
-                    }else{
-                      return  res.json({error:"Manuscript Could not be saved"})
-                    }
-                }else{
-                    return res.json({error:"We could not find the manuscript"})
-                }
-            })
+              if(!req.user || !req.user.id){
+            return res.json({error:"Session is Not Valid, please login again"})
         }
-    }else{
-        return res.json({error:"Paper Not Found"})
-    }
-})
+            const { manuscript_id, review_status, current_process } = req.body;
+            const articleId = req.session.articleId;
+            
+            if (!articleId) {
+                return res.status(400).json({ 
+                    error: "No active manuscript session" 
+                });
+            }
 
-         
+            // Get manuscript data
+            const [paper] = await dbPromise.query(
+                "SELECT * FROM submissions WHERE revision_id = ?", 
+                [articleId]
+            );
+
+            if (!paper || paper.length === 0) {
+                return res.status(404).json({ 
+                    error: "Paper not found" 
+                });
+            }
+
+            const manuscript = paper[0];
+            const { corresponding_authors_email, title } = manuscript;
+
+            // Validate manuscript file exists
+            if (!manuscript.manuscript_file) {
+                return res.status(400).json({ 
+                    error: "Upload a manuscript file to continue" 
+                });
+            }
+
+            // Update submission status
+            const [updateResult] = await dbPromise.query(
+                "UPDATE submissions SET status = ? WHERE revision_id = ?",
+                [review_status, articleId]
+            );
+
+            if (updateResult.affectedRows === 0) {
+                return res.status(404).json({ 
+                    error: "Manuscript could not be updated" 
+                });
+            }
+
+            // Handle submission workflow
+            if (review_status === "submitted") {
+                // Send notifications
+                await Promise.all([
+                    SendNewSubmissionEmail(corresponding_authors_email, title, articleId),
+                    sendEmailToHandler("ajibolaoladejo95@gmail.com", title, articleId),
+                    CoAuthors(req, res, articleId)
+                ]);
+
+                // Update previous versions
+                const updatedStatus = current_process.replace('saved', 'submitted');
+                await dbPromise.query(
+                    "UPDATE submissions SET status = ? WHERE article_id = ? AND revision_id != ?",
+                    [updatedStatus, manuscript_id, articleId]
+                );
+
+                // Clear session data instead of cookies
+                req.session.manuscriptData = null;
+                req.session.article_data = null 
+                req.session.articleId = null
+
+                return res.json({ 
+                    success: true,
+                    message: "Manuscript submitted successfully",
+                    manuscriptId: articleId
+                });
+            }
+
+            return res.json({ 
+                success: true,
+                message: "Manuscript saved successfully",
+                manuscriptId: articleId
+            });
+
         } catch (error) {
-            console.error("Error Processing Authors:", error.message);
-            return res.json({ status: "error", error: `Error Processing Submission: ${error.message}` });
+            console.error("Submission processing error:", error);
+            return res.status(500).json({ 
+                status: "error", 
+                error: "Failed to process submission",
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     });
 };

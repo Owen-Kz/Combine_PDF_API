@@ -3,6 +3,7 @@ const Brevo = require('@getbrevo/brevo');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 const db = require('../../routes/db.config');
+const dbPromise = require('../../routes/dbPromise.config');
 
 // Load environment variables
 dotenv.config();
@@ -19,7 +20,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
 
     try {
         // Fetch user details from database
-        const [rows] = await db.query(
+        const [rows] = await dbPromise.query(
             "SELECT * FROM `authors_account` WHERE `email` = ?",
             [recipientEmail]
         );

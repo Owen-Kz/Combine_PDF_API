@@ -93,6 +93,7 @@ const MigrateAccount = require("../controllers/editors/migrateAuthorAccount");
 const editorSignUp = require("../controllers/account/editorSignup");
 const remindReviewer = require("../controllers/account/invitations/remindReviewers");
 const reviewerSignup = require("../controllers/account/reviewerSignup");
+const manuscrsciptDataMiddleWare = require("../controllers/manuscriptData_middleware");
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -114,18 +115,18 @@ router.get("/doc", documentFileFormat)
 
 
 // ArticleSubmission 
-router.get("/uploadManuscript",getUserData, uploadArticlePage)
+router.get("/uploadManuscript",getUserData, manuscrsciptDataMiddleWare, uploadArticlePage)
 
 router.post('/generateArticleId', generateArticleId)
-router.post("/submitArticleType", getUserData, submitArticleType)
-router.post("/uploadSingleFile/:field", getUserData, uploadSingleFile)
-router.post("/submitManuscriptTitle", getUserData, submitTitle)
-router.post("/submitAbstract", getUserData, submitAbstract)
-router.post("/submitKeyword", getUserData, submitKeyword)
+router.post("/submitArticleType", getUserData, manuscrsciptDataMiddleWare, submitArticleType)
+router.post("/uploadSingleFile/:field", getUserData, manuscrsciptDataMiddleWare, uploadSingleFile)
+router.post("/submitManuscriptTitle", getUserData, manuscrsciptDataMiddleWare, submitTitle)
+router.post("/submitAbstract", getUserData, manuscrsciptDataMiddleWare, submitAbstract)
+router.post("/submitKeyword", getUserData, manuscrsciptDataMiddleWare, submitKeyword)
 router.get("/authorProfileForSearch", getUserData, authorsProfileSearch)
-router.post("/addAuthorToPaper", getUserData, AddAuthorToPaper)
-router.post("/addReviewerToPaper", getUserData, AddReviewerToPaper )
-router.post("/submitDisclosures", getUserData, SubmitDisclosures)
+router.post("/addAuthorToPaper", getUserData, manuscrsciptDataMiddleWare, AddAuthorToPaper)
+router.post("/addReviewerToPaper", getUserData, manuscrsciptDataMiddleWare, AddReviewerToPaper )
+router.post("/submitDisclosures", getUserData, manuscrsciptDataMiddleWare, SubmitDisclosures)
 router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})
 })

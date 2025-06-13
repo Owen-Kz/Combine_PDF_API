@@ -281,13 +281,17 @@ document.addEventListener('DOMContentLoaded', function() {
 submitAuthorsForm.addEventListener("submit", function(e){
   e.preventDefault();
   const formData = new FormData(submitAuthorsForm)
-  fetch(`/addAuthorToPaper`, {
+  fetch(`/addAuthorToPaper?_uid=${uid.value}&prg=true`, {
     method: "POST",
     body: formData
   }).then(res => res.json())
   .then(data =>{
     if(data.error){
-      showErrorPopup(data.error)
+     
+      iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
     }else if(data.success){
     showProgressSavedPopup()
 showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')

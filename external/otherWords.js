@@ -79,7 +79,7 @@ const documentFileFormat = async (req, res) => {
         return res.send(fileBuffer);
     } catch (error) {
         console.error('Error processing file:', error.message);
-        res.status(500).send('Error processing file');
+        res.status(500).send('Error processing file, Please try again or refresh the page');
     }
 };
 

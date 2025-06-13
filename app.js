@@ -6,13 +6,21 @@ const cookie = require("cookie-parser");
 const PORT = process.env.PORT || 31000;
 const server = require("http").Server(app)
 const session = require("express-session");
+const MySQLStore = require('express-mysql-session')(session); // Example for MySQL
 
 const bodyParser = require("body-parser");
 app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false } // Set to true if using HTTPS
+    secret: process.env.JWT_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    store: new MySQLStore({    host: process.env.D_HOST,
+    user: process.env.D_USER,
+    password: process.env.D_PASSWORD,
+    database: process.env.D_NAME}), // Or MemoryStore (not for production)
+    cookie: { 
+        maxAge: 24 * 60 * 60 * 1000, // 1 day (adjust as needed)
+        httpOnly: true,
+    }
 }));
 
   app.use(bodyParser.json());
@@ -69,6 +77,7 @@ const {Server} = require('socket.io');
 const SaveMessage = require("./external/saveMessage");
 const saveSpaceMessage = require("./external/saveSpaceMessage");
 const path = require("path");
+const { config } = require("dotenv");
 require('debug')('socket.io');
 
 const io = new Server(server, {

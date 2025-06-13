@@ -224,13 +224,16 @@ document.addEventListener('DOMContentLoaded', function() {
 submitReviewersForm.addEventListener("submit", function(e){
   e.preventDefault();
   const formData = new FormData(submitReviewersForm)
-  fetch(`/addReviewerToPaper`, {
+  fetch(`/addReviewerToPaper?_uid=${uid.value}&prg=true`, {
     method: "POST",
     body: formData
   }).then(res => res.json())
   .then(data =>{
     if(data.error){
-      showErrorPopup(data.error)
+      iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
       showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
 
     }else if(data.success){
@@ -240,7 +243,7 @@ submitReviewersForm.addEventListener("submit", function(e){
     }else{
 
       showErrorPopup("An Error Occured")
-      showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
+      // showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
 
     }
   })

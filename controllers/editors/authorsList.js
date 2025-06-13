@@ -6,7 +6,6 @@ const getAllAuthors = async (req, res) => {
     try {
         // Get user ID from session (Assuming session is managed via middleware)
         const userId = req.user?.id;
-        console.log(req.user.id)
         if (!userId) {
             return res.status(400).json({ status: "error", message: "Invalid Parameters" });
         }

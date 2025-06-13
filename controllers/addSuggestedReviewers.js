@@ -1,17 +1,24 @@
 const db = require("../routes/db.config");
 const multer = require("multer");
+const dbPromise = require("../routes/dbPromise.config");
 const upload = multer();
 
+
 const AddReviewerToPaper = async (req, res) => {
-  
     upload.none()(req, res, async (err) => {
         if (err) {
-            return res.json({ status: "error", error: "Multer error" });
+            console.error("Multer error:", err);
+            return res.status(400).json({ 
+                status: "error", 
+                error: "Invalid form data format" 
+            });
         }
+
         try {
+              if(!req.user || !req.user.id){
+            return res.json({error:"Session is Not Valid, please login again"})
+        }
             const {
-      
-     
                 suggested_reviewer_fullname,
                 suggested_reviewer_affiliation,
                 suggested_reviewer_country,
@@ -19,89 +26,96 @@ const AddReviewerToPaper = async (req, res) => {
                 suggested_reviewer_email
             } = req.body;
 
-            const mainSubmissionId = req.cookies._sessionID;
-            const email = suggested_reviewer_email
-            if (!email || email.length === 0) {
-                return res.json({ status: "error", error: "No reviewers provided" });
+            // Get submission ID from session
+            const mainSubmissionId = req.session.articleId;
+            if (!mainSubmissionId) {
+                return res.status(400).json({ 
+                    status: "error", 
+                    error: "No active manuscript session" 
+                });
             }
 
-            let insertPromises = [];
+            // Normalize input to array
+            const emails = Array.isArray(suggested_reviewer_email) ? 
+                suggested_reviewer_email : 
+                [suggested_reviewer_email].filter(Boolean);
 
-            // Function to check if an reviewer exists
-            const checkRevieweExists = (reviewerEmail) => {
-                return new Promise((resolve, reject) => {
-                    db.query(
-                        "SELECT * FROM `suggested_reviewers` WHERE `email` = ? AND `article_id` = ?",
-                        [reviewerEmail, mainSubmissionId],
-                        (err, data) => {
-                            if (err) return reject(err);
-                            resolve(data.length > 0);
-                        }
-                    );
+            if (emails.length === 0) {
+                return res.status(400).json({ 
+                    status: "error", 
+                    error: "At least one reviewer email is required" 
                 });
-            };
+            }
 
-            const checkReviewerIsAuthor = (reviewerEmail) => {
-                return new Promise((resolve, reject) => {
-                    db.query(
-                        "SELECT * FROM `submission_authors` WHERE `authors_email` = ? AND `submission_id` = ?",
-                        [reviewerEmail, mainSubmissionId],
-                        (err, data) => {
-                            if (err) return reject(err);
-                            resolve(data.length > 0);
-                        }
-                    );
-                });
-            };
-            // Function to insert an reviewer
-            const insertReviewer = (fullname, reviewerEmail,aff, country, city) => {
-                return new Promise((resolve, reject) => {
-                    db.query(
-                        `INSERT INTO suggested_reviewers SET ?`,
-                        [{article_id:mainSubmissionId, fullname:fullname, email:reviewerEmail, affiliation:aff, affiliation_country:country, affiliation_city:city}],
-                        (err, result) => {
-                            if (err) return reject(err);
-                            resolve(result);
-                        }
-                    );
-                });
-            };
+            // Process reviewers
+            const insertedReviewers = [];
+            const skippedReviewers = [];
 
-    
+            for (let i = 0; i < emails.length; i++) {
+                const reviewerEmail = emails[i].trim();
+                if (!reviewerEmail) continue;
 
-            // Process additional reviewers
+                const fullName = suggested_reviewer_fullname[i]?.trim() || '';
+                const affiliation = suggested_reviewer_affiliation[i]?.trim() || '';
+                const country = suggested_reviewer_country[i]?.trim() || '';
+                const city = suggested_reviewer_city[i]?.trim() || '';
 
-            if(email && email.length >0){
-            for (let i = 0; i < email.length; i++) {
-                let reviewerEmail = email[i];
+                try {
+                    // Check if reviewer exists or is an author
+                    const [existingReviewer, existingAuthor] = await Promise.all([
+                        await dbPromise.query(
+                            "SELECT 1 FROM suggested_reviewers WHERE email = ? AND article_id = ?",
+                            [reviewerEmail, mainSubmissionId]
+                        ).then(([rows]) => rows.length > 0),
+                        
+                        await dbPromise.query(
+                            "SELECT 1 FROM submission_authors WHERE authors_email = ? AND submission_id = ?",
+                            [reviewerEmail, mainSubmissionId]
+                        ).then(([rows]) => rows.length > 0)
+                    ]);
 
-                if (!reviewerEmail) continue; // Skip empty emails
-
-                let reviewersFullname = `${suggested_reviewer_fullname[i]}`;
-
-                const reviewerExists = await checkRevieweExists(reviewerEmail);
-                const isAuthor = await checkReviewerIsAuthor(reviewerEmail)
-                if (!reviewerExists && !isAuthor) {
-                    insertPromises.push(
-                        insertReviewer(
-                            reviewersFullname,
-                            reviewerEmail,
-                            suggested_reviewer_affiliation[i],
-                            suggested_reviewer_country[i],
-                            suggested_reviewer_city[i],
-                        )
-                    );
+                    if (!existingReviewer && !existingAuthor) {
+                        await dbPromise.query(
+                            "INSERT INTO suggested_reviewers SET ?",
+                            {
+                                article_id: mainSubmissionId,
+                                fullname: fullName,
+                                email: reviewerEmail,
+                                affiliation: affiliation,
+                                affiliation_country: country,
+                                affiliation_city: city
+                            }
+                        );
+                        insertedReviewers.push(reviewerEmail);
+                    } else {
+                        skippedReviewers.push({
+                            email: reviewerEmail,
+                            reason: existingReviewer ? "already_suggested" : "is_author"
+                        });
+                    }
+                } catch (dbError) {
+                    console.error(`Error processing reviewer ${reviewerEmail}:`, dbError);
+                    skippedReviewers.push({
+                        email: reviewerEmail,
+                        reason: "processing_error"
+                    });
                 }
             }
-        }
 
-            // Execute all insert queries
-            await Promise.all(insertPromises);
+            return res.json({ 
+                status: "success",
+                success: "Reviewers processed successfully",
+                inserted: insertedReviewers,
+                skipped: skippedReviewers
+            });
 
-            res.json({ success: "reviewers Created Successfully" });
         } catch (error) {
-            console.error("Error Processing reviewers:", error);
-            return res.json({ status: "error", error: `Error Processing reviewer: ${error.message}` });
+            console.error("System error processing reviewers:", error);
+            return res.status(500).json({ 
+                status: "error", 
+                error: "Failed to process reviewers",
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     });
 };

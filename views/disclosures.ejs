@@ -132,27 +132,37 @@
     e.preventDefault()
     body.removeAttribute("id")
     const data = new FormData(disclosuresForm)
-    fetch(`/submitDisclosures`, {
+    fetch(`/submitDisclosures?_uid=${uid.value}&prg=true`, {
       method:"POST",
       body:data
     }).then (res => res.json())
     .then(data =>{
 
       if(data.success){
-        showProgressSavedPopup()
+        // showProgressSavedPopup()
 
-        alert("Manuscript Submitted Successfully")
+        iziToast.success({
+        message: "Manuscript Submitted Successfully",
+        position:"topRight"
+      })
             window.location.href = "/dashboard"
             // }else[
             
         }else if(data.error){
-            showErrorPopup(data.error)
+            iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
             body.setAttribute("id", "formNotSubmitted")
        
         }else{
           
             console.log(data)
-            showErrorPopup("Internal Server Error")
+            // showErrorPopup("Internal Server Error")
+                 iziToast.error({
+        message: 'Internal Server Error',
+        position:"topRight"
+      })
             body.setAttribute("id", "formNotSubmitted")
         }
 

@@ -1,7 +1,7 @@
 <div id="abstract" class="form-section hidden">
     <form onsubmit="return false" id="submitAbstractForm">
     <div>
-
+      <input type="text" id="abstract_value" value="<%= SavedAbstract%>" readonly hidden>
       <h3 class="manu_head"><span style="color: #e22424;">*</span>Abstract</h3><br>
       <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
 
@@ -28,20 +28,51 @@
   <script type="module">
     import {quill} from '/js/quill.js'
     const submitAbstractForm = document.getElementById("submitAbstractForm")
+    const abstract_value = document.getElementById("abstract_value")
+const savedAbstract = abstract_value.value
 
-    const savedAbstract = getCookie("_abstract")
+// 1. DEBUG: Log raw value to inspect
+// console.log("RAW ABSTRACT:", savedAbstract); 
 
- 
-// Ensure it's a valid JSON or set a default empty Delta
-let parsedAbstract;
-try {
-    parsedAbstract = savedAbstract ? JSON.parse(savedAbstract) : { ops: [{ insert: "\n" }] };
-} catch (error) {
-    console.error("Error parsing savedAbstract:", error);
-    parsedAbstract = { ops: [{ insert: "\n" }] }; // Fallback to empty Quill content
+// 2. Clean the string
+function prepareJSON(str) {
+  // Remove ALL HTML entities (&#34; etc)
+  const decoded = str.replace(/&[#\w]+;/g, m => 
+    new DOMParser().parseFromString(m, "text/html").body.textContent
+  );
+  
+  // Fix common JSON issues:
+  return decoded
+    .trim()
+    .replace(/([\w"])\s*$/, '$1') // Remove trailing whitespace/commas
+    .replace(/^([^[{])/, '')       // Remove garbage before JSON
+    .replace(/([^\]}])$/, '');     // Remove garbage after JSON
 }
 
-// Set contents in Quill
+// 3. Safe parsing with detailed error handling
+let parsedAbstract;
+try {
+  const cleanJSON = prepareJSON(savedAbstract);
+  // console.log("CLEANED JSON:", cleanJSON); // DEBUG
+  
+  parsedAbstract = JSON.parse(cleanJSON);
+  
+  // Ensure Quill-compatible format
+  if (Array.isArray(parsedAbstract)) {
+    parsedAbstract = { ops: parsedAbstract };
+  } else if (!parsedAbstract.ops) {
+    parsedAbstract = { ops: [{ insert: "\n" }] };
+  }
+} catch (error) {
+  console.error("FULL ERROR:", {
+    error, 
+    input: savedAbstract,
+    cleaned: prepareJSON(savedAbstract)
+  });
+  parsedAbstract = { ops: [{ insert: "\n" }] }; // Fallback
+}
+
+// 4. Set Quill content
 quill.setContents(parsedAbstract);
      submitAbstractForm.addEventListener("submit", function(e){
       e.preventDefault()
@@ -53,7 +84,7 @@ quill.setContents(parsedAbstract);
       }
 
 
-      fetch(`/submitAbstract`, {
+      fetch(`/submitAbstract?_uid=${uid.value}&prg=true`, {
         method:"POST",
         headers:{
           "Content-type" : "application/JSON"
@@ -62,7 +93,10 @@ quill.setContents(parsedAbstract);
       }).then(res =>res.json())
       .then(data =>{
         if(data.error){
-          showErrorPopup(data.error)
+          iziToast.error({
+        message: data.error,
+        position:"topRight"
+      })
 
         }else if(data.success){
         showProgressSavedPopup()
