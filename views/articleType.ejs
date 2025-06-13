@@ -5,9 +5,9 @@
 
     <h3 class="manu_head">Article Type & Discipline</h3>
     <span class="manu_head"><span style="color: #e22424;">*</span>Choose Article Type:</span>
-    <input type="text" name="_article_id" id="_article_id" value="<%=article_id%>" readonly>
-    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly >
-    <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly >
+    <input type="text" name="_article_id" id="_article_id" value="<%=article_id%>" readonly hidden>
+    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+    <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly  hidden>
     <select name="article_type" id="article_type" class="form-control" required>
       <!-- <option value="">Select an Option</option> -->
       <% if(article_type && article_type !== null) { %>
