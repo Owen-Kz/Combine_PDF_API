@@ -35,10 +35,10 @@
   <link rel="stylesheet" href="/css/loader.css">
   <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js'></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
-  <script src="/js/headerMessages.js"> </script>
-  <script src="/js/submissionHeader.js"> </script>
-  <script src="/js/messagePopups.js"></script>
-  <script type="module" src="/js/checkField.js"></script>
+  <script src="/js/headerMessages.js?v=<%= new Date() %>"> </script>
+  <script src="/js/submissionHeader.js?v=<%= new Date() %>"> </script>
+  <script src="/js/messagePopups.js?v=<%= new Date() %>"></script>
+  <script type="module" src="/js/checkField.js?v=<%= new Date() %>"></script>
   <script type="text/javascript">
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
@@ -339,7 +339,7 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 
-    <script type="module" src="/js/quill.js"></script>
+    <script type="module" src="/js/quill.js?v=<%= new Date() %>"></script>
     <script>
 function toggleInputField() {
     var manuscriptIDField = document.getElementById("manuscriptIDField");
