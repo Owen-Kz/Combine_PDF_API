@@ -68,7 +68,7 @@ const SubmitDisclosures = async (req, res) => {
                 // Send notifications
                 await Promise.all([
                     SendNewSubmissionEmail(corresponding_authors_email, title, articleId),
-                    sendEmailToHandler("ajibolaoladejo95@gmail.com", title, articleId),
+                    sendEmailToHandler("submissions@asfirj.org", title, articleId),
                     CoAuthors(req, res, articleId)
                 ]);
 
