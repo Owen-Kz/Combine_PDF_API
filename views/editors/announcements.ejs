@@ -20,6 +20,8 @@
     <link rel="stylesheet" href="/editorStatic/plugins/bower_components/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.css">
     <!-- Quill CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
     <!-- Custom CSS -->
     <link href="/editorStatic/css/style.min.css" rel="stylesheet">
     <link href="/editorStatic/css/table.css" rel="stylesheet">
@@ -428,8 +430,8 @@
                                                 <th class="text-right">Priority</th>
                                                 <th class="text-right">Author</th>
                                                 <th class="text-right">Date Created</th>
-                                                <th class="text-right">Last Updated</th>
-                                                <th class="text-right">Status</th>
+                                                <!-- <th class="text-right">Last Updated</th> -->
+                                                <!-- <th class="text-right">Status</th> -->
                                                 <th class="text-right">Actions</th>
                                             </tr>
                                         </thead>
@@ -454,37 +456,11 @@
         </div>
     </div>
 
-    <!-- Announcement Editor Modal -->
-    <div id="announcementModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeAnnouncementModal()">&times;</span>
-            <h2 id="modalTitle">Create New Announcement</h2>
-            
-            <div class="form-group">
-                <label for="announcementTitle">Title</label>
-                <input type="text" class="form-control" id="announcementTitle" placeholder="Enter announcement title">
-            </div>
-            
-            <div class="form-group">
-                <label for="announcementPriority">Priority</label>
-                <select class="priority-select" id="announcementPriority">
-                    <option value="low">Low</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
-            
-            <div id="editor-container"></div>
-            
-            <div class="action-buttons">
-                <button class="btn btn-secondary" onclick="closeAnnouncementModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="verifyAction('publish')">Publish Announcement</button>
-            </div>
-        </div>
-    </div>
+<%- include("./partials/newAnnouncementModal.ejs") %>
 
     <!-- Verification Modal -->
     <div id="verificationModal" class="verification-modal">
+        <input type="hidden" id="itemID">
         <div class="verification-content">
             <span class="close" onclick="closeVerificationModal()">&times;</span>
             <h3 id="verificationModalTitle">Verify Action</h3>
@@ -497,34 +473,7 @@
         </div>
     </div>
 
-    <!-- Edit Announcement Modal (hidden by default) -->
-    <div id="editAnnouncementModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditAnnouncementModal()">&times;</span>
-            <h2>Edit Announcement</h2>
-            
-            <div class="form-group">
-                <label for="editAnnouncementTitle">Title</label>
-                <input type="text" class="form-control" id="editAnnouncementTitle">
-            </div>
-            
-            <div class="form-group">
-                <label for="editAnnouncementPriority">Priority</label>
-                <select class="priority-select" id="editAnnouncementPriority">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
-            
-            <div id="edit-editor-container"></div>
-            
-            <div class="action-buttons">
-                <button class="btn btn-secondary" onclick="closeEditAnnouncementModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="verifyAction('update')">Update Announcement</button>
-            </div>
-        </div>
-    </div>
+ <%- include("./partials/editAnnouncementModal.ejs") %>
 
     <script>
         // Initialize Quill editor
@@ -575,11 +524,21 @@
             // In a real implementation, you would fetch the announcement data here
             // For now, we'll just show the modal
             document.getElementById('editAnnouncementModal').style.display = 'block';
-            
-            // Example data - in real app you would get this from your database
-            document.getElementById('editAnnouncementTitle').value = 'Sample Announcement Title';
-            document.getElementById('editAnnouncementPriority').value = 'medium';
-            editQuill.setContents([{ insert: 'This is the announcement content that would be loaded from the database.\n' }]);
+            const getAnnouncementData = fetch("/getAnnouncementData", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: announcementId })
+            })
+
+            getAnnouncementData.then(response => response.json()).then(data => {
+                // Populate the edit form with the fetched data
+                document.getElementById('editAnnouncementTitle').value = data.announcement.title;
+                document.getElementById('editAnnouncementPriority').value = data.announcement.priority;
+                document.getElementById("editAnnouncementId").value = data.announcement.id;
+                editQuill.setContents([{ insert: data.announcement.data }]);
+            });
         }
 
         function closeEditAnnouncementModal() {
@@ -615,20 +574,30 @@
             document.getElementById('verificationModal').style.display = 'none';
         }
 
-        function verifyAction(action) {
+        function verifyAction(action, id) {
             // Open verification modal and store the intended action
+            document.getElementById('itemID').value = id
             openVerificationModal(action);
         }
 
         function confirmAction() {
             const verificationCode = document.getElementById('verificationCode').value;
+            const itemID = document.getElementById('itemID').value;
+
             const action = document.getElementById('verificationModal').getAttribute('data-action');
-            
-            // In a real implementation, you would verify the code with your backend
-            if (verificationCode === '1234') { // Replace with actual verification logic
-                closeVerificationModal();
-                
-                switch(action) {
+            fetch("/editors/verifyCode", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: verificationCode, action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    closeVerificationModal();
+
+                    switch(action) {
                     case 'publish':
                         publishAnnouncement();
                         break;
@@ -636,86 +605,107 @@
                         updateAnnouncement();
                         break;
                     case 'delete':
-                        deleteAnnouncement();
+                        deleteAnnouncement(itemID);
                         break;
                 }
-            } else {
-                alert('Invalid security code. Please try again.');
-            }
+                } else {
+                    alert('Verification failed: ' + data.message);
+                }
+            });
         }
 
         function publishAnnouncement() {
             const title = document.getElementById('announcementTitle').value;
             const priority = document.getElementById('announcementPriority').value;
             const content = quill.root.innerHTML;
-            
+            const verifyCode = document.getElementById('verificationCode').value;
+
             // Here you would send the data to your backend
-            console.log('Publishing announcement:', { title, priority, content });
-            
-            // Close the modal and refresh announcements
-            closeAnnouncementModal();
-            // loadAnnouncements(); // You would implement this function to refresh the list
-            alert('Announcement published successfully!');
+            fetch('/editors/uploadAnnouncement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, priority, content, verifyCode })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Close the modal and refresh announcements
+                    closeAnnouncementModal();
+                    loadAnnouncements(); // You would implement this function to refresh the list
+                    alert('Announcement published successfully!');
+                } else {
+                    alert('Failed to publish announcement.');
+                }
+            })
+            .catch(error => {
+                console.error('Error publishing announcement:', error);
+                alert('Error publishing announcement.');
+            });
         }
 
         function updateAnnouncement() {
             const title = document.getElementById('editAnnouncementTitle').value;
             const priority = document.getElementById('editAnnouncementPriority').value;
             const content = editQuill.root.innerHTML;
-            
+              const verifyCode = document.getElementById('verificationCode').value;
             // Here you would send the data to your backend
             console.log('Updating announcement:', { title, priority, content });
+            fetch("/editors/editAnnouncement", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, priority, content, id: document.getElementById('editAnnouncementId').value, verifyCode })
+            })
             
             // Close the modal and refresh announcements
             closeEditAnnouncementModal();
-            // loadAnnouncements(); // You would implement this function to refresh the list
+            loadAnnouncements(); // You would implement this function to refresh the list
             alert('Announcement updated successfully!');
         }
 
-        function deleteAnnouncement() {
+        function deleteAnnouncement(id) {
             // Here you would send the delete request to your backend
-            console.log('Deleting announcement');
-            
-            // Refresh announcements
-            // loadAnnouncements(); // You would implement this function to refresh the list
+            const verifyCode = document.getElementById('verificationCode').value;
+
+            fetch("/editors/deleteAnnouncement", {
+             method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body:JSON.stringify({id:id, verifyCode})
+            }).then(res => res.json())
+            .then(data =>{
+                if(data.success){
+   // Refresh announcements
+            loadAnnouncements(); // You would implement this function to refresh the list
             alert('Announcement deleted successfully!');
+                }else{
+                    alert(data.error)
+                }
+            })
+         
         }
 
         // Sample function to load announcements - in a real app this would fetch from your backend
-        function loadAnnouncements() {
+       async function loadAnnouncements() {
             const announcementsContainer = document.getElementById('announcementsContainer');
             announcementsContainer.innerHTML = '';
             
+            const announcementData = await fetch("/editors/getAnnouncements")
+                .then(response => response.json())
+                .catch(error => {
+                    console.error('Error fetching announcements:', error);
+                    return [];
+                });
             // Sample data - in a real app you would fetch this from your API
-            const sampleAnnouncements = [
-                {
-                    id: 1,
-                    title: 'System Maintenance Scheduled',
-                    priority: 'high',
-                    author: 'Admin User',
-                    created: '2023-05-15',
-                    updated: '2023-05-15',
-                    status: 'active'
-                },
-                {
-                    id: 2,
-                    title: 'New Submission Guidelines',
-                    priority: 'medium',
-                    author: 'Editor Team',
-                    created: '2023-05-10',
-                    updated: '2023-05-12',
-                    status: 'active'
-                },
-                {
-                    id: 3,
-                    title: 'Monthly Newsletter',
-                    priority: 'low',
-                    author: 'Communications Team',
-                    created: '2023-05-01',
-                    updated: '2023-05-01',
-                    status: 'archived'
-                }
-            ];
+            const sampleAnnouncements = announcementData.announcements;
+            
+            if (sampleAnnouncements.length === 0) {
+                announcementsContainer.innerHTML = '<tr><td colspan="7" class="text-center">No announcements found.</td></tr>';
+                return;
+            }
             
             // Update counts
             document.querySelector('.activeAnnouncementsCount').textContent = 
@@ -731,28 +721,28 @@
                 
                 // Priority badge
                 let priorityBadge = '';
-                if (announcement.priority === 'high') {
+                if (announcement.priority === '1' || announcement.priority === 'high' || announcement.priority == 1) {
                     priorityBadge = '<span class="priority-high">High Priority</span>';
-                } else if (announcement.priority === 'medium') {
+                } else if (announcement.priority === '2') {
                     priorityBadge = '<span class="priority-medium">Medium Priority</span>';
                 } else {
                     priorityBadge = '<span class="priority-low">Low Priority</span>';
                 }
                 
                 // Status badge
-                let statusBadge = '';
-                if (announcement.status === 'active') {
-                    statusBadge = '<span style="color: green;">Active</span>';
-                } else {
-                    statusBadge = '<span style="color: gray;">Archived</span>';
-                }
+                // let statusBadge = '';
+                // if (announcement.status === 'active') {
+                //     statusBadge = '<span style="color: green;">Active</span>';
+                // } else {
+                //     statusBadge = '<span style="color: gray;">Archived</span>';
+                // }
                 
                 // Action buttons
                 let actions = `
                     <button class="btn btn-sm btn-primary" onclick="openEditAnnouncementModal(${announcement.id})">
                         <i class="bi bi-pencil"></i> Edit
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="verifyAction('delete')">
+                    <button class="btn btn-sm btn-danger" onclick="verifyAction('delete', ${announcement.id})">
                         <i class="bi bi-trash"></i> Delete
                     </button>
                 `;
@@ -765,8 +755,8 @@
                     `;
                 } else {
                     actions += `
-                        <button class="btn btn-sm btn-success" onclick="activateAnnouncement(${announcement.id})">
-                            <i class="bi bi-arrow-repeat"></i> Activate
+                        <button class="btn btn-sm btn-success" onclick="window.location.href='https://asfirj.org/announcements?x=${announcement.slug}'">
+                            <i class="bi bi-eye"></i> View
                         </button>
                     `;
                 }
@@ -774,10 +764,8 @@
                 row.innerHTML = `
                     <td>${announcement.title}</td>
                     <td>${priorityBadge}</td>
-                    <td>${announcement.author}</td>
-                    <td>${announcement.created}</td>
-                    <td>${announcement.updated}</td>
-                    <td>${statusBadge}</td>
+                    <td>${announcement.admin_email}</td>
+                    <td>${new Date(announcement.timestamp).toLocaleString()}</td>
                     <td>${actions}</td>
                 `;
                 
@@ -830,6 +818,5 @@
     <!--Custom JavaScript -->
     <script src="/editorStatic/js/custom.js?v=<%=new Date() %>"></script>
     <!-- Quill JS -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 </body>
 </html>

@@ -84,6 +84,13 @@ const admin_nav = `<ul id="sidebarnav">
                                 <span class="hide-menu">Publish</span>
                             </a>
                         </li>
+                           <li class="sidebar-item">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="/editors/announcements" 
+                                aria-expanded="false">
+                                <i class="fas fa-bullhorn" aria-hidden="true"></i>
+                                <span class="hide-menu">Announcements</span>
+                            </a>
+                        </li>
                          <li class="sidebar-item">
                             <a class="sidebar-link waves-effect waves-dark sidebar-link" href="https://asfirj.org/manageEditors.html" target="_blank"
                                 aria-expanded="false">

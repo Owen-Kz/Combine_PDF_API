@@ -1,0 +1,29 @@
+   <!-- Edit Announcement Modal (hidden by default) -->
+    <div id="editAnnouncementModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditAnnouncementModal()">&times;</span>
+            <h2>Edit Announcement</h2>
+      
+                <input type="text" class="form-control" id="editAnnouncementId" readonly hidden>
+          
+            <div class="form-group">
+                <label for="editAnnouncementTitle">Title</label>
+                <input type="text" class="form-control" id="editAnnouncementTitle">
+            </div>
+            
+            <div class="form-group">
+                <label for="editAnnouncementPriority">Priority</label>
+                <select class="priority-select" id="editAnnouncementPriority">
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </div>
+            
+            <div id="edit-editor-container"></div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="closeEditAnnouncementModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="verifyAction('update')">Update Announcement</button>
+            </div>
+        </div>
+    </div>

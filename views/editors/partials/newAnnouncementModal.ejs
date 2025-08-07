@@ -1,0 +1,28 @@
+    <!-- Announcement Editor Modal -->
+    <div id="announcementModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAnnouncementModal()">&times;</span>
+            <h2 id="modalTitle">Create New Announcement</h2>
+            
+            <div class="form-group">
+                <label for="announcementTitle">Title</label>
+                <input type="text" class="form-control" id="announcementTitle" placeholder="Enter announcement title">
+            </div>
+            
+            <div class="form-group">
+                <label for="announcementPriority">Priority</label>
+                <select class="priority-select" id="announcementPriority" >
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                    <!-- <option value="2" selected>No</option> -->
+                </select>
+            </div>
+            
+            <div id="editor-container"></div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="closeAnnouncementModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="verifyAction('publish')">Publish Announcement</button>
+            </div>
+        </div>
+    </div>

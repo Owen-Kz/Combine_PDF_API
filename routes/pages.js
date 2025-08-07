@@ -94,6 +94,11 @@ const editorSignUp = require("../controllers/account/editorSignup");
 const remindReviewer = require("../controllers/account/invitations/remindReviewers");
 const reviewerSignup = require("../controllers/account/reviewerSignup");
 const manuscrsciptDataMiddleWare = require("../controllers/manuscriptData_middleware");
+const announcementsPage = require("../controllers/editors/pages/announcementsPage");
+const { config } = require("dotenv");
+const deleteAnnouncement = require("../controllers/editors/announcements/deleteAnnouncement");
+
+  config();
 
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
@@ -238,7 +243,21 @@ router.post("/editors/email/bulkEmail", EditorLoggedIn, sendBulkEmail)
 router.get("/editors/Reviews", EditorLoggedIn, viewReviewPage)
 router.post("/editors/createAccount", editorSignUp)
 router.post("/editors/remindReviewer", EditorLoggedIn, remindReviewer)
-
+router.get("/editors/announcements", EditorLoggedIn, announcementsPage)
+router.get("/editors/getAnnouncements", EditorLoggedIn, require("../controllers/editors/announcements/getAnnouncements"))
+router.post("/editors/uploadAnnouncement", EditorLoggedIn, require("../controllers/editors/announcements/uploadAnnouncement"))
+router.post("/editors/editAnnouncement", EditorLoggedIn, require("../controllers/editors/announcements/editAnnouncement"))
+router.post("/getAnnouncementData", EditorLoggedIn, require("../controllers/editors/announcements/getAnnouncementData"))
+router.post("/editors/deleteAnnouncement", EditorLoggedIn, deleteAnnouncement)
+router.post("/editors/verifyCode", EditorLoggedIn, (req, res) => {
+  
+    const verifyCode = req.body.code;
+    if (verifyCode === process.env.VERIFICATION_CODE) {
+        res.json({ status: "success", message: "Verification code is correct" });
+    } else {
+        res.status(400).json({ status: "error", message: "Invalid verification code" });
+    }
+});
 
 router.post("/editors/isEditor", EditorLoggedIn, (req,res) =>{
   res.json({success:"Editor", account:req.user})
