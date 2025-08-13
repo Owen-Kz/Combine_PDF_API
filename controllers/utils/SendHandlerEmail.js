@@ -1,5 +1,6 @@
-const Brevo = require('@getbrevo/brevo'); 
+const Brevo = require('@getbrevo/brevo');
 const dotenv = require('dotenv');
+const dbPromise = require('../../routes/dbPromise.config');
 
 // Load environment variables
 dotenv.config();
@@ -10,7 +11,7 @@ dotenv.config();
  * @param {string} manuscriptTitle - The title of the manuscript.
  * @param {string} manuscriptId - The manuscript ID.
  */
-async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId) {
+async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId, userFullname) {
     try {
         if (!recipientEmail) {
             return { status: 'error', message: 'Invalid Request' };
@@ -20,6 +21,28 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId)
         const apiKey = process.env.BREVO_API_KEY;
         const senderEmail = process.env.BREVO_EMAIL;
         const recipientName = "submissions@asfirj.org";
+
+        // const previousSubmission = await dbPromise.query("SELECT * FROM submissions WHERE article_id = ?",[mainId])
+
+        // Check if submission was previously submitted 
+
+        let mainId = manuscriptId;
+        let NewHeader = '';
+
+        // Extract main ID by removing anything after the dot
+        if (manuscriptId.includes('.')) {
+            mainId = manuscriptId.split('.')[0];
+        }
+
+        // Check for correction or revision patterns (case-insensitive)
+        const suffix = manuscriptId.split('.').pop()?.toLowerCase();
+        if (suffix?.startsWith('cr')) {
+            NewHeader = `A Correction has just been submitted for ${manuscriptTitle} by`;
+        } else if (suffix?.startsWith('r')) {
+            NewHeader = `A Revision has been submitted for ${manuscriptTitle} has just been made by`;
+        } else {
+            NewHeader = `A new submission with the title <strong>${manuscriptTitle}</strong> has just been made by`;
+        }
 
         // Configure Brevo API
         const apiInstance = new Brevo.TransactionalEmailsApi();
@@ -39,7 +62,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId)
 
                 <p>Dear ${recipientName},</p>
 
-                <p>A new submission with the title <strong>${manuscriptTitle}</strong> has just been made.</p>
+                <p>${NewHeader} <b>${userFullname}</b>.</p>
                 
                 <p>Manuscript ID is <strong>[${manuscriptId}]</strong>.</p>
 

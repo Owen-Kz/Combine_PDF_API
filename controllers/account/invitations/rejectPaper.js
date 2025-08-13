@@ -96,7 +96,7 @@ const RejectPaper = async (req, res) => {
     // Send email to reviewer
     const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
     if (emailSent.status !== "success") {
-    // await ReviewerAccountEmail("company@weperch.live", "Error Sending Email", `[{insert:<p>Error Sending Email tO ${reviewerEmail}}]`, "bensonmichaelowen@gmail.com", new Date(), [], [], []);
+    // await ReviewerAccountEmail("company@weperch.live", "Error Sending Email", `[{insert:<p>Error Sending Email tO ${reviewerEmail}}]`, "submissions@asfirj.org", new Date(), [], [], []);
 
       res.status(500).json({ status: "error", message: emailSent.message });
       responseSent = true;

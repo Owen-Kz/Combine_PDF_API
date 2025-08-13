@@ -84,7 +84,7 @@ const manuscrsciptDataMiddleWare = async (req, res, next) => {
     }
     // Reuse existing session ID
     else if (req.session.articleId && req.query.prg) {
-        console.log("JILL")
+ 
               // Fetch article data
       
  

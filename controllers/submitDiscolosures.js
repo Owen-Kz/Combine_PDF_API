@@ -66,9 +66,10 @@ const SubmitDisclosures = async (req, res) => {
             // Handle submission workflow
             if (review_status === "submitted") {
                 // Send notifications
+                const userFullname = `${req.user.prefix} ${req.user.firstname} ${req.user.lastname} ${req.user.othername}`
                 await Promise.all([
                     SendNewSubmissionEmail(corresponding_authors_email, title, articleId),
-                    sendEmailToHandler("submissions@asfirj.org", title, articleId),
+                    sendEmailToHandler("submissions@asfirj.org", title, articleId, userFullname),
                     CoAuthors(req, res, articleId)
                 ]);
 
