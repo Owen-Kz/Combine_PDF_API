@@ -37,9 +37,9 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         // Check for correction or revision patterns (case-insensitive)
         const suffix = manuscriptId.split('.').pop()?.toLowerCase();
         if (suffix?.startsWith('cr')) {
-            NewHeader = `A Correction has just been submitted for ${manuscriptTitle} by`;
+            NewHeader = `A Correction has just been submitted for <strong>${manuscriptTitle}</strong> by`;
         } else if (suffix?.startsWith('r')) {
-            NewHeader = `A Revision has been submitted for ${manuscriptTitle} has just been made by`;
+            NewHeader = `A Revision has been submitted for <strong>${manuscriptTitle}</strong> by`;
         } else {
             NewHeader = `A new submission with the title <strong>${manuscriptTitle}</strong> has just been made by`;
         }
