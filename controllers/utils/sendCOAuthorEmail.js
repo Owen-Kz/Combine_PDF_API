@@ -71,11 +71,11 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         .credentials { 
             background-color: #f8f9fa; 
             padding: 15px; 
-            border-left: 4px solid #3498db; 
+            border-left: 4px solid #ae05b4ff; 
             margin: 20px 0; 
         }
         .button { 
-            background-color: #3498db; 
+            background-color: #ae05b4ff; 
             color: white; 
             padding: 12px 20px; 
             text-decoration: none; 
@@ -135,7 +135,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         <p>ASFI Research Journal &copy; ${currentYear}</p>
         <p>
             <a href="https://asfirj.org/unsubscribe?email=${encodeURIComponent(recipientEmail)}">Unsubscribe</a> | 
-            <a href="https://asfirj.org/contact">Contact Us</a>
+            <a href="https://asfirj.org/contact.html">Contact Us</a>
         </p>
     </div>
 </body>

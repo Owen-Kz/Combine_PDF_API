@@ -97,7 +97,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         .highlight {
             background-color: #f8f9fa;
             padding: 15px;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #ae05b4ff;
             margin: 20px 0;
         }
         .manuscript-id {
@@ -112,7 +112,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
             margin-top: 30px;
         }
         a {
-            color: #3498db;
+            color: #ae05b4ff;
             text-decoration: none;
         }
     </style>
@@ -144,7 +144,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         
         <p style="margin-top: 20px;">
             <a href="https://asfirj.org/">Website</a> | 
-            <a href="https://asfirj.org/contact">Contact Us</a>
+            <a href="https://asfirj.org/contact.html">Contact Us</a>
         </p>
     </div>
 </body>

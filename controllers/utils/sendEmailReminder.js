@@ -79,7 +79,7 @@ const sendEmailReminder = async (RecipientEmail, subject, emailContent) => {
             margin-top: 30px;
         }
         a {
-            color: #3498db;
+            color: #ae05b4ff;
             text-decoration: none;
         }
     </style>
@@ -97,7 +97,7 @@ const sendEmailReminder = async (RecipientEmail, subject, emailContent) => {
         <p>ASFI Research Journal &copy; ${currentYear}</p>
         <p>
             <a href="https://asfirj.org/unsubscribe?email=${encodeURIComponent(RecipientEmail)}">Unsubscribe</a> | 
-            <a href="https://asfirj.org/contact">Contact Us</a>
+            <a href="https://asfirj.org/contact.html">Contact Us</a>
         </p>
     </div>
 </body>
