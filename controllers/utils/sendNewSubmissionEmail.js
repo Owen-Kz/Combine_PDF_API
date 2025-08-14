@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const Brevo = require("@getbrevo/brevo");
 const db = require("../../routes/db.config");
-const { escapeHtml } = require("../../utils/security"); // Assume you have a security utils file
+const { escapeHtml } = require("./security");
 
 /**
  * Sends a confirmation email to authors after manuscript submission
