@@ -173,9 +173,9 @@ async function AcceptanceEmailToEditor(RecipientEmail, subject, message, editor_
     // Log the email in database
     await connection.execute(
       `INSERT INTO sent_emails 
-       (article_id, sender, recipient, subject, status, sent_at) 
-       VALUES (?, ?, ?, ?, 'Delivered', NOW())`,
-      [article_id, editor_email, RecipientEmail, subject]
+       (article_id, sender, recipient, subject, status, body, sent_at) 
+       VALUES (?, ?, ?, ?, 'Delivered',?, NOW())`,
+      [article_id, editor_email, RecipientEmail, subject, message]
     );
 
     return { 
@@ -196,9 +196,9 @@ async function AcceptanceEmailToEditor(RecipientEmail, subject, message, editor_
       try {
         await connection.execute(
           `INSERT INTO sent_emails 
-           (article_id, sender, recipient, subject, status, error_message, sent_at) 
-           VALUES (?, ?, ?, ?, 'Failed', ?, NOW())`,
-          [article_id, editor_email, RecipientEmail, subject, error.message.substring(0, 255)]
+           (article_id, sender, recipient, subject, status, error_message, body, sent_at) 
+           VALUES (?, ?, ?, ?, 'Failed', ?, ?, NOW())`,
+          [article_id, editor_email, RecipientEmail, subject, error.message.substring(0, 255), message]
         );
       } catch (dbError) {
         console.error("Failed to log error in database:", dbError);

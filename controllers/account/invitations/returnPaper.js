@@ -89,10 +89,10 @@ const ReturnPaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'returned_for_correction' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_correction");
+    // await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_correction");
 
     // Send email to reviewer
-    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
+    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_correction");
 
     if (emailSent.status !== "success") {
       responseSent = true

@@ -104,7 +104,7 @@ function convertToHTML(contentArray) {
  * @param {Array} attachments - Array of attachment objects
  * @returns {Promise<Object>} - Status object
  */
-async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_email, article_id, ccEmails, bccEmails, attachments) {
+async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_email, article_id, ccEmails, bccEmails, attachments, email_for) {
   // Validate inputs
   if (!RecipientEmail || !subject || !message) {
     return { status: "error", message: "Missing required fields" };
@@ -195,11 +195,11 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
     // Log the email in database
     await connection.execute(
       `INSERT INTO sent_emails 
-       (article_id, sender, recipient, subject, status, sent_at) 
-       VALUES (?, ?, ?, ?, 'Delivered', NOW())
+       (article_id, sender, recipient, subject, status,body, sent_at, email_for) 
+       VALUES (?, ?, ?, ?, 'Delivered',?, NOW(), ?)
        ON DUPLICATE KEY UPDATE 
        status = 'Delivered', sent_at = NOW()`,
-      [article_id, editor_email, RecipientEmail, subject]
+      [article_id, editor_email, RecipientEmail, subject, message, email_for]
     );
 
     return { 
@@ -220,9 +220,9 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
       try {
         await connection.execute(
           `INSERT INTO sent_emails 
-           (article_id, sender, recipient, subject, status, error_message, sent_at) 
-           VALUES (?, ?, ?, ?, 'Failed', ?, NOW())`,
-          [article_id, editor_email, RecipientEmail, subject, error.message.substring(0, 255)]
+           (article_id, sender, recipient, subject, status, error_message, body, sent_at, email_for) 
+           VALUES (?, ?, ?, ?, 'Failed', ?, ?, NOW(), ?)`,
+          [article_id, editor_email, RecipientEmail, subject, error.message.substring(0, 255), message, email_for]
         );
       } catch (dbError) {
         console.error("Failed to log error in database:", dbError);

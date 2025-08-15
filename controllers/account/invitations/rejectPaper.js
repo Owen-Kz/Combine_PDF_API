@@ -91,10 +91,10 @@ const RejectPaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'rejected' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "reject_paper");
+    // await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "reject_paper");
     
     // Send email to reviewer
-    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
+    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "reject_paper");
     if (emailSent.status !== "success") {
     // await ReviewerAccountEmail("company@weperch.live", "Error Sending Email", `[{insert:<p>Error Sending Email tO ${reviewerEmail}}]`, "submissions@asfirj.org", new Date(), [], [], []);
 

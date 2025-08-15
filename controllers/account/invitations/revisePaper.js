@@ -90,10 +90,10 @@ const RevisePaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'returned_for_revision' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_revision");
+    // await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_revision");
 
     // Send email to reviewer
-    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
+    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_revision");
 
     if (emailSent.status !== "success") {
       responseSent = true;

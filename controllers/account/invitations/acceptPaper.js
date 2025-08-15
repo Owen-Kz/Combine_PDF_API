@@ -91,10 +91,10 @@ const AcceptPaper = async (req, res) => {
     await connection.execute("UPDATE submissions SET status = 'accepted' WHERE revision_id = ?", [articleId]);
 
     // Save email details
-    await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "accept_paper");
+    // await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "accept_paper");
 
     // Send email to reviewer
-    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments);
+    const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "accept_paper");
 
     if (emailSent.status !== "success") {
       res.status(500).json({ status: "error", message: "Could not send email" });
