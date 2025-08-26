@@ -53,7 +53,8 @@ const uploadSingleFile = async (req, res) => {
                     }
                     console.error('Upload error:', err);
                     return res.status(500).json({ 
-                        error: 'File upload failed' 
+                        error: 'File upload failed',
+                        message: err.message ? err.message : err.toString()
                     });
                 }
 

@@ -322,7 +322,7 @@
         console.log(error)
         spinner.remove();
         iziToast.error({
-          message: "Upload failed. Please try again.",
+          message: error.message ? error.message : error,
           position: "topRight"
         })
         uploadButton.disabled = false;
