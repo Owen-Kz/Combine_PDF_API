@@ -36,3 +36,10 @@ async function CountTotalReviewerInvitaitons(article_id){
         }
     })
 }
+
+
+export {
+    countAcceptedReviewerInvitations,
+    countRejectedReviewerInvitations,
+    countTotalReviewerInvitations 
+}
