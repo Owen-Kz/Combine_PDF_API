@@ -23,12 +23,12 @@ const myPreviousSubmissions = async (req, res) => {
         WHERE status != 'saved_for_later' 
         AND status != 'revision_saved' 
         AND status != 'returned' 
-        AND article_id = ? 
+        AND (article_id = ? OR previous_manuscript_id = ?)
         AND title != '' 
         ORDER BY id DESC
       `;
       
-      db.execute(query, [revisionID], (err, results) => {
+      db.execute(query, [revisionID, mainId], (err, results) => {
         if (err) {
           return res.status(500).json({ error: err.message });
         }

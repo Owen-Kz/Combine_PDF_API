@@ -156,10 +156,12 @@
     const submitKeywordsForm = document.getElementById("submitKeywordsForm")
     submitKeywordsForm.addEventListener("submit", function(){
       // let KeywordsSubmitted = getCookie("_KeyCount")? getCookie("_KeyCount") : 0
+      const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+      const queriedID = "<%= queriedID %>";
 
       keywordInputs.forEach(keyword =>{
         if(keyword.value !== ""){
-        fetch(`/submitKeyword?_uid=${uid.value}&prg=true`,{
+        fetch(`/submitKeyword?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`,{
           method:"POST",
           headers:{
             "Content-type":"application/JSON"

@@ -27,13 +27,15 @@
   <script>
     const submitTitleForm = document.getElementById("submitTitleForm")
     const title = submitTitleForm.querySelector("input[name='manuscript_full_title']")
+    const currentSubmissionProcess = "<%= currentSubmissionProcess %>"
+    const queriedID = "<%= queriedID %>"
     submitTitleForm.addEventListener("submit", function(e){
       e.preventDefault()
       const data = {
         manuscript_full_title:title.value
       }
       if(title && title.value !== ""){
-        fetch(`/submitManuscriptTitle?_uid=${uid.value}&prg=true`, {
+        fetch(`/submitManuscriptTitle?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
           method:"POST",
           headers:{
             "Content-type":"application/JSON"

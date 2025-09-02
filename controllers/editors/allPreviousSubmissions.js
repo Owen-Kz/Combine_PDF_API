@@ -11,11 +11,11 @@ const allPreviousSubmissions = async (req, res) => {
             const query = `
                 SELECT * 
                 FROM submissions 
-                WHERE article_id = ? AND title != '' AND title IS NOT NULL 
+                WHERE (article_id = ? OR previous_manuscript_id = ?) AND title != '' AND title IS NOT NULL 
                 ORDER BY id DESC;
             `;
 
-            db.query(query, [revisionID], async (error, data) => {
+            db.query(query, [revisionID, revisionID], async (error, data) => {
                 if (error) {
                     return res.status(500).json({ error: error.message });
                 }

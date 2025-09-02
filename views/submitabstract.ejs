@@ -5,8 +5,10 @@
       <h3 class="manu_head"><span style="color: #e22424;">*</span>Abstract</h3><br>
       <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
 
-      <!-- Main toolbar -->
-      <div class="bg-body border rounded-bottom h-400px overflow-hidden quill-editor" id="quilleditor" style="height: 500px;">
+      <!-- Quill container - make sure this is unique -->
+      <div id="abstract-quill-container">
+        <div class="bg-body border rounded-bottom h-400px overflow-hidden" id="abstract-quilleditor" style="height: 500px;">
+        </div>
       </div>
       <div id="word-count" class="wordCount"></div><span id="limit-exceed"> </span>
     </div>
@@ -24,86 +26,133 @@
     </form>
   </div>
 
-
   <script type="module">
-    import {quill} from '/js/quill.js'
-    const submitAbstractForm = document.getElementById("submitAbstractForm")
-    const abstract_value = document.getElementById("abstract_value")
-const savedAbstract = abstract_value.value
+    import { getQuillInstance, isQuillInitialized, destroyQuillInstances } from '/js/quill.js';
+    
+    let abstractQuill = null;
+    let abstractInitialized = false;
 
-// 1. DEBUG: Log raw value to inspect
-// console.log("RAW ABSTRACT:", savedAbstract); 
+    function initializeAbstractQuill() {
+      if (abstractInitialized) return abstractQuill;
+      
+      const abstract_value = document.getElementById("abstract_value");
+      const savedAbstract = abstract_value?.value || '';
+      
+      // Parse the abstract content
+      let parsedAbstract = { ops: [{ insert: "\n" }] };
+      
+      if (savedAbstract && savedAbstract !== 'null' && savedAbstract !== 'undefined') {
+        try {
+          // Clean the string
+          function prepareJSON(str) {
+            if (!str) return '{"ops":[{"insert":"\\n"}]}';
+            
+            const decoded = str.replace(/&[#\w]+;/g, m => 
+              new DOMParser().parseFromString(m, "text/html").body.textContent
+            );
+            
+            return decoded
+              .trim()
+              .replace(/([\w"])\s*$/, '$1')
+              .replace(/^([^[{])/, '')
+              .replace(/([^\]}])$/, '');
+          }
 
-// 2. Clean the string
-function prepareJSON(str) {
-  // Remove ALL HTML entities (&#34; etc)
-  const decoded = str.replace(/&[#\w]+;/g, m => 
-    new DOMParser().parseFromString(m, "text/html").body.textContent
-  );
-  
-  // Fix common JSON issues:
-  return decoded
-    .trim()
-    .replace(/([\w"])\s*$/, '$1') // Remove trailing whitespace/commas
-    .replace(/^([^[{])/, '')       // Remove garbage before JSON
-    .replace(/([^\]}])$/, '');     // Remove garbage after JSON
-}
-
-// 3. Safe parsing with detailed error handling
-let parsedAbstract;
-try {
-  const cleanJSON = prepareJSON(savedAbstract);
-  // console.log("CLEANED JSON:", cleanJSON); // DEBUG
-  
-  parsedAbstract = JSON.parse(cleanJSON);
-  
-  // Ensure Quill-compatible format
-  if (Array.isArray(parsedAbstract)) {
-    parsedAbstract = { ops: parsedAbstract };
-  } else if (!parsedAbstract.ops) {
-    parsedAbstract = { ops: [{ insert: "\n" }] };
-  }
-} catch (error) {
-  console.error("FULL ERROR:", {
-    error, 
-    input: savedAbstract,
-    cleaned: prepareJSON(savedAbstract)
-  });
-  parsedAbstract = { ops: [{ insert: "\n" }] }; // Fallback
-}
-
-// 4. Set Quill content
-quill.setContents(parsedAbstract);
-     submitAbstractForm.addEventListener("submit", function(e){
-      e.preventDefault()
-      // if(!quill.getContents().ops || quill.getContents().ops == '[{"insert":"\\n"}]'){
-      //   return showErrorPopup("Abstract Cannot be empty")
-      // }
-      const data = {
-        abstract :  JSON.stringify(quill.getContents().ops)
+          const cleanJSON = prepareJSON(savedAbstract);
+          parsedAbstract = JSON.parse(cleanJSON);
+          
+          if (Array.isArray(parsedAbstract)) {
+            parsedAbstract = { ops: parsedAbstract };
+          } else if (!parsedAbstract.ops) {
+            parsedAbstract = { ops: [{ insert: "\n" }] };
+          }
+        } catch (error) {
+          console.error("Abstract parsing error:", error);
+          parsedAbstract = { ops: [{ insert: "\n" }] };
+        }
       }
 
+      // Initialize Quill with the parsed content
+      abstractQuill = getQuillInstance('#abstract-quilleditor', parsedAbstract);
+      abstractInitialized = true;
+      
+      return abstractQuill;
+    }
 
-      fetch(`/submitAbstract?_uid=${uid.value}&prg=true`, {
-        method:"POST",
-        headers:{
-          "Content-type" : "application/JSON"
-        },
-        body:JSON.stringify(data)
-      }).then(res =>res.json())
-      .then(data =>{
-        if(data.error){
-          iziToast.error({
-        message: data.error,
-        position:"topRight"
-      })
-
-        }else if(data.success){
-        showProgressSavedPopup()
-        showNext('keywords', 'abstract', 'abstract_nav', 'keywords_nav', 'title', 4,4, 'submitAbstract')
-    }else {
-        showErrorPopup("An Error Occured. Please try again")
+    // Initialize when abstract section becomes visible
+    function handleAbstractSectionVisibility() {
+      const abstractSection = document.getElementById('abstract');
+      if (abstractSection && !abstractSection.classList.contains('hidden')) {
+        if (!abstractInitialized) {
+          setTimeout(() => {
+            initializeAbstractQuill();
+          }, 100);
         }
-      })
-    })
+      }
+    }
+
+    // Observe section visibility changes
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.attributeName === 'class') {
+          handleAbstractSectionVisibility();
+        }
+      });
+    });
+
+    const abstractSection = document.getElementById('abstract');
+    if (abstractSection) {
+      observer.observe(abstractSection, { attributes: true });
+    }
+
+    // Form submission handler
+    const submitAbstractForm = document.getElementById("submitAbstractForm");
+    if (submitAbstractForm) {
+      submitAbstractForm.addEventListener("submit", function(e){
+        e.preventDefault();
+        
+        if (!abstractQuill) {
+          showErrorPopup("Editor not ready. Please wait...");
+          return;
+        }
+
+        const data = {
+          abstract: JSON.stringify(abstractQuill.getContents().ops)
+        };
+       const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+  const queriedID = "<%= queriedID %>";
+        fetch(`/submitAbstract?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json"
+          },
+          body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            iziToast.error({
+              message: data.error,
+              position: "topRight"
+            });
+          } else if (data.success) {
+            showProgressSavedPopup();
+            showNext('keywords', 'abstract', 'abstract_nav', 'keywords_nav', 'title', 4, 4, 'submitAbstract');
+          } else {
+            showErrorPopup("An Error Occurred. Please try again");
+          }
+        })
+        .catch(error => {
+          console.error("Submission error:", error);
+          showErrorPopup("Network error. Please check your connection.");
+        });
+      });
+    }
+
+    // Cleanup when leaving the page
+    window.addEventListener('beforeunload', function() {
+      if (abstractInitialized) {
+        destroyQuillInstances();
+      }
+    });
   </script>

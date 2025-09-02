@@ -1,6 +1,13 @@
 import { fetchOrcidData } from "./fetchOrcidId.js";
-import { quill } from "./quill.js";
+import { getQuillInstance, initializeQuill } from "./quill.js";
 
+// Initialize Quill editor when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Quill editor
+  const quill = getQuillInstance();
+  
+  // Rest of your code that depends on Quill...
+});
 
 const article_type = document.getElementById("article-type")
 const prefix = document.getElementById("article_type")
@@ -31,58 +38,6 @@ nextButton.removeAttribute("disabled")
 article_type_nav.setAttribute("onclick","NavigationNext('article-type', 'article_type_nav','upload_manuscript_nav',0)")
 }
 })
-
-// document.addEventListener('DOMContentLoaded', function() {
-//     const articleTypeSelect = document.getElementById('article_type');
-//     const disciplineSelect = document.getElementById('discipline');
-//     const nextButton = document.querySelector('.nextManuscript');
-    
-// const isYesChecked = document.getElementById("is_women_in_contemporary_science_yes").checked;
-// const isNotChecked = document.getElementById("is_women_in_contemporary_science_no").checked;
-  
-//     // Function to check if both fields are selected
-//     function checkSelection() {
-//       // Check if both article type and discipline are selected
-//       if (articleTypeSelect.value !== '' && disciplineSelect.value !== '' && isYesChecked !== false || isNotChecked !== false) {
-//         nextButton.classList.remove("disabled")
-//         nextButton.disabled = false; // Enable the Next button
-//       } else if(articleTypeSelect.value === ""){
-//         showErrorPopup('Please select Article Type before proceeding.');
-//         nextButton.classList.add("disabled")
-//         nextButton.disabled = true;
-//       }else if(disciplineSelect.value === ""){
-//         showErrorPopup('Please select Discipline before proceeding.');
-//         nextButton.classList.add("disabled")
-//         nextButton.disabled = true;
-//       }else if(isYesChecked === false || isNotChecked === false){
-//         showErrorPopup('Please select Yes or No for Women in Contemporary Science before proceeding.');
-//         nextButton.classList.add("disabled")
-//         nextButton.disabled = true;
-//       }
-//        else {
-//         nextButton.classList.add("disabled")
-//         nextButton.disabled = true; // Disable the Next button if either is not selected
-//       }
-//     }
-  
-//     // Event listener for change on both select fields
-//     articleTypeSelect.addEventListener('change', checkSelection);
-//     disciplineSelect.addEventListener('change', checkSelection);
-  
-//     // Event listener for Next button click
-//     nextButton.addEventListener('click', function() {
-//       // Prevent form submission if fields are not selected
-//       if (articleTypeSelect.value === '' && !articleTypeSelect.value) {
-//         showErrorPopup('Please select Article Type before proceeding.');
-        
-//        // Alert user
-//       }
-//       if (disciplineSelect.value === '' && !disciplineSelect.value) {
-//         showErrorPopup('Please select Discipline before proceeding.');
-        
-//       }
-//     });
-//   });
 
 document.addEventListener('DOMContentLoaded', function () {
   const articleTypeSelect = document.getElementById('article_type');
@@ -133,8 +88,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 const headerMessageContainer = document.getElementById("headerMessage")
-
-
 headerMessageContainer.innerHTML = headerMessages[0]
 
 
@@ -196,47 +149,72 @@ Titles.forEach(titles =>{
 
 });
 
+// Abstract section with Quill integration
 const Abstract = document.getElementById("abstract");
-const nextabButton = Abstract.querySelector(".nextManuscript");
-var text = quill.getText().trim();
-if(text.length === 0){
-    const nextButton = Abstract.querySelector(".nextManuscript")
-    nextabButton.classList.add("disabled")
+if (Abstract) {
+  const nextabButton = Abstract.querySelector(".nextManuscript");
+  
+  // Initialize Quill for abstract if it exists
+  const quillEditor = document.getElementById("quilleditor");
+  if (quillEditor && !quillEditor.classList.contains('ql-container')) {
+    initializeQuill('#quilleditor');
+  }
+  
+  const quill = getQuillInstance();
+  
+  if (quill) {
+    // Initial check
+    checkAbstractWordCount(quill, nextabButton);
+    
+    // Event listener for text change in Quill editor
+    quill.on('text-change', function() {
+      checkAbstractWordCount(quill, nextabButton);
+    });
+  } else {
+    console.error("Quill editor not initialized");
+    nextabButton.classList.add("disabled");
+  }
 }
 
-    // Event listener for text change in Quill editor
-    quill.on('text-change', function(delta, oldDelta, source) {
-        if (source === 'user') { // Check if change is from user input
-          var wordCountElement = document.getElementById('word-count');
-          var limitExceed = document.getElementById('limit-exceed');
-      
-              var context = quill.getText().trim(); // Get plain text from Quill editor
-              var words = context.split(/\s+/); // Split text into words
-              var wordCount = words.length;
-      
-              // Update word count display
-              wordCountElement.textContent = 'Word Count: ' + wordCount + ' words';
-      
-              // Check if exceeded maximum limit (300 words or 3000 characters)
-              if (wordCount > 300 || text.length > 3000) {
-                  limitExceed.innerHTML = `<p>Word Limit Exceeded. Please adjust to expected limit before proceeding. Maximum of 300 Words!</p>`;
-                  // Disable the button
-                  nextabButton.classList.add("disabled");
-                  nextabButton.setAttribute("disabled", true);
-              } else {
-                  // Hide limit exceeded message
-                  limitExceed.innerHTML = " ";
-                  wordCountElement.textContent = 'Word Count: ' + wordCount + ' words';
-                  
-                  // Enable the button if the word count is within limit and text is not empty
-                  if (wordCount > 0) {
-                      nextabButton.classList.remove("disabled");
-                      nextabButton.removeAttribute("disabled");
-                      abstract_nav.setAttribute("onclick", "NavigationNext('abstract', 'abstract_nav','keywords_nav', 3)");
-                  }
-              }
-        }
-    });
+function checkAbstractWordCount(quill, nextButton) {
+  const wordCountElement = document.getElementById('word-count');
+  const limitExceed = document.getElementById('limit-exceed');
+  
+  if (!wordCountElement || !limitExceed) {
+    console.error("Word count elements not found");
+    return;
+  }
+  
+  const text = quill.getText().trim();
+  const words = text.split(/\s+/).filter(word => word.length > 0);
+  const wordCount = words.length;
+  const charCount = text.length;
+
+  // Update word count display
+  wordCountElement.textContent = 'Word Count: ' + wordCount + ' words';
+
+  // Check if exceeded maximum limit (300 words or 3000 characters)
+  if (wordCount > 300 || charCount > 3000) {
+    limitExceed.innerHTML = `<p>Word Limit Exceeded. Please adjust to expected limit before proceeding. Maximum of 300 Words!</p>`;
+    // Disable the button
+    nextButton.classList.add("disabled");
+    nextButton.disabled = true;
+  } else {
+    // Hide limit exceeded message
+    limitExceed.innerHTML = " ";
+    wordCountElement.textContent = 'Word Count: ' + wordCount + ' words';
+    
+    // Enable the button if the word count is within limit and text is not empty
+    if (wordCount > 0) {
+      nextButton.classList.remove("disabled");
+      nextButton.disabled = false;
+      abstract_nav.setAttribute("onclick", "NavigationNext('abstract', 'abstract_nav','keywords_nav', 3)");
+    } else {
+      nextButton.classList.add("disabled");
+      nextButton.disabled = true;
+    }
+  }
+}
 
 const Keywords = document.getElementById("keywords")
 const Keyword = Keywords.querySelectorAll("input[type=text]")
@@ -285,22 +263,6 @@ const Suggest_Reviewer_Email = Suggest_Reviewers.querySelectorAll("input[type=em
 suggest_reviewers_nav.setAttribute("onclick","NavigationNext('suggest-reviewers', 'suggest_reviewers_nav', 'disclosures_nav', 6)");
 
       
-// Suggest_Reviewer.forEach(suggest_Reviewer =>{
-//     // if(suggest_Reviewer.value === "" && !suggest_Reviewer.value){
-//     //     const nextButton = Suggest_Reviewers.querySelector(".nextManuscript")
-//     //     nextButton.classList.add("disabled")
-//     // } 
-    
-//     suggest_Reviewer.addEventListener("change", function(){
-//       if(suggest_Reviewer.value && suggest_Reviewer.value != ""){
-//           const nextButton = Suggest_Reviewers.querySelector(".nextManuscript")
-
-//           suggest_reviewers_nav.setAttribute("onclick","NavigationNext('suggest-reviewers', 'suggest_reviewers_nav', 'disclosures_nav', 6)");
-//           }
-//       })
-      
-//       });
-
 const matchingEmail = [];
 Suggest_Reviewer_Email.forEach(email_keyword => {
   email_keyword.addEventListener("change", function() {
@@ -309,17 +271,20 @@ Suggest_Reviewer_Email.forEach(email_keyword => {
     if (matchingEmail.includes(emailValue)) {
       const nextButton = Suggest_Reviewers.querySelector(".nextManuscript");
       nextButton.classList.add("disabled");
-      nextButton.setAttribute("disabled", "disabled");
+      nextButton.disabled = true;
       showErrorPopup('This email has already been filled!');
     }
     else if(!matchingEmail.includes(emailValue)) {
       const nextButton = Suggest_Reviewers.querySelector(".nextManuscript");
       nextButton.classList.remove("disabled");
-      nextButton.removeAttribute("disabled", "disabled");
+      nextButton.disabled = false;
       matchingEmail.push(emailValue);
     }
     else if(emailValue == ""){
-      matchingEmail.pop(emailValue);
+      const index = matchingEmail.indexOf(emailValue);
+      if (index > -1) {
+        matchingEmail.splice(index, 1);
+      }
     }
   });
 });

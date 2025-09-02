@@ -134,7 +134,9 @@ submitArticleType.addEventListener("submit", function(e){
         submissionStatus: submissionStatus.value,
         is_women_in_contemporary_science: is_women_in_contemporary_science.value
     }
-   fetch(`/submitArticleType?_uid=${uid.value}&prg=true`, {
+    const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+    const queriedID = "<%= queriedID %>";
+   fetch(`/submitArticleType?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
     method:"POST",
     headers:{
         "Content-type":"application/JSON"

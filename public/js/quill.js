@@ -46,11 +46,20 @@ function customToolbarHandler(quill, format) {
 }
 
 // 📌 Function to Initialize Quill Editors
-function initializeQuill(selector) {
+function initializeQuill(selector, content = null) {
   const editor = document.querySelector(selector);
-  if (!editor) return null; // Prevent errors if element doesn't exist
+  if (!editor) {
+    console.error('Element not found:', selector);
+    return null;
+  }
+  
+  // Check if Quill is already initialized on this element
+  if (editor.classList.contains('ql-container')) {
+    console.log('Quill already initialized on', selector);
+    return Quill.find(editor);
+  }
 
-  return new Quill(selector, {
+  const quillInstance = new Quill(selector, {
     modules: {
       toolbar: {
         container: [
@@ -59,9 +68,9 @@ function initializeQuill(selector) {
           [{ list: "ordered" }, { list: "bullet" }],
           [{ header: [1, 2, false] }],
           [{ align: [] }],
-          [{ script: "sub" }, { script: "super" }], // Subscript/Superscript
-          [{ color: [] }, { background: [] }], // Fixed comma issue
-          [{ size: ["small", false, "large", "huge"] }], // Font size
+          [{ script: "sub" }, { script: "super" }],
+          [{ color: [] }, { background: [] }],
+          [{ size: ["small", false, "large", "huge"] }],
           ["clean"],
           [{ uppercase: "uppercase" }],
           [{ lowercase: "lowercase" }],
@@ -78,12 +87,64 @@ function initializeQuill(selector) {
     },
     theme: "snow",
   });
+
+  // Set content if provided
+  if (content) {
+    try {
+      if (typeof content === 'string') {
+        quillInstance.root.innerHTML = content;
+      } else {
+        quillInstance.setContents(content);
+      }
+    } catch (error) {
+      console.error('Error setting Quill content:', error);
+      quillInstance.setText(content || '');
+    }
+  }
+
+  return quillInstance;
 }
 
-// 🎯 Initialize Main Editor
-const quill = initializeQuill("#quilleditor");
+// Global quill instances
+let quillInstance = null;
+let quillInstance2 = null;
 
-// 🎯 Initialize Second Editor (If Exists)
-const quill2 = document.getElementById("quilleditor2") ? initializeQuill("#quilleditor2") : null;
+// Function to get or initialize the main quill editor
+function getQuillInstance(selector = '#quilleditor', content = null) {
+  if (!quillInstance) {
+    quillInstance = initializeQuill(selector, content);
+  }
+  return quillInstance;
+}
 
-export { quill, quill2 };
+// Function to get or initialize the second quill editor
+function getQuillInstance2(selector = '#quilleditor2', content = null) {
+  if (!quillInstance2 && document.querySelector(selector)) {
+    quillInstance2 = initializeQuill(selector, content);
+  }
+  return quillInstance2;
+}
+
+// Function to check if Quill is initialized
+function isQuillInitialized() {
+  return quillInstance !== null;
+}
+
+// Function to destroy Quill instances (for cleanup)
+function destroyQuillInstances() {
+  if (quillInstance) {
+    quillInstance = null;
+  }
+  
+  if (quillInstance2) {
+    quillInstance2 = null;
+  }
+}
+
+export { 
+  getQuillInstance, 
+  getQuillInstance2, 
+  isQuillInitialized, 
+  destroyQuillInstances,
+  initializeQuill 
+};

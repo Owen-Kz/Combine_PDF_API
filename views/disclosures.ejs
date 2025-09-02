@@ -132,7 +132,9 @@
     e.preventDefault()
     body.removeAttribute("id")
     const data = new FormData(disclosuresForm)
-    fetch(`/submitDisclosures?_uid=${uid.value}&prg=true`, {
+    const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+    const queriedID = "<%= queriedID %>";
+    fetch(`/submitDisclosures?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
       method:"POST",
       body:data
     }).then (res => res.json())

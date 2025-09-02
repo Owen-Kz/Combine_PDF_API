@@ -281,7 +281,9 @@ document.addEventListener('DOMContentLoaded', function() {
 submitAuthorsForm.addEventListener("submit", function(e){
   e.preventDefault();
   const formData = new FormData(submitAuthorsForm)
-  fetch(`/addAuthorToPaper?_uid=${uid.value}&prg=true`, {
+  const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+  const queriedID = "<%= queriedID %>";
+  fetch(`/addAuthorToPaper?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
     method: "POST",
     body: formData
   }).then(res => res.json())

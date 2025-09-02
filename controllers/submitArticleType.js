@@ -1,106 +1,213 @@
 const db = require("../routes/db.config");
+const dbPromise = require("../routes/dbPromise.config");
 const generateArticleId = require("./generateArticleId");
 
-const submitArticleType = async (req, res) => {
-       if(!req.user || !req.user.id){
-            return res.json({error:"Session is Not Valid, please login again"})
+// Retry function with exponential backoff (consistent with upload handler)
+async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error) {
+            lastError = error;
+            console.log(`Operation attempt ${attempt}/${maxRetries} failed:`, error.message);
+            
+            if (attempt < maxRetries) {
+                const delay = baseDelay * Math.pow(2, attempt - 1);
+                const jitter = delay * 0.1 * (Math.random() * 2 - 1);
+                const totalDelay = Math.max(100, delay + jitter);
+                
+                await new Promise(resolve => setTimeout(resolve, totalDelay));
+            }
         }
+    }
+    
+    throw lastError;
+}
+
+const submitArticleType = async (req, res) => {
+    if (!req.user || !req.user.id) {
+        return res.json({ error: "Session is Not Valid, please login again" });
+    }
+    
     try {
-        const correspondingAuthor = req.user.email; // Using authenticated user's email instead of cookie
-        const { article_id, article_type, discipline, previous_manuscript_id, is_women_in_contemporary_science, submissionStatus } = req.body;
+        const correspondingAuthor = req.user.email;
+        const { article_type, discipline, previous_manuscript_id, is_women_in_contemporary_science, submissionStatus } = req.body;
+        
         // Validate required fields
         if (!article_type || !discipline || !submissionStatus) {
             return res.status(400).json({
                 error: "All fields are required",
-                received: { article_id, article_type, discipline, previous_manuscript_id, submissionStatus }
+                received: { article_type, discipline, submissionStatus }
             });
         }
 
-        // Get process type from session instead of cookie
-        const process = req.manuscriptData?.process;
+        // Get process type and article ID from session
+        const process = req.session.manuscriptData?.process || "new";
         let articleID = req.session.articleId;
+        let newRevisionID = req.session.manuscriptData?.new_revisionID;
+        
+        // Use the new revision ID if it exists (for revisions/corrections)
+        if (newRevisionID) {
+            articleID = newRevisionID;
+        }
 
+        // Extract base article ID for revisions/corrections
+        let baseArticleId;
+        if (newRevisionID) {
+            baseArticleId = newRevisionID.split('.')[0]; // Get part before dot
+        } else {
+            baseArticleId = articleID;
+        }
 
-
-        // Check if the ID already exists by another user's session
-        db.query("SELECT * FROM submissions WHERE revision_id = ? AND corresponding_authors_email != ?", 
-            [article_id, correspondingAuthor], 
-            async (err, sessionId) => {
-                if (err) {
-                    console.error("Database error:", err);
-                    return res.status(500).json({ error: "Database error" });
+        // Get counts from the original article if this is a revision/correction
+        let revisionsCount = 0;
+        let correctionsCount = 0;
+        
+        if (newRevisionID && (process === "revision" || process === "correction")) {
+            try {
+                const [originalData] = await dbPromise.query(
+                    "SELECT revisions_count, corrections_count FROM submissions WHERE article_id = ? ORDER BY date_submitted DESC LIMIT 1", 
+                    [baseArticleId]
+                );
+                
+                if (originalData && originalData[0]) {
+                    revisionsCount = originalData[0].revisions_count || 0;
+                    correctionsCount = originalData[0].corrections_count || 0;
                 }
+            } catch (error) {
+                console.error("Error fetching original article counts:", error);
+                // Continue with default counts
+            }
+        }
 
-                // if (sessionId[0]) {
-                //     // Generate new ID if conflict exists
-                //     articleID = await generateArticleId(req, res);
-                //     req.session.articleId = articleID; // Store new ID in session
-                // } else {
-                //     articleID = req.manuscriptData?.sessionID || article_id;
-                // }
+        // Database operation with retry logic
+        try {
+            await retryWithBackoff(async () => {
+                let connection;
+                try {
+                    connection = await dbPromise.getConnection();
+                    await connection.beginTransaction();
 
-                // Get counts from session instead of cookies
-                let revisionsCount = req.manuscriptData?.newReviseCount || 0;
-                let correctionsCount = req.manuscriptData?.newCorrectionCount || 0;
+                    // Check if submission already exists
+                    const [existingRecords] = await connection.query(
+                        "SELECT * FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ?", 
+                        [articleID, correspondingAuthor]
+                    );
 
-                // Check if submission already exists
-                db.query("SELECT * FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ?", 
-                    [articleID, correspondingAuthor], 
-                    async (err, data) => {
-                        if (err) {
-                            console.error("Database error:", err);
-                            return res.status(500).json({ error: "Database error" });
+                    if (existingRecords.length > 0) {
+                        // Update existing submission
+                        const [updateResult] = await connection.query(
+                            `UPDATE submissions SET 
+                                article_type = ?, 
+                                discipline = ?, 
+                                previous_manuscript_id = ?, 
+                                is_women_in_contemporary_science = ?, 
+                                status = ?,
+                                last_updated = NOW()
+                             WHERE revision_id = ?`, 
+                            [article_type, discipline, previous_manuscript_id, 
+                             is_women_in_contemporary_science, submissionStatus, articleID]
+                        );
+
+                        if (updateResult.affectedRows === 0) {
+                            throw new Error("No rows affected during update");
+                        }
+                    } else {
+                        // Insert new submission
+                        const [insertResult] = await connection.query(
+                            `INSERT INTO submissions SET 
+                                article_id = ?,
+                                revision_id = ?,
+                                article_type = ?,
+                                discipline = ?,
+                                corresponding_authors_email = ?,
+                                is_women_in_contemporary_science = ?,
+                                status = ?,
+                                revisions_count = ?,
+                                corrections_count = ?,
+                                previous_manuscript_id = ?,
+
+                                last_updated = NOW()`, 
+                            [baseArticleId, articleID, article_type, discipline, 
+                             correspondingAuthor, is_women_in_contemporary_science, 
+                             submissionStatus, revisionsCount, correctionsCount, 
+                             previous_manuscript_id]
+                        );
+
+                        if (insertResult.affectedRows === 0) {
+                            throw new Error("No rows affected during insert");
                         }
 
-                        if (data[0]) {
-                            // Update existing submission
-                            db.query("UPDATE submissions SET article_type = ?, discipline = ?, previous_manuscript_id = ?, is_women_in_contemporary_science = ?, status = ? WHERE revision_id = ?", 
-                                [article_type, discipline, previous_manuscript_id, is_women_in_contemporary_science, submissionStatus, articleID], 
-                                (err, update) => {
-                                    if (err) {
-                                        console.error("Update error:", err);
-                                        return res.status(500).json({ error: "Update failed" });
-                                    }
-                                    return res.json({ success: "Progress saved", uid:req.query._uid });
-                                });
-                        } else {
-                            // Create new submission
-                            db.query("INSERT INTO submissions SET ?", 
-                                {
-                                    article_id: article_id,
-                                    revision_id: articleID,
-                                    article_type: article_type,
-                                    discipline: discipline,
-                                    corresponding_authors_email: correspondingAuthor,
-                                    is_women_in_contemporary_science: is_women_in_contemporary_science,
-                                    status: submissionStatus,
-                                    revisions_count: revisionsCount,
-                                    corrections_count: correctionsCount
-                                }, 
-                                (err, insert) => {
-                                    if (err) {
-                                        console.error("Insert error:", err);
-                                        return res.status(500).json({ error: "Insert failed" });
-                                    }
+                        // If this is a revision or correction, update the original article counts
+                        if (process === "revision" || process === "correction") {
+                            const updateField = process === "revision" ? "revisions_count" : "corrections_count";
+                            const newCount = process === "revision" ? revisionsCount + 1 : correctionsCount + 1;
+                            
+                            const [countUpdateResult] = await connection.query(
+                                `UPDATE submissions SET ${updateField} = ?, last_updated = NOW() 
+                                 WHERE article_id = ? AND revision_id = ?`, 
+                                [newCount, baseArticleId, baseArticleId]
+                            );
 
-                                    // Update counts for the article
-                                    db.query("UPDATE submissions SET revisions_count = ?, corrections_count = ? WHERE article_id = ? AND revision_id != ?", 
-                                        [revisionsCount, correctionsCount, article_id, articleID], 
-                                        (err) => {
-                                            if (err) {
-                                                console.error("Count update error:", err);
-                                                // Continue despite count update error
-                                            }
-                                        });
-
-                                    return res.json({ success: "Progress has been saved", article_id:articleID });
-                                });
+                            if (countUpdateResult.affectedRows === 0) {
+                                console.warn("Count update did not affect any rows");
+                            }
                         }
-                    });
+                    }
+
+                    await connection.commit();
+                    return true;
+                    
+                } catch (error) {
+                    if (connection) {
+                        await connection.rollback();
+                    }
+                    throw error;
+                } finally {
+                    if (connection) {
+                        connection.release();
+                    }
+                }
+            }, 3, 500);
+
+            // Update session data
+            if (!req.session.manuscriptData) {
+                req.session.manuscriptData = {};
+            }
+            
+            req.session.manuscriptData.process = process;
+            req.session.articleId = articleID;
+            
+            // Save session explicitly
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error("Session save error:", saveErr);
+                }
+                
+                return res.json({ 
+                    success: "Progress has been saved", 
+                    article_id: articleID,
+                    revision_id: articleID,
+                    process: process
+                });
             });
+
+        } catch (dbError) {
+            console.error("Database operation failed after retries:", dbError);
+            return res.status(500).json({ 
+                error: "Failed to save article type",
+                details: process.env.NODE_ENV === 'development' ? dbError.message : "Please try again"
+            });
+        }
+
     } catch (error) {
         console.error("System error:", error);
-        return res.status(500).json({ error: "System error" });
+        return res.status(500).json({ 
+            error: "System error",
+            details: process.env.NODE_ENV === 'development' ? error.message : "Please try again later"
+        });
     }
 };
 

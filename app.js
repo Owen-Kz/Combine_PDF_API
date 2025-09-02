@@ -9,18 +9,35 @@ const session = require("express-session");
 const MySQLStore = require('express-mysql-session')(session); // Example for MySQL
 
 const bodyParser = require("body-parser");
+// app.use(session({
+//     secret: process.env.JWT_SECRET,
+//     resave: false,
+//     saveUninitialized: true,
+//     store: new MySQLStore({    host: process.env.D_HOST,
+//     user: process.env.D_USER,
+//     password: process.env.D_PASSWORD,
+//     database: process.env.D_NAME}), // Or MemoryStore (not for production)
+//     cookie: { 
+//         maxAge: 24 * 60 * 60 * 1000, // 1 day (adjust as needed)
+//         httpOnly: true,
+//     }
+// }));
+
 app.use(session({
-    secret: process.env.JWT_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    store: new MySQLStore({    host: process.env.D_HOST,
+  secret: process.env.JWT_SECRET,
+  store: new MySQLStore({
+    host: process.env.D_HOST,
+    port: process.env.D_PORT ? process.env.D_PORT : 3306,
     user: process.env.D_USER,
     password: process.env.D_PASSWORD,
-    database: process.env.D_NAME}), // Or MemoryStore (not for production)
-    cookie: { 
-        maxAge: 24 * 60 * 60 * 1000, // 1 day (adjust as needed)
-        httpOnly: true,
-    }
+    database: process.env.D_NAME
+  }),
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
   app.use(bodyParser.json());
