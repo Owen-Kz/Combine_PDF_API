@@ -29,8 +29,8 @@ const generateArticleId = async (req, res) => {
         
         // Create a placeholder record immediately to claim the ID
         await connection.query(
-            "INSERT INTO submissions (revision_id, title, status, corresponding_authors_email, date_submitted) VALUES (?, ?, ?, ?, NOW())",
-            [articleID, "Draft Submission", "draft", req.user.email]
+            "INSERT INTO submissions (revision_id, article_id, title, status, corresponding_authors_email, date_submitted) VALUES (?, ?, ?, ?, NOW())",
+            [articleID, articleID, "Draft Submission", "draft", req.user.email]
         );
 
         await connection.commit();
