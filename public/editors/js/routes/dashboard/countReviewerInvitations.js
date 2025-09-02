@@ -13,7 +13,7 @@ async function countAcceptedReviewerInvitations(article_id){
     })
 }
 
-async function CountRejectedReviewerInvitaitons(article_id){
+async function CountRejectedReviewerInvitations(article_id){
     return fetch(`/editors/countRejectedReviewerInvitations?a_id=${article_id}`,{})
     .then(res=>res.json())
     .then(data=>{
@@ -25,7 +25,7 @@ async function CountRejectedReviewerInvitaitons(article_id){
     })
 }
 
-async function CountTotalReviewerInvitaitons(article_id){
+async function CountTotalReviewerInvitations(article_id){
     return fetch(`/editors/countTotalReviewerInvitations?a_id=${article_id}`,{})
     .then(res=>res.json())
     .then(data=>{
@@ -40,6 +40,6 @@ async function CountTotalReviewerInvitaitons(article_id){
 
 export {
     countAcceptedReviewerInvitations,
-    countRejectedReviewerInvitations,
-    countTotalReviewerInvitations 
+    CountRejectedReviewerInvitations,
+    CountTotalReviewerInvitations
 }
