@@ -38,8 +38,8 @@ async function CountTotalReviewerInvitations(article_id){
 }
 
 
-export {
-    countAcceptedReviewerInvitations,
-    CountRejectedReviewerInvitations,
-    CountTotalReviewerInvitations
-}
+// export {
+//     countAcceptedReviewerInvitations,
+//     CountRejectedReviewerInvitations,
+//     CountTotalReviewerInvitations
+// }
