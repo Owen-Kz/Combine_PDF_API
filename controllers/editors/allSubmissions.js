@@ -20,7 +20,7 @@ const allSubmissions = async (req, res) => {
                                 ORDER BY s.revision_id DESC, s.process_start_date DESC
                             ) AS row_num
                         FROM submissions s
-                        WHERE s.title != ''
+                        WHERE s.title != '' AND s.title != 'Draft Submission'
                 `;
 
                 let whereClause = '';
@@ -67,7 +67,7 @@ const allSubmissions = async (req, res) => {
                     let countQuery = `
                         SELECT COUNT(DISTINCT s.article_id) as total
                         FROM submissions s
-                        WHERE s.title != ''
+                        WHERE s.title != '' AND s.title != 'Draft Submission'
                     ` + whereClause;
 
                     db.query(countQuery, queryParams.slice(0, -2), (countError, countData) => {

@@ -19,7 +19,7 @@ try{
                         ORDER BY s.revision_id DESC, s.process_start_date DESC
                     ) AS row_num
                 FROM submissions s
-                WHERE s.title != '' AND (status = 'Accepted' OR status = 'Rejected' OR status = 'rejected')
+                WHERE s.title != '' AND s.title != 'Draft Submission' AND (status = 'Accepted' OR status = 'Rejected' OR status = 'rejected')
         `;
 
         let whereClause = '';
@@ -66,7 +66,7 @@ try{
             let countQuery = `
                 SELECT COUNT(DISTINCT s.article_id) as total
                 FROM submissions s
-                WHERE s.title != '' AND (status = 'Accepted' OR status = 'Rejected' OR status = 'rejected')
+                WHERE s.title != '' AND s.title != 'Draft Submission' AND (status = 'Accepted' OR status = 'Rejected' OR status = 'rejected')
             ` + whereClause;
 
             db.query(countQuery, queryParams.slice(0, -2), (countError, countData) => {
