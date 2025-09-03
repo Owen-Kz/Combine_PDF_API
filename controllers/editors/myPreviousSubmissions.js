@@ -24,7 +24,7 @@ const myPreviousSubmissions = async (req, res) => {
         AND status != 'revision_saved' 
         AND status != 'returned' 
         AND (article_id = ? OR previous_manuscript_id = ?)
-        AND title != '' 
+        AND title != '' AND title != 'Draft Submission' 
         ORDER BY id DESC
       `;
       

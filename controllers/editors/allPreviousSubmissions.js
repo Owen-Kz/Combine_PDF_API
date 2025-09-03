@@ -11,7 +11,7 @@ const allPreviousSubmissions = async (req, res) => {
             const query = `
                 SELECT * 
                 FROM submissions 
-                WHERE (article_id = ? OR previous_manuscript_id = ?) AND title != '' AND title IS NOT NULL 
+                WHERE (article_id = ? OR previous_manuscript_id = ?) AND title != '' AND title != 'Draft Submission' AND title IS NOT NULL 
                 ORDER BY id DESC;
             `;
 

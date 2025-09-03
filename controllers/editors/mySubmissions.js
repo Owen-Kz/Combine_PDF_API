@@ -20,12 +20,12 @@ const mySubmissions = async (req, res) => {
             let query = `
                 SELECT * FROM submissions 
                 WHERE status NOT IN ('saved_for_later', 'revision_saved', 'returned') 
-                AND title != ''
+                AND title != '' AND title != 'Draft Submission'
             `;
 
             let countQuery = `SELECT COUNT(*) as total FROM submissions 
                 WHERE status NOT IN ('saved_for_later', 'revision_saved', 'returned') 
-                AND title != ''`;
+                AND title != '' AND title != 'Draft Submission'`;
             
             let queryParams = [];
             let countParams = [];
