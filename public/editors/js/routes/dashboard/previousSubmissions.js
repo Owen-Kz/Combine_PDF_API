@@ -4,13 +4,13 @@ import { GetCookie } from "../setCookie.js";
 import { validateLogin } from "../validateLogin.js";
 import { 
     countAcceptedEditorInvitations, 
-    CountRejectedEditorInvitaitons, 
-    CountTotalEditorInvitaitons 
+    CountRejectedEditorInvitations, 
+    CountTotalEditorInvitations 
 } from "./countEditorInvitations.js";
 import { 
     countAcceptedReviewerInvitations, 
-    CountRejectedReviewerInvitaitons, 
-    CountTotalReviewerInvitaitons 
+    CountRejectedReviewerInvitations, 
+    CountTotalReviewerInvitations 
 } from "./countReviewerInvitations.js";
 import { GetMyPreviousSubmissions } from "./getMyPreviousSubmissions.js";
 import { GetPreviousAdminSubmissions } from "./getPreviousAdminSubmissions.js";
@@ -43,7 +43,7 @@ const stats = document.getElementById("stats");
     let submissionStatus = "";
     let adminAction = "";
     let tableRowClass = "";
-    let reviewerInvitaitons = "";
+    let reviewerInvitations = "";
     let editorInvitations = "";
 
     const redirectTo = (path, id) => {
@@ -76,15 +76,15 @@ const stats = document.getElementById("stats");
             editorInvitations = `
                 <ul>
                     <li>Accepted: ${await countAcceptedEditorInvitations(id)}</li>
-                    <li>Declined: ${await CountRejectedEditorInvitaitons(id)}</li>
-                    <li>Pending: ${await CountTotalEditorInvitaitons(id)}</li>
+                    <li>Declined: ${await CountRejectedEditorInvitations(id)}</li>
+                    <li>Pending: ${await CountTotalEditorInvitations(id)}</li>
                 </ul>
             `;
-            reviewerInvitaitons = `
+            reviewerInvitations = `
                 <ul>
                     <li>Accepted: ${await countAcceptedReviewerInvitations(id)}</li>
-                    <li>Declined: ${await CountRejectedReviewerInvitaitons(id)}</li>
-                    <li>Pending: ${await CountTotalReviewerInvitaitons(id)}</li>
+                    <li>Declined: ${await CountRejectedReviewerInvitations(id)}</li>
+                    <li>Pending: ${await CountTotalReviewerInvitations(id)}</li>
                 </ul>
             `;
             adminAction = accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant" ?
@@ -110,7 +110,7 @@ const stats = document.getElementById("stats");
             <td class="status">
                 <span class="status-text ${textColor}">${text}</span>
             </td>
-            <td>${reviewerInvitaitons}</td>
+            <td>${reviewerInvitations}</td>
             <td>${editorInvitations}</td>
             <td>
                 <input type="hidden" value="${status.revision_id}" name="id">

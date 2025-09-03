@@ -86,13 +86,13 @@ function formatTimestamp(timestamp) {
 // import { GetMySubmissions } from "./getMySubmissions.js";
 // import {
 //     countAcceptedEditorInvitations,
-//     CountRejectedEditorInvitaitons,
-//     CountTotalEditorInvitaitons
+//     CountRejectedEditorInvitations,
+//     CountTotalEditorInvitations
 // } from "./countEditorInvitations.js";
 // import {
 //     countAcceptedReviewerInvitations,
-//     CountRejectedReviewerInvitaitons,
-//     CountTotalReviewerInvitaitons
+//     CountRejectedReviewerInvitations,
+//     CountTotalReviewerInvitations
 // } from "./countReviewerInvitations.js";
 
 const user = GetCookie("editor");
@@ -104,7 +104,7 @@ const user = GetCookie("editor");
     let submissionStatus = "";
     let adminAction = "";
     let tableRowClass = "";
-    let reviewerInvitaitons = "";
+    let reviewerInvitations = "";
     let editorInvitations = "";
 
     const authorsCount = document.querySelectorAll(".authorsCount");
@@ -146,7 +146,7 @@ const user = GetCookie("editor");
         <td class="status">
             <span class="status-text ${textColor}">${text}</span>
         </td>
-        <td>${reviewerInvitaitons}</td>
+        <td>${reviewerInvitations}</td>
         <td>${editorInvitations}</td>
         <td>
             <a href="/editors/View/?a=${status.revision_id}" style="font-weight:bold;">View</a>
@@ -213,15 +213,15 @@ async function renderSubmissions(submissionsArray, accoount_type, page, isSearch
                 editorInvitations = `
                     <ul>
                         <li>Accepted: ${await countAcceptedEditorInvitations(id)}</li>
-                        <li>Declined: ${await CountRejectedEditorInvitaitons(id)}</li>
-                        <li>Pending: ${await CountTotalEditorInvitaitons(id)}</li>
+                        <li>Declined: ${await CountRejectedEditorInvitations(id)}</li>
+                        <li>Pending: ${await CountTotalEditorInvitations(id)}</li>
                     </ul>
                 `;
-                reviewerInvitaitons = `
+                reviewerInvitations = `
                     <ul>
                         <li>Accepted: ${await countAcceptedReviewerInvitations(id)}</li>
-                        <li>Declined: ${await CountRejectedReviewerInvitaitons(id)}</li>
-                        <li>Pending: ${await CountTotalReviewerInvitaitons(id)}</li>
+                        <li>Declined: ${await CountRejectedReviewerInvitations(id)}</li>
+                        <li>Pending: ${await CountTotalReviewerInvitations(id)}</li>
                     </ul>
                 `;
 
@@ -269,7 +269,7 @@ async function renderSubmissions(submissionsArray, accoount_type, page, isSearch
                             <td class="status">
                                 <span class="status-text status-green">Accepted</span>
                             </td>
-                            <td>${reviewerInvitaitons}</td>
+                            <td>${reviewerInvitations}</td>
                             <td>${editorInvitations}</td>
                             <td>
                                 <a href="javascript:void(0)" onclick=archivePaper("${submission.revision_id}") style="font-weight:bold;">Archive</a>
@@ -302,7 +302,7 @@ async function renderSubmissions(submissionsArray, accoount_type, page, isSearch
                             <td class="status">
                                 <span class="status-text status-orange">Under Processing by author</span>
                             </td>
-                            <td>${reviewerInvitaitons}</td>
+                            <td>${reviewerInvitations}</td>
                             <td>${editorInvitations}</td>
                             <td>
                                 <a href="/editors/View/?a=${id}" style="font-weight:bold;">View</a>
@@ -315,7 +315,7 @@ async function renderSubmissions(submissionsArray, accoount_type, page, isSearch
                             <td class="status">
                                 <span class="status-text status-orange">Under Processing by author</span>
                             </td>
-                            <td>${reviewerInvitaitons}</td>
+                            <td>${reviewerInvitations}</td>
                             <td>${editorInvitations}</td>
                             <td>
                                 <a href="/editors/View/?a=${id}" style="font-weight:bold;">View</a>
@@ -328,7 +328,7 @@ async function renderSubmissions(submissionsArray, accoount_type, page, isSearch
                             <td class="status">
                                 <span class="status-text status-orange">Under Processing by author</span>
                             </td>
-                            <td>${reviewerInvitaitons}</td>
+                            <td>${reviewerInvitations}</td>
                             <td>${editorInvitations}</td>
                             <td>
                                 <a href="/editors/View/?a=${id}" style="font-weight:bold;">View</a>
