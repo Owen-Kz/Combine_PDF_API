@@ -1,5 +1,6 @@
 const db = require("../routes/db.config");
 const dbPromise = require("../routes/dbPromise.config");
+const dotenv = require("dotenv").config();
 
 // Consistent retry function with other modules
 async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {

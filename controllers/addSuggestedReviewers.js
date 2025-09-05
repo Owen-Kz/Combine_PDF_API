@@ -2,6 +2,8 @@ const db = require("../routes/db.config");
 const multer = require("multer");
 const dbPromise = require("../routes/dbPromise.config");
 const upload = multer();
+const dotenv = require("dotenv").config();
+
 
 // Consistent retry function with other modules
 async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {

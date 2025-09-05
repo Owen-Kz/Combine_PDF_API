@@ -5,6 +5,7 @@ const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const db = require("../../routes/db.config");
 const dbPromise = require("../../routes/dbPromise.config");
+const dotenv = require("dotenv").config();
 
 // Cloudinary Configuration
 cloudinary.config({

@@ -1,6 +1,7 @@
 const db = require("../routes/db.config");
 const dbPromise = require("../routes/dbPromise.config");
 const generateArticleId = require("./generateArticleId");
+const dotenv = require("dotenv").config();
 
 // Retry function with exponential backoff (consistent with upload handler)
 async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
@@ -27,6 +28,9 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
 }
 
 const submitArticleType = async (req, res) => {
+      console.log('Session ID:', req.sessionID);
+  console.log('Session data:', req.session);
+  console.log('User:', req.user);
     if (!req.user || !req.user.id) {
         return res.json({ error: "Session is Not Valid, please login again" });
     }

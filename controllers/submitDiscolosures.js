@@ -5,6 +5,8 @@ const sendEmailToHandler = require("./utils/SendHandlerEmail");
 const CoAuthors = require("./CoAuthors");
 const dbPromise = require("../routes/dbPromise.config");
 const upload = multer();
+const dotenv = require("dotenv").config();
+
 
 // Consistent retry function with other modules
 async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
