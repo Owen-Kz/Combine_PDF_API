@@ -7,7 +7,6 @@ const deleteAnnouncement = async (req, res) =>{
         upload.none()(req, res, async (err) => {
 try{
     const {id, verifyCode} = req.body 
-    console.log(req.body)
  
     if(!id || !verifyCode){
         return res.json({error:"All Fields are required"})

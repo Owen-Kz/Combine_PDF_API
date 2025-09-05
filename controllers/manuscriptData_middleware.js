@@ -339,7 +339,7 @@ const manuscriptDataMiddleware = async (req, res, next) => {
     }
    
     req.current_process = currentProcess;
-    console.log("Final manuscript data:", req.session.manuscriptData);
+    // console.log("Final manuscript data:", req.session.manuscriptData);
 
     // Save session explicitly to ensure persistence
     req.session.save((err) => {

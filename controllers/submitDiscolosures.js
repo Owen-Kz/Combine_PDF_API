@@ -90,8 +90,8 @@ const SubmitDisclosures = async (req, res) => {
                         const hasSessionDocument = req.session.manuscriptData?.document_file && req.session.manuscriptData.document_file !== '';
 
                         // Determine which files to use - session files take precedence over database files
-                        const finalManuscriptFile = hasSessionManuscript ? req.session.manuscriptData.manuscript_file : manuscript_file;
-                        const finalCoverLetter = hasSessionCoverLetter ? req.session.manuscriptData.cover_letter_file : cover_letter_file;
+                        const finalManuscriptFile = hasSessionManuscript ? req.session.manuscriptData.manuscript_file.url : manuscript_file;
+                        const finalCoverLetter = hasSessionCoverLetter ? req.session.manuscriptData.cover_letter_file.url : cover_letter_file;
                         const finalDocumentFile = hasSessionDocument ? req.session.manuscriptData.document_file : document_file;
 
                         // Validate that we have a manuscript file (either from session or database)
@@ -105,7 +105,9 @@ const SubmitDisclosures = async (req, res) => {
                             console.log("Manuscript file:", hasSessionManuscript ? "From session" : "From database");
                             console.log("Cover letter:", hasSessionCoverLetter ? "From session" : "From database");
                             console.log("Document file:", hasSessionDocument ? "From session" : "From database");
-                            
+                            console.log(finalManuscriptFile)
+                            console.log(finalCoverLetter)
+
                             await connection.query(
                                 "UPDATE submissions SET manuscript_file = ?, cover_letter_file = ?, document_file = ? WHERE revision_id = ?", 
                                 [finalManuscriptFile, finalCoverLetter, finalDocumentFile, articleId]
