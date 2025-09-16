@@ -10,7 +10,7 @@ const bodyParser = require("body-parser");
 const cors = require('cors');
 const path = require("path");
 
-// Trust proxy (important for production)
+// Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
 // CORS configuration
@@ -48,13 +48,14 @@ sessionStore.on('error', (error) => {
 
 // Session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  name: 'asfi.sid',   // ✅ unique cookie name
+  secret: process.env.SESSION_SECRET || 'change_this_secret', // ✅ dedicated secret
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production',  // ✅ only secure in production
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true
@@ -71,7 +72,7 @@ app.use(express.json());
 // Debug middleware (remove in production)
 app.use((req, res, next) => {
   console.log('Session ID:', req.sessionID);
-  console.log('User in session:', req.session.user.email);
+  console.log('User in session:', req.session.user ? req.session.user.email : 'None');
   next();
 });
 
@@ -84,7 +85,7 @@ app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 app.use("/editorStatic/", express.static(path.join(__dirname, "public/editors")));
 
-// Socket.io setup (your existing code)
+// Socket.io setup
 const { Server } = require('socket.io');
 const io = new Server(server, {
   cors: {
