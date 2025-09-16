@@ -23,7 +23,7 @@ bcrypt.hash(generatedPassword, saltRounds, (err, encryptedPassword) => {
 }
 (async () => {
   try {
-    const password = await CreatePassword("1234");
+    const password = await CreatePassword("6e6a0052ad91b565");
     // console.log(password);
   } catch (error) {
     console.error("Error:", error);

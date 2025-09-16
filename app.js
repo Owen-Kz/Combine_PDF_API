@@ -48,7 +48,7 @@ sessionStore.on('error', (error) => {
 
 // Session middleware
 app.use(session({
-  secret: process.env.JWT_SECRET,
+  secret: process.env.SESSION_SECRET,
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
@@ -70,8 +70,8 @@ app.use(express.json());
 
 // Debug middleware (remove in production)
 app.use((req, res, next) => {
-  // console.log('Session ID:', req.sessionID);
-  // console.log('User in session:', req.session.user.email);
+  console.log('Session ID:', req.sessionID);
+  console.log('User in session:', req.session.user.email);
   next();
 });
 
