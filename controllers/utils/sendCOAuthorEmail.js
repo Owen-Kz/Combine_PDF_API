@@ -34,7 +34,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         if (rows.length === 0) {
             return { status: 'error', message: 'User not found in our system' };
         }
-
+ 
         const { firstname, prefix } = rows[0];
         const currentYear = new Date().getFullYear();
         const encryptedButton = crypto.createHash('md5').update(recipientEmail).digest('hex');
@@ -76,7 +76,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         }
         .button { 
             background-color: #ae05b4ff; 
-            color: white; 
+            color: #eee; 
             padding: 12px 20px; 
             text-decoration: none; 
             border-radius: 4px; 
@@ -119,7 +119,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
     </div>
     
     <p>Please click below to verify your account and login:</p>
-    <a href="${loginUrl}" class="button">Verify & Login</a>
+    <a href="${loginUrl}" class="button" style="color:#eee;">Verify & Login</a>
     
     <p>After logging in, we strongly recommend you:</p>
     <ol>
@@ -127,7 +127,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         <li>Complete your profile information</li>
     </ol>
     
-    <a href="${updateUrl}" class="button">Update Account Information</a>
+    <a href="${updateUrl}" class="button" style="color:#eee;">Update Account Information</a>
     
     <p class="warning">For security reasons, please change your password immediately after first login.</p>
     

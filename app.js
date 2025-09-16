@@ -77,7 +77,7 @@ app.use((req, res, next) => {
 
 // View engine and static files
 app.set("view engine", "ejs");
-app.set("views", ["./views", "./views/editors", "./views/authors", "./views/reviewers"]);
+app.set("views", ["./views", "./views/editors", "./views/authors", "./views/reviewers", "./views/co-authors"]);
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/fonts", express.static(path.join(__dirname, "public/css/fonts")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));

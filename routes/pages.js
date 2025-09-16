@@ -1,4 +1,7 @@
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
 const CombinePDF = require("../external/combinePDF");
 const CombineDOCX = require("../external/combineDOC");
 const downloadFile = require("../external/downloadFile");
@@ -97,6 +100,8 @@ const manuscrsciptDataMiddleWare = require("../controllers/manuscriptData_middle
 const announcementsPage = require("../controllers/editors/pages/announcementsPage");
 const { config } = require("dotenv");
 const deleteAnnouncement = require("../controllers/editors/announcements/deleteAnnouncement");
+const updateAccount = require("../controllers/pages/updateAccountPage");
+const updateAccountData = require("../controllers/account/updateAccountData");
 
   config();
 
@@ -112,6 +117,35 @@ router.use((req, res, next) => {
     next();
   });
   
+  // Define the upload folder path and ensure it is writable
+const folderPath = path.join(__dirname, "../public");
+fs.access(folderPath, fs.constants.W_OK, (err) => {
+  if (err) {
+    console.log(`The folder '${folderPath}' is not writable:`, err);
+  } else {
+    console.log(`The folder '${folderPath}' is writable`);
+  }
+});
+
+// Configure multer storage settings and file size limit
+const storage = multer.diskStorage({
+  destination: folderPath,
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "_" + Math.round(Math.random() * 1E9);
+    const fileExtension = path.extname(file.originalname);
+    const profileFile = uniqueSuffix + fileExtension;
+    cb(null, profileFile);
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Optional: You can filter file types here if needed
+    cb(null, true);
+  }
+});
 router.post("/external/api/combinePDF", CombinePDF)
 router.post("/external/api/combineDOC", CombineDOCX)
 router.get("/file", downloadFile)
@@ -132,6 +166,8 @@ router.get("/authorProfileForSearch", getUserData, authorsProfileSearch)
 router.post("/addAuthorToPaper", getUserData, manuscrsciptDataMiddleWare, AddAuthorToPaper)
 router.post("/addReviewerToPaper", getUserData, manuscrsciptDataMiddleWare, AddReviewerToPaper )
 router.post("/submitDisclosures", getUserData, manuscrsciptDataMiddleWare, SubmitDisclosures)
+router.get("/updateAccount", updateAccount)
+router.post("/updateAccountData", upload.none(), updateAccountData)
 router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})
 })

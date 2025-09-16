@@ -29,8 +29,9 @@ const CoAuthors = async (req,res,articleId) =>{
                         }else{
 
                             const password = crypto.randomBytes(8).toString('hex');
-                            const hashedPasswod =CreatePassword(password)
-                            
+                       
+                            const hashedPasswod = await CreatePassword(password)
+                       
                             db.query("INSERT INTO authors_account SET ?",[{prefix:prefix, email:person.authors_email, firstname:firstName, lastname:lastName, othername:otherNames, orcid_id:person.orcid_id, affiliations:person.affiliations, affiliation_country:person.affiliation_country, affiliation_city:person.affiliation_city, asfi_membership_id:person.asfi_membership_id, password:hashedPasswod}], async(err, newAccount) =>{
                                 if(err){
                                     console.log(err) 
