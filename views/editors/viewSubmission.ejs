@@ -29,7 +29,9 @@
     <link rel='stylesheet'
         href='https://cdnjs.cloudflare.com/ajax/libs/material-design-iconic-font/2.2.0/css/material-design-iconic-font.min.css'>
     <!-- QUILL JS  -->
-     <script type="module" src="/js/dashboard/countReviewerInvitations.js"></script>
+     <!-- <script type="module" src="/js/dashboard/countReviewerInvitations.js?v=<%=new Date() %>"></script>
+     <script type="module" src="/js/dashboard/countEditorInvitations.js?v=<%=new Date() %>"></script> -->
+
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js?v=<%=new Date() %>"></script>
     <!-- END QUILL JS  -->
@@ -524,10 +526,8 @@
                     <script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js'></script>
                     <script type="module" src="/editorStatic/js/routes/dashboard/viewArticle.js?v=<%=new Date() %>"></script>
                     <script type="module" src="/editorStatic/js/routes/dashboard/viewArticleReviews.js?v=<%=new Date() %>"></script>
-                    <script type="module" src="/editorStatic/js/routes/dashboard/previousSubmissions.js?v=<%=new Date() %>"></script>
-                    <!-- <script type="module" src="/editorStatic/js/routes/dashboard/previousSubmissions.js?v=" + Date.now()></script> -->
-                    <!-- <script type="module" src="/editorStatic/js/routes/dashboard/previousSubmissions.js?v=${Date.now()}"></script> -->
-
+                    <script type="module" src="/editorStatic/js/routes/dashboard/previousSubmissions.js?v=<%=new Date() %>+Sf"></script>
+                  
 
                     <script src="/editorStatic/js/routes/dashboard/dropDownAction.js?v=<%=new Date() %>"></script>
                     <script>
