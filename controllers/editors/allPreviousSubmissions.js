@@ -1,4 +1,5 @@
 const db = require("../../routes/db.config");
+const dbPromise = require("../../routes/dbPromise.config");
 const isAdminAccount = require("./isAdminAccount");
 
 
@@ -8,14 +9,23 @@ const allPreviousSubmissions = async (req, res) => {
         const { item_id: revisionID } = req.body;
       
         if (await isAdminAccount(adminId)) {
+            const [getPreviousManuscirptQuery] = await dbPromise.query("SELECT previous_manuscript_id, article_id FROM submissions WHERE revision_id = ?", [revisionID]);
+            const previousManuscriptId = getPreviousManuscirptQuery[0]?.previous_manuscript_id || null;
+            const articleId = getPreviousManuscirptQuery[0]?.article_id || null;
+
+            console.log("Previous Manuscript ID:", previousManuscriptId);
+    
+            if (!articleId) {
+                return res.status(400).json({ error: "Invalid revision_id or no previous manuscript found." });
+            }
             const query = `
                 SELECT * 
                 FROM submissions 
-                WHERE (article_id = ? OR previous_manuscript_id = ?) AND title != '' AND title != 'Draft Submission' AND title IS NOT NULL 
+                WHERE (article_id = ? OR revision_id = ? OR article_id = ?) AND title != '' AND title != 'Draft Submission' AND title IS NOT NULL 
                 ORDER BY id DESC;
             `;
 
-            db.query(query, [revisionID, revisionID], async (error, data) => {
+            db.query(query, [articleId, previousManuscriptId, previousManuscriptId], async (error, data) => {
                 if (error) {
                     return res.status(500).json({ error: error.message });
                 }

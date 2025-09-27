@@ -129,7 +129,7 @@ const stats = document.getElementById("stats");
     };
 
     if (accoount_type === "editor_in_chief" || accoount_type === "editorial_assistant") {
-        SubmissionsArray = await GetPreviousAdminSubmissions(user, result)
+        SubmissionsArray = await GetPreviousAdminSubmissions(user, submissionId)
     } else {
         if (stats) {
             stats.style.display = "none";
