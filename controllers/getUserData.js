@@ -27,8 +27,9 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
 
 const getUserData = async (req, res, next) => {
     try {
-        const userID = req.query._uid || req.user?.id || req.session.user?.id;
-        
+        const userID = req.query._uid;
+        // const userID = req.query._uid || req.user?.id || req.session.user?.id;
+
         // Initialize empty user object if no ID provided
         if (!userID) {
             req.user = {};

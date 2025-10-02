@@ -6,12 +6,10 @@ import { validateLogin } from "../validateLogin.js"
 import { GetKeywords } from "../queries/getKeywords.js";
 import { getAuthor } from "./getAuthor.js";
 
-
 const userFullnameContainer = document.querySelectorAll(".userFullnameContainer")
 const user = GetCookie("editor")
 if (user) {
     const AccountData = await validateLogin(user)
-
 
     const userFullname = AccountData.fullname
     const email = AccountData.email
@@ -26,81 +24,103 @@ if (user) {
     if (ArticleId) {
         const ArticleData = await GetSubmissionData(ArticleId)
 
-
-
         if (ArticleData) {
             let AuthorsList = ""
             const unstructuredAbstract = ArticleData.abstract
             let documentFile = ""
             let DOCUMENTFILE = ""
             let MANUSCRIPT_FILE = ""
+            
+            // Helper function to generate filename
+            const generateFilename = (articleTitle, fileType, fileUrl) => {
+                // Clean the article title for filename use
+                const cleanTitle = articleTitle
+                    .replace(/[^a-z0-9]/gi, '_')
+                    .toLowerCase()
+                    .substring(0, 50); // Limit length
+                
+                // Get file extension from URL
+                let extension = '.file';
+                if (fileUrl) {
+                    const urlExtension = fileUrl.split('.').pop();
+                    if (urlExtension && urlExtension.length <= 5) {
+                        extension = '.' + urlExtension.toLowerCase();
+                    }
+                }
+                
+                return `${cleanTitle}_${fileType}`;
+            };
+
             if (ArticleData.date_submitted < "2025-01-07") {
-                MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://cp.asfirj.org/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
+                MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://test.asfirj.org/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
 
                 if (ArticleData.document_file !== "dummy.pdf") {
                     documentFile = ArticleData.document_file;
-                    DOCUMENTFILE = `<li>Document File: <a href="https://cp.asfirj.org/uploadedFiles/${documentFile}">${documentFile}</a></li>`;
+                    DOCUMENTFILE = `<li>Document File: <a href="https://test.asfirj.org/uploadedFiles/${documentFile}">${documentFile}</a></li>`;
                 }
             } else {
                 if(ArticleData.manuscript_file && ArticleData.manuscript_file !== null){
-                if (ArticleData.manuscript_file.slice(0, 26) === 'https://res.cloudinary.com') {
-                    MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://process.asfirj.org/doc?url=${ArticleData.manuscript_file}">${ArticleData.manuscript_file.slice(78)}</a></li>`
-                } else {
-                    MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://cp.asfirj.org/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
-                }
-            }else{
-                MANUSCRIPT_FILE = "<li>No Manuscript has been submitted</li>"
-            }
-
-                // const filesArray = JSON.parse(ArticleData.document_file)
-                const filesArrayCont = []
-                const supplements = ArticleData.supplementary_material
-                if (supplements) {
-                    filesArrayCont.push(supplements)
-                }
-                const graphicAbstract = ArticleData.graphic_abstract
-                if (graphicAbstract) {
-                    filesArrayCont.push(graphicAbstract)
-                }
-
-
-                const figures = ArticleData.figures
-                if (figures) {
-                    filesArrayCont.push(figures)
-                }
-
-                const tables = ArticleData.tables
-                if (tables) {
-                    filesArrayCont.push(tables)
-                }
-
-                const trackedManuscriptFile = ArticleData.tracked_manuscript_file
-
-                if (trackedManuscriptFile) {
-                    filesArrayCont.push(trackedManuscriptFile)
-                }
-
-                const filesArray = filesArrayCont
-
-                DOCUMENTFILE = "<b>Additional Document Files</b> (i.e supplementary materials, tables, figures, graphic abstract): "
-                for (let i = 0; i < filesArray.length; i++) {
-                    if (filesArray[i].slice(0, 26) === 'https://res.cloudinary.com') {
-                        DOCUMENTFILE += `<br> <a href="https://process.asfirj.org/doc?url=${filesArray[i]}" style="color:#333; text-decoration: underline;" target=_blank>View ${filesArray[i].substring(filesArray[i].lastIndexOf("/") + 1)}</a>
-                         `
+                    if (ArticleData.manuscript_file.slice(0, 26) === 'https://res.cloudinary.com') {
+                        const filename = generateFilename(ArticleData.title, 'manuscript', ArticleData.manuscript_file);
+                        MANUSCRIPT_FILE = `<li>Manuscript File: <a href="/doc?download=true&id=${ArticleData.revision_id}&url=${ArticleData.manuscript_file}&filename=${encodeURIComponent(filename)}">Download Manuscript</a></li>`
                     } else {
-                        DOCUMENTFILE += `<br> <a href="https://cp.asfirj.org/uploadedFiles/${filesArray[i]}" style="color:#333; text-decoration: underline;" target=_blank>View ${filesArray[i]}</a>`
+                        MANUSCRIPT_FILE = `<li>Manuscript File: <a href="https://test.asfirj.org/uploadedFiles/${ArticleData.manuscript_file}">${ArticleData.manuscript_file}</a></li>`
                     }
+                } else {
+                    MANUSCRIPT_FILE = "<li>No Manuscript has been submitted</li>"
+                }
 
+                // Process additional files
+                const filesArrayCont = []
+                const fileTypes = []
+                
+                // Add files with their types
+                if (ArticleData.supplementary_material) {
+                    filesArrayCont.push(ArticleData.supplementary_material);
+                    fileTypes.push('supplementary_material');
+                }
+                if (ArticleData.graphic_abstract) {
+                    filesArrayCont.push(ArticleData.graphic_abstract);
+                    fileTypes.push('graphic_abstract');
+                }
+                if (ArticleData.figures) {
+                    filesArrayCont.push(ArticleData.figures);
+                    fileTypes.push('figures');
+                }
+                if (ArticleData.tables) {
+                    filesArrayCont.push(ArticleData.tables);
+                    fileTypes.push('tables');
+                }
+                if (ArticleData.tracked_manuscript_file) {
+                    filesArrayCont.push(ArticleData.tracked_manuscript_file);
+                    fileTypes.push('tracked_manuscript');
+                }
+
+                DOCUMENTFILE = "<b>Additional Document Files</b> (i.e supplementary materials, tables, figures, graphic abstract): ";
+                
+                for (let i = 0; i < filesArrayCont.length; i++) {
+                    const fileUrl = filesArrayCont[i];
+                    const fileType = fileTypes[i];
+                    
+                    if (fileUrl.slice(0, 26) === 'https://res.cloudinary.com') {
+                        const filename = generateFilename(ArticleData.title, fileType, fileUrl);
+                        const displayName = fileType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        DOCUMENTFILE += `<br> <a href="/doc?download=true&id=${ArticleData.revision_id}&url=${fileUrl}&filename=${encodeURIComponent(filename)}" style="color:#333; text-decoration: underline;" target=_blank>Download ${displayName}</a>`;
+                    } else {
+                        DOCUMENTFILE += `<br> <a href="https://test.asfirj.org/uploadedFiles/${fileUrl}" style="color:#333; text-decoration: underline;" target=_blank>View ${fileUrl}</a>`;
+                    }
                 }
             }
+            
             let coverLetterMan = ""
-            if(ArticleData.cover_letter_file.slice(0, 26) === 'https://res.cloudinary.com'){
-               coverLetterMan =  `<a href="https://process.asfirj.org/doc?url=${ArticleData.cover_letter_file}">Cover Letter</a></li>`
-            }else{
-
-               coverLetterMan = `<a href="https://cp.asfirj.org/uploadedFiles/${ArticleData.cover_letter_file}">${ArticleData.cover_letter_file}</a></li>`
+            if(ArticleData.cover_letter_file && ArticleData.cover_letter_file.slice(0, 26) === 'https://res.cloudinary.com'){
+                const filename = generateFilename(ArticleData.title, 'cover_letter', ArticleData.cover_letter_file);
+                coverLetterMan = `<a href="/doc?download=true&id=${ArticleData.revision_id}&url=${ArticleData.cover_letter_file}&filename=${encodeURIComponent(filename)}">Download Cover Letter</a></li>`;
+            } else if (ArticleData.cover_letter_file) {
+                coverLetterMan = `<a href="https://test.asfirj.org/uploadedFiles/${ArticleData.cover_letter_file}">${ArticleData.cover_letter_file}</a></li>`;
+            } else {
+                coverLetterMan = "<span>No cover letter submitted</span></li>";
             }
-
 
             ArticlesContainer.innerHTML = `     <!-- Section  -->
                                         <div class="d-md-flex mb-3" style="flex-direction: column;">
@@ -145,7 +165,7 @@ if (user) {
                                         ${DOCUMENTFILE} 
 
                                        </ul>
-                                       <a href='https://process.asfirj.org/combine?a=${ArticleData.revision_id}'><button type="button" class="combine_file">Combine Files</button></a>
+                                       <a href='/combine?a=${ArticleData.revision_id}'><button type="button" class="combine_file">Combine Files</button></a>
                                        <p> Please note that this only applies to papers submitted before 2025</p>
                                     </div>
                                     
@@ -205,20 +225,19 @@ if (user) {
                      </li>
                       <li style="color: black; margin-bottom: 10px;">I confirm that the research that yielded the manuscript being submitted meets the ethical guidelines and adheres to all legal research requirements of the study country.
                      </li>
-                     <li style="color: black; margin-bottom: 10px;">I have prepared my manuscript and files, including text, tables, and figures, in accordance with ASFIRJ’s style and formatting requirements as described at: <a href="https://asfirj.org/authors.html" style="color: 2cabe3;">asfirj.org/authors.html</a>.</li>
+                     <li style="color: black; margin-bottom: 10px;">I have prepared my manuscript and files, including text, tables, and figures, in accordance with ASFIRJ's style and formatting requirements as described at: <a href="https://asfirj.org/authors.html" style="color: 2cabe3;">asfirj.org/authors.html</a>.</li>
                      <li style="color: black; margin-bottom: 10px;">I confirm that each of the co-authors acknowledges their participation in the research that yielded
                             the manuscript being submitted and agrees to the submission of the manuscript to ASFIRJ.</li>
-                       <li style="color: black; margin-bottom: 10px;">I confirm that the contributions each author made to the manuscript are specified in the authors’ contribution section of the manuscript.</li> 
+                       <li style="color: black; margin-bottom: 10px;">I confirm that the contributions each author made to the manuscript are specified in the authors' contribution section of the manuscript.</li> 
                        
                     <li style="color: black; margin-bottom: 10px;">I confirm that the manuscript being submitted and the data it contains are unpublished and original.</li>
                        
-                <li style="color: black; margin-bottom: 10px;">I confirm that I am willing to pay ASFIRJ’s APC for the submitted manuscript if it is accepted for publication in the journal as indicated at <a href="https://asfirj.org/aboutus.html" style="color:2cabe3;">asfirj.org/aboutus.html</a>.</li>
+                <li style="color: black; margin-bottom: 10px;">I confirm that I am willing to pay ASFIRJ's APC for the submitted manuscript if it is accepted for publication in the journal as indicated at <a href="https://asfirj.org/aboutus.html" style="color:2cabe3;">asfirj.org/aboutus.html</a>.</li>
                     </ul>
 
 
                                     <!-- End Section  -->
                               `;
-
 
             // Parse the Quill content from the JSON data
             const quillContent = JSON.parse(unstructuredAbstract);
@@ -319,4 +338,3 @@ if (user) {
 } else {
     window.location.href = `${parentDirectoryName}/workflow/accounts/login`
 }
-
