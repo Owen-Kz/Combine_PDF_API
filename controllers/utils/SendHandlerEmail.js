@@ -45,7 +45,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         const senderEmail = process.env.BREVO_EMAIL;
         if (!senderEmail) throw new Error('BREVO_EMAIL is not configured');
 
-        const currentYear = new Date().getFullYear();
+        const currentYear = new Date().getUTCFullYear();
         const currentDate = new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',

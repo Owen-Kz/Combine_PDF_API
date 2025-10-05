@@ -1,5 +1,5 @@
 
-const date = new Date().getFullYear();
+const date = new Date().getUTCFullYear();
 
 const footer = document.getElementById("footer");
 footer.innerHTML = `<div>

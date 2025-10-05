@@ -91,7 +91,7 @@ async function AcceptanceEmailToEditor(RecipientEmail, subject, message, editor_
       };
     }
 
-    const currentYear = new Date().getFullYear();
+    const currentYear = new Date().getUTCFullYear();
     
     // Create professional email template
     const emailContent = `

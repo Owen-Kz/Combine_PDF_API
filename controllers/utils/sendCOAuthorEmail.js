@@ -36,7 +36,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         }
  
         const { firstname, prefix } = rows[0];
-        const currentYear = new Date().getFullYear();
+        const currentYear = new Date().getUTCFullYear();
         const encryptedButton = crypto.createHash('md5').update(recipientEmail).digest('hex');
         const loginUrl = `https://process.asfirj.org/verify?e=${encodeURIComponent(encryptedButton)}`;
         const updateUrl = `https://asfirj.org/portal/updateAccount?e=${encodeURIComponent(encryptedButton)}`;

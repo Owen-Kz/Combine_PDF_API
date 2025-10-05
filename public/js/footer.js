@@ -70,7 +70,7 @@ FooterContainer.innerHTML = FooterContents
 
 document.addEventListener("DOMContentLoaded", function() {
     // Get the current year
-    const currentYear = new Date().getFullYear();
+    const currentYear = new Date().getUTCFullYear();
     
     // Set the current year in the footer
     const yearSpan = document.getElementById('current-year');

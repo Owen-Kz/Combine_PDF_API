@@ -3,9 +3,9 @@ const express = require("express");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
+const path = require("path");
 const db = require("../../routes/db.config");
 const dbPromise = require("../../routes/dbPromise.config");
-const dotenv = require("dotenv").config();
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -14,29 +14,42 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// File validation constants
+const FILE_CONFIG = {
+    MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
+    ALLOWED_MIME_TYPES: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/zip',
+        'application/x-zip-compressed'
+    ],
+    REQUIRED_FIELDS: ['manuscript_file'], // Manuscript is mandatory
+    VALID_FIELDS: [
+        'manuscript_file',
+        'cover_letter_file',
+        'tables',
+        'figures',
+        'graphic_abstract',
+        'supplementary_material',
+        'tracked_manuscript_file'
+    ]
+};
+
 // Multer Configuration
 const upload = multer({
     dest: "uploads/",
     limits: {
-        fileSize: 50 * 1024 * 1024 // 50MB limit
+        fileSize: FILE_CONFIG.MAX_FILE_SIZE
     },
     fileFilter: (req, file, cb) => {
-        // Validate file types
-        const allowedMimes = [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'application/zip',
-            'application/x-zip-compressed'
-        ];
-        
-        if (allowedMimes.includes(file.mimetype)) {
+        if (FILE_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Invalid file type'), false);
+            cb(new Error(`Invalid file type: ${file.mimetype}. Allowed types: PDF, Word, images, ZIP`), false);
         }
     }
 });
@@ -60,9 +73,8 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
             console.log(`Operation attempt ${attempt}/${maxRetries} failed:`, error.message);
             
             if (attempt < maxRetries) {
-                // Exponential backoff with jitter: baseDelay * 2^(attempt-1) ± 10%
                 const delay = baseDelay * Math.pow(2, attempt - 1);
-                const jitter = delay * 0.1 * (Math.random() * 2 - 1); // ±10% jitter
+                const jitter = delay * 0.1 * (Math.random() * 2 - 1);
                 const totalDelay = Math.max(100, delay + jitter);
                 
                 console.log(`Waiting ${Math.round(totalDelay)}ms before retry...`);
@@ -74,19 +86,74 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
     throw lastError;
 }
 
-// Sophisticated database operation with transaction support
+// Enhanced session management
+const ensureSessionData = (req) => {
+    if (!req.session.manuscriptData) {
+        req.session.manuscriptData = {
+            // File flags
+            manFile: false,
+            covFile: false,
+            docFile: false,
+            // File URLs
+            manuscript_file: null,
+            cover_letter_file: null,
+            document_file: null,
+            // Session management
+            sessionID: null,
+            process: 'new',
+            hasNewFiles: false,
+            // Timestamps
+            lastUpdated: new Date().toISOString()
+        };
+    }
+    return req.session.manuscriptData;
+};
+
+// Save session with error handling
+const saveSession = async (req) => {
+    return new Promise((resolve, reject) => {
+        req.session.manuscriptData.lastUpdated = new Date().toISOString();
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save failed:', err);
+                reject(new Error('Failed to save session data'));
+            } else {
+                resolve();
+            }
+        });
+    });
+};
+
+// Validate manuscript requirements
+const validateManuscriptRequirements = (sessionData) => {
+    const errors = [];
+    
+    // Check if manuscript file is uploaded
+    if (!sessionData.manFile || !sessionData.manuscript_file) {
+        errors.push('Manuscript file is required');
+    }
+    
+    // Check if manuscript file URL is valid
+    if (sessionData.manuscript_file && typeof sessionData.manuscript_file === 'object') {
+        if (!sessionData.manuscript_file.url) {
+            errors.push('Manuscript file URL is invalid');
+        }
+    }
+    
+    return errors;
+};
+
+// Database operation with transaction support
 async function updateSubmissionDatabase(articleId, fieldName, fileUrl, maxRetries = 3) {
     return await retryWithBackoff(async () => {
         let connection;
         try {
-            // Get a connection for transaction
             connection = await dbPromise.getConnection();
-            
             await connection.beginTransaction();
 
             // First check if the submission exists
             const [existingRecords] = await connection.query(
-                "SELECT revision_id FROM submissions WHERE revision_id = ?",
+                "SELECT revision_id, corresponding_authors_email FROM submissions WHERE revision_id = ?",
                 [articleId]
             );
 
@@ -102,11 +169,16 @@ async function updateSubmissionDatabase(articleId, fieldName, fileUrl, maxRetrie
                     throw new Error("No rows affected during update");
                 }
             } else {
-                // Insert new record
+                // For new submissions, we need user email
+                if (!req.user?.email) {
+                    throw new Error("User email required for new submission");
+                }
+                
+                // Insert new record with user email
                 const [insertResult] = await connection.query(
-                    `INSERT INTO submissions (revision_id, ${fieldName}, last_updated) 
-                     VALUES (?, ?, NOW())`,
-                    [articleId, fileUrl]
+                    `INSERT INTO submissions (revision_id, ${fieldName}, corresponding_authors_email, last_updated) 
+                     VALUES (?, ?, ?, NOW())`,
+                    [articleId, fileUrl, req.user.email]
                 );
 
                 if (insertResult.affectedRows === 0) {
@@ -130,49 +202,68 @@ async function updateSubmissionDatabase(articleId, fieldName, fileUrl, maxRetrie
     }, maxRetries, 500);
 }
 
+// Clean up local files safely
+const cleanUpLocalFile = (filePath) => {
+    if (filePath && fs.existsSync(filePath)) {
+        try {
+            fs.unlinkSync(filePath);
+        } catch (error) {
+            console.warn('Failed to delete local file:', error.message);
+        }
+    }
+};
+
+// Upload to Cloudinary with enhanced error handling
+const uploadToCloudinary = async (filePath, fieldName) => {
+    return await retryWithBackoff(async () => {
+        const result = await cloudinary.uploader.upload(filePath, {
+            folder: `asfirj/original/${fieldName}`,
+            resource_type: "auto",
+            timeout: 120000,
+            chunk_size: 6000000,
+            quality: 'auto',
+            format: 'auto'
+        });
+        
+        if (!result.secure_url) {
+            throw new Error('Cloudinary upload failed - no URL returned');
+        }
+        
+        return result;
+    }, 3, 1000);
+};
+
 const uploadSingleFile = async (req, res) => {
     const FileField = req.params.field;
-    const validFields = [
-        'manuscript_file',
-        'cover_letter_file',
-        'tables',
-        'figures',
-        'graphic_abstract',
-        'supplementary_material',
-        'tracked_manuscript_file'
-    ];
 
     // Validate field parameter
-    if (!validFields.includes(FileField)) {
+    if (!FILE_CONFIG.VALID_FIELDS.includes(FileField)) {
         return res.status(400).json({ 
             error: "Invalid file field specified",
-            validFields: validFields
+            validFields: FILE_CONFIG.VALID_FIELDS
         });
     }
 
     try {
         // Handle file upload
         upload.single(FileField)(req, res, async (err) => {
-            // Clean up local file in case of errors
-            const cleanUpLocalFile = () => {
-                if (req.file?.path && fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                }
-            };
+            const sessionData = ensureSessionData(req);
+            let localFilePath = req.file?.path;
 
             try {
+                // Handle upload errors
                 if (err) {
-                    cleanUpLocalFile();
+                    cleanUpLocalFile(localFilePath);
                     
                     if (err.code === 'LIMIT_FILE_SIZE') {
                         return res.status(413).json({ 
-                            error: 'File exceeds maximum size of 50MB' 
+                            error: `File exceeds maximum size of ${FILE_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB` 
                         });
                     }
                     
-                    if (err.message === 'Invalid file type') {
+                    if (err.message.includes('Invalid file type')) {
                         return res.status(415).json({ 
-                            error: 'Invalid file type. Please upload PDF, Word, image, or zip files.' 
+                            error: err.message 
                         });
                     }
                     
@@ -183,93 +274,127 @@ const uploadSingleFile = async (req, res) => {
                     });
                 }
 
+                // Check if file was uploaded
                 if (!req.file) {
                     return res.status(400).json({ 
                         error: "No file uploaded" 
                     });
                 }
 
-                let result;
-                try {
-                    // Upload to Cloudinary with retry logic
-                    result = await retryWithBackoff(async () => {
-                        return await cloudinary.uploader.upload(req.file.path, {
-                            folder: "asfirj/original",
-                            resource_type: "auto",
-                            timeout: 120000, // 2 minute timeout per attempt
-                            chunk_size: 6000000 // 6MB chunks for large files
-                        });
-                    }, 3, 1000);
-                } catch (cloudinaryError) {
-                    cleanUpLocalFile();
-                    console.error("Cloudinary upload failed after retries:", cloudinaryError);
-                    
-                    return res.status(500).json({ 
-                        error: "File upload failed after multiple attempts",
-                        details: process.env.NODE_ENV === 'development' ? cloudinaryError.message : "Please try again later"
+                // Validate file properties
+                if (!req.file.originalname || !req.file.mimetype) {
+                    cleanUpLocalFile(localFilePath);
+                    return res.status(400).json({ 
+                        error: "Invalid file properties" 
                     });
                 }
 
-                // Delete local file
-                cleanUpLocalFile();
-
-                // Initialize session data if not exists
-                if (!req.session.manuscriptData) {
-                    req.session.manuscriptData = {};
+                let cloudinaryResult;
+                try {
+                    // Upload to Cloudinary
+                    cloudinaryResult = await uploadToCloudinary(localFilePath, FileField);
+                } catch (cloudinaryError) {
+                    cleanUpLocalFile(localFilePath);
+                    console.error("Cloudinary upload failed:", cloudinaryError);
+                    
+                    return res.status(500).json({ 
+                        error: "File upload to cloud storage failed",
+                        details: process.env.NODE_ENV === 'development' ? cloudinaryError.message : "Please try again later"
+                    });
+                } finally {
+                    // Always clean up local file
+                    cleanUpLocalFile(localFilePath);
                 }
 
                 // Update session data
-                req.session.manuscriptData[FileField] = {
-                    url: result.secure_url,
+                sessionData[FileField] = {
+                    url: cloudinaryResult.secure_url,
+                    public_id: cloudinaryResult.public_id,
+                    originalname: req.file.originalname,
+                    mimetype: req.file.mimetype,
+                    size: req.file.size,
                     uploaded: true,
-                    timestamp: new Date()
+                    timestamp: new Date().toISOString()
                 };
 
-                // Set specific flags for required files
+                // Set specific flags for file types
                 if (FileField === 'manuscript_file') {
-                    req.session.manuscriptData.manFile = true;
+                    sessionData.manFile = true;
+                    console.log('Manuscript file uploaded successfully');
                 } else if (FileField === 'cover_letter_file') {
-                    req.session.manuscriptData.covFile = true;
+                    sessionData.covFile = true;
                 }
-                req.session.hasNewFiles = true
+                
+                sessionData.hasNewFiles = true;
+                sessionData.lastUpdated = new Date().toISOString();
 
                 // Update database
-                const articleId = req.session.articleId;
+                const articleId = req.session.manuscriptData?.sessionID || req.session.articleId;
                 if (!articleId) {
-                    return res.status(400).json({ 
-                        error: "No active manuscript session" 
+                    // If no article ID, save to session only and return success
+                    await saveSession(req);
+                    
+                    return res.json({ 
+                        success: true, 
+                        fileUrl: cloudinaryResult.secure_url,
+                        field: FileField,
+                        message: "File uploaded successfully (saved to session)",
+                        flags: {
+                            manFile: FileField === 'manuscript_file',
+                            covFile: FileField === 'cover_letter_file',
+                            hasManuscript: sessionData.manFile
+                        },
+                        manuscriptStatus: sessionData.manFile ? 'COMPLETE' : 'REQUIRED'
                     });
                 }
 
                 try {
-                    await updateSubmissionDatabase(articleId, FileField, result.secure_url, 3);
+                    await updateSubmissionDatabase(articleId, FileField, cloudinaryResult.secure_url, 3);
                 } catch (dbError) {
                     console.error("Database update failed:", dbError);
-                    return res.status(500).json({ 
-                        error: "Failed to save file information",
-                        details: process.env.NODE_ENV === 'development' ? dbError.message : "Please contact support"
-                    });
+                    // Don't fail the upload if database update fails - file is already in session
+                    console.warn("File uploaded but database update failed, saved to session only");
                 }
 
                 // Save session explicitly
-                req.session.save((saveErr) => {
-                    if (saveErr) {
-                        console.error("Session save error:", saveErr);
-                    }
-                    
-                    return res.json({ 
-                        success: true, 
-                        fileUrl: result.secure_url,
-                        field: FileField,
-                        flags: {
-                            manFile: FileField === 'manuscript_file',
-                            covFile: FileField === 'cover_letter_file'
-                        }
+                try {
+                    await saveSession(req);
+                } catch (sessionError) {
+                    console.error("Session save failed:", sessionError);
+                    return res.status(500).json({ 
+                        error: "Failed to save session data",
+                        fileUrl: cloudinaryResult.secure_url // Still return file URL
                     });
+                }
+
+                // Validate manuscript requirements after upload
+                const requirementErrors = validateManuscriptRequirements(sessionData);
+                const hasManuscript = sessionData.manFile && sessionData.manuscript_file;
+
+                return res.json({ 
+                    success: true, 
+                    fileUrl: cloudinaryResult.secure_url,
+                    field: FileField,
+                    flags: {
+                        manFile: FileField === 'manuscript_file',
+                        covFile: FileField === 'cover_letter_file',
+                        hasManuscript: hasManuscript
+                    },
+                    manuscriptStatus: hasManuscript ? 'COMPLETE' : 'REQUIRED',
+                    requirements: {
+                        manuscriptUploaded: hasManuscript,
+                        errors: requirementErrors,
+                        isReadyForSubmission: requirementErrors.length === 0
+                    },
+                    session: {
+                        articleId: articleId,
+                        hasSession: true,
+                        lastUpdated: sessionData.lastUpdated
+                    }
                 });
 
             } catch (error) {
-                cleanUpLocalFile();
+                cleanUpLocalFile(localFilePath);
                 console.error("File processing error:", error);
                 
                 return res.status(500).json({ 
@@ -279,11 +404,16 @@ const uploadSingleFile = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("System error:", error);
+        console.error("System error in upload handler:", error);
         return res.status(500).json({ 
-            error: "Internal server error" 
+            error: "Internal server error",
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
 
+// Export validation function for use in other modules
 module.exports = uploadSingleFile;
+module.exports.validateManuscriptRequirements = validateManuscriptRequirements;
+module.exports.ensureSessionData = ensureSessionData;
+module.exports.FILE_CONFIG = FILE_CONFIG;

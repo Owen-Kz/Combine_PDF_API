@@ -43,7 +43,7 @@ const sendEmailReminder = async (RecipientEmail, subject, emailContent) => {
         );
 
         // Current year for footer
-        const currentYear = new Date().getFullYear();
+        const currentYear = new Date().getUTCFullYear();
 
         // HTML email template with proper styling
         const htmlTemplate = `

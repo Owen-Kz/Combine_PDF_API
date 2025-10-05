@@ -134,7 +134,7 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
     // Convert message to HTML
     const contentArray = JSON.parse(message);
     const htmlContent = convertToHTML(contentArray);
-    const currentYear = new Date().getFullYear();
+    const currentYear = new Date().getUTCFullYear();
 
     // Create full email template
     const emailTemplate = `

@@ -518,7 +518,7 @@
         };
 
         /*===== Copyright =====*/
-        var currentYear  = new Date().getFullYear();
+        var currentYear  = new Date().getUTCFullYear();
         $('#currentYear').append(currentYear);
 
     });

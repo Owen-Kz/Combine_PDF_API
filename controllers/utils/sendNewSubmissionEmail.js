@@ -59,7 +59,7 @@ const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscrip
             month: 'long',
             day: 'numeric'
         });
-        const currentYear = new Date().getFullYear();
+        const currentYear = new Date().getUTCFullYear();
 
         // Configure Brevo API
         const apiInstance = new Brevo.TransactionalEmailsApi();

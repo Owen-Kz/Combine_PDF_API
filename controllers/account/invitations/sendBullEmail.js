@@ -115,7 +115,7 @@ const sendBulkEmail = async (recipientEmail, subject, message, editorEmail, arti
     const htmlContent = convertToHTML(contentArray);
 
     // Create full email template
-    const currentYear = new Date().getFullYear();
+    const currentYear = new Date().getUTCFullYear();
     const emailTemplate = `
       <!DOCTYPE html>
       <html lang="en">
