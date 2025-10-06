@@ -7,7 +7,7 @@
 
       <!-- Quill container - make sure this is unique -->
       <div id="abstract-quill-container">
-        <div class="bg-body border rounded-bottom h-400px overflow-hidden" id="abstract-quilleditor" style="height: 500px;">
+        <div class="bg-body border rounded-bottom h-400px overflow-hidden" id="quilleditor" style="height: 500px;">
         </div>
       </div>
       <div id="word-count" class="wordCount"></div><span id="limit-exceed"> </span>
@@ -73,7 +73,7 @@
       }
 
       // Initialize Quill with the parsed content
-      abstractQuill = getQuillInstance('#abstract-quilleditor', parsedAbstract);
+      abstractQuill = getQuillInstance('#quilleditor', parsedAbstract);
       abstractInitialized = true;
       
       return abstractQuill;

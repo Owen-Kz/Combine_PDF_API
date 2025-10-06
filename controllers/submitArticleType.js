@@ -29,8 +29,8 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
 
 const submitArticleType = async (req, res) => {
       console.log('Session ID:', req.sessionID);
-  console.log('Session data:', req.session);
-  console.log('User:', req.user);
+//   console.log('Session data:', req.session);
+//   console.log('User:', req.user);
     if (!req.user || !req.user.id) {
         return res.json({ error: "Session is Not Valid, please login again" });
     }
