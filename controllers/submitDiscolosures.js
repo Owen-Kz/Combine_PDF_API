@@ -8,8 +8,6 @@ const { retryOperation } = require("./manuscriptData_middleware");
 const upload = multer();
 const dotenv = require("dotenv").config();
 
-// Import the shared retry function from manuscriptDataMiddleware
-
 // Enhanced retry helper with deadlock handling
 async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
     return retryOperation(operation, maxRetries, baseDelay);
@@ -53,9 +51,24 @@ const SubmitDisclosures = async (req, res) => {
                     connection = await dbPromise.getConnection();
                     await connection.beginTransaction();
 
-                    // Get manuscript data with specific column selection to reduce lock contention
+                    // Get manuscript data with ALL file fields from database
                     const [paper] = await connection.query(
-                        "SELECT revision_id, article_id, corresponding_authors_email, title, manuscript_file, cover_letter_file, document_file, status FROM submissions WHERE revision_id = ? FOR UPDATE",
+                        `SELECT 
+                            revision_id, 
+                            article_id, 
+                            corresponding_authors_email, 
+                            title, 
+                            manuscript_file, 
+                            cover_letter_file, 
+                            document_file,
+                            tracked_manuscript_file,
+                            tables,
+                            figures,
+                            graphic_abstract,
+                            supplementary_material,
+                            status 
+                         FROM submissions 
+                         WHERE revision_id = ? FOR UPDATE`,
                         [articleId]
                     );
 
@@ -64,75 +77,47 @@ const SubmitDisclosures = async (req, res) => {
                     }
 
                     const manuscript = paper[0];
-                    const { corresponding_authors_email, title, manuscript_file, cover_letter_file, document_file } = manuscript;
+                    const { 
+                        corresponding_authors_email, 
+                        title, 
+                        manuscript_file, 
+                        cover_letter_file, 
+                        document_file,
+                        tracked_manuscript_file,
+                        tables,
+                        figures,
+                        graphic_abstract,
+                        supplementary_material
+                    } = manuscript;
 
-                    // Helper: get URL from session files
-                    const getSessionFileUrl = (fileData) => {
-                        if (!fileData) return null;
-
-                        if (Array.isArray(fileData)) {
-                            return fileData[0]?.url || null;
-                        }
-                        if (fileData && typeof fileData === 'object' && fileData.url) {
-                            return fileData.url;
-                        }
-                        return fileData;
+                    // Helper function to check if file exists in database
+                    const hasFileInDatabase = (fileField) => {
+                        return fileField && fileField !== '' && fileField !== null;
                     };
 
-                    // Check if we have new session files
-                    const hasSessionManuscript = req.session.manuscriptData?.manuscript_file &&
-                        getSessionFileUrl(req.session.manuscriptData.manuscript_file) !== '';
-                    const hasSessionCoverLetter = req.session.manuscriptData?.cover_letter_file &&
-                        getSessionFileUrl(req.session.manuscriptData.cover_letter_file) !== '';
-                    const hasSessionDocument = req.session.manuscriptData?.document_file &&
-                        req.session.manuscriptData.document_file !== '';
+                    // Check file requirements from database instead of session
+                    const hasManuscriptFile = hasFileInDatabase(manuscript_file);
+                    const hasCoverLetterFile = hasFileInDatabase(cover_letter_file);
+                    const hasDocumentFile = hasFileInDatabase(document_file);
 
-                    // Final file values
-                    const finalManuscriptFile = hasSessionManuscript
-                        ? getSessionFileUrl(req.session.manuscriptData.manuscript_file)
-                        : manuscript_file;
-
-                    const finalCoverLetter = hasSessionCoverLetter
-                        ? getSessionFileUrl(req.session.manuscriptData.cover_letter_file)
-                        : cover_letter_file;
-
-                    const finalDocumentFile = hasSessionDocument
-                        ? req.session.manuscriptData.document_file
-                        : document_file;
-
-                    // Must have manuscript
-                    if (!finalManuscriptFile || finalManuscriptFile === '') {
+                    // Must have manuscript file in database
+                    if (!hasManuscriptFile) {
                         throw new Error("Manuscript file not uploaded");
                     }
 
-                    // Update files if session has new ones - use conditional updates to reduce locking
-                    if (hasSessionManuscript || hasSessionCoverLetter || hasSessionDocument) {
-                        const updateFields = [];
-                        const updateValues = [];
+                    // Log file status for debugging
+                    console.log(`File status for ${articleId}:`, {
+                        manuscript: hasManuscriptFile ? '✓' : '✗',
+                        cover_letter: hasCoverLetterFile ? '✓' : '✗',
+                        document: hasDocumentFile ? '✓' : '✗',
+                        tracked_manuscript: hasFileInDatabase(tracked_manuscript_file) ? '✓' : '✗',
+                        tables: hasFileInDatabase(tables) ? '✓' : '✗',
+                        figures: hasFileInDatabase(figures) ? '✓' : '✗',
+                        graphic_abstract: hasFileInDatabase(graphic_abstract) ? '✓' : '✗',
+                        supplementary_material: hasFileInDatabase(supplementary_material) ? '✓' : '✗'
+                    });
 
-                        if (hasSessionManuscript) {
-                            updateFields.push("manuscript_file = ?");
-                            updateValues.push(finalManuscriptFile);
-                        }
-                        if (hasSessionCoverLetter) {
-                            updateFields.push("cover_letter_file = ?");
-                            updateValues.push(finalCoverLetter);
-                        }
-                        if (hasSessionDocument) {
-                            updateFields.push("document_file = ?");
-                            updateValues.push(finalDocumentFile);
-                        }
-
-                        if (updateFields.length > 0) {
-                            updateValues.push(articleId);
-                            await connection.query(
-                                `UPDATE submissions SET ${updateFields.join(", ")} WHERE revision_id = ?`,
-                                updateValues
-                            );
-                        }
-                    }
-
-                    // Update submission status with minimal locking
+                    // Update submission status
                     const [updateResult] = await connection.query(
                         "UPDATE submissions SET status = ?, last_updated = NOW() WHERE revision_id = ?",
                         [review_status, articleId]
@@ -143,10 +128,9 @@ const SubmitDisclosures = async (req, res) => {
                     }
 
                     if (review_status === "submitted") {
-                        // Update previous versions - use quick updates without transactions if possible
+                        // Update previous versions if this is a revision
                         const updatedStatus = current_process?.replace('saved', 'submitted') || 'submitted';
                         
-                        // Only update if we have a manuscript_id and it's different from current articleId
                         if (manuscript_id && manuscript_id !== articleId) {
                             await connection.query(
                                 "UPDATE submissions SET status = ?, last_updated = NOW() WHERE article_id = ? AND revision_id != ? AND status != 'submitted'",
@@ -157,10 +141,9 @@ const SubmitDisclosures = async (req, res) => {
                         await connection.commit();
                         console.log(`Submission committed successfully for: ${articleId}`);
 
-                        // Send notifications outside of transaction to reduce lock time
+                        // Send notifications outside of transaction
                         const userFullname = `${req.user.prefix || ''} ${req.user.firstname || ''} ${req.user.lastname || ''} ${req.user.othername || ''}`.trim();
                         
-                        // Use Promise.allSettled to ensure one email failure doesn't block others
                         try {
                             const emailResults = await Promise.allSettled([
                                 SendNewSubmissionEmail(corresponding_authors_email, title, articleId),
@@ -189,7 +172,12 @@ const SubmitDisclosures = async (req, res) => {
                             return res.json({
                                 success: true,
                                 message: "Manuscript submitted successfully",
-                                manuscriptId: articleId
+                                manuscriptId: articleId,
+                                files: {
+                                    manuscript: hasManuscriptFile,
+                                    cover_letter: hasCoverLetterFile,
+                                    document: hasDocumentFile
+                                }
                             });
                         });
 
@@ -201,7 +189,12 @@ const SubmitDisclosures = async (req, res) => {
                         return res.json({
                             success: true,
                             message: "Manuscript saved successfully",
-                            manuscriptId: articleId
+                            manuscriptId: articleId,
+                            files: {
+                                manuscript: hasManuscriptFile,
+                                cover_letter: hasCoverLetterFile,
+                                document: hasDocumentFile
+                            }
                         });
                     }
 
