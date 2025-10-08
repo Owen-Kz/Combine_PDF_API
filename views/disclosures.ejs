@@ -133,8 +133,10 @@
     body.removeAttribute("id")
     const data = new FormData(disclosuresForm)
     const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+
+    data.append("corresponding_authors_email", _userEmail.value)
     const queriedID = "<%= queriedID %>";
-    fetch(`/submitDisclosures?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
+    fetch(`/manuscript/submitDisclosures?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
       method:"POST",
       body:data
     }).then (res => res.json())

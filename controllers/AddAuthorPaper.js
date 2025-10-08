@@ -48,6 +48,15 @@ const AddAuthorToPaper = async (req, res) => {
                 });
             }
 
+            // Check if we have submission data from middleware
+            if (!req.submissionData || !req.articleId) {
+                return res.status(400).json({ 
+                    status: "error", 
+                    error: "No active manuscript session",
+                    message: "Please start a new submission or reload your existing manuscript"
+                });
+            }
+
             const {
                 loggedIn_authors_prefix,
                 loggedIn_authors_first_name,
@@ -71,15 +80,16 @@ const AddAuthorToPaper = async (req, res) => {
                 email
             } = req.body;
 
-            // Get submission ID from session
-            const mainSubmissionId = req.session.articleId;
-            if (!mainSubmissionId) {
-                return res.status(400).json({ 
-                    status: "error", 
-                    error: "No active manuscript session",
-                    message: "Please start a new submission or reload your existing manuscript"
-                });
-            }
+            // Use articleId from middleware instead of session
+            const mainSubmissionId = req.articleId;
+            const submissionData = req.submissionData;
+
+            console.log("Processing authors for submission:", {
+                articleId: mainSubmissionId,
+                userEmail: req.user.email,
+                correspondingAuthor: corresponding_author,
+                additionalAuthors: email
+            });
 
             // Normalize emails to array
             const emails = Array.isArray(email) ? email : [email].filter(Boolean);
@@ -103,13 +113,23 @@ const AddAuthorToPaper = async (req, res) => {
                         connection = await dbPromise.getConnection();
                         await connection.beginTransaction();
 
-                        // Verify the manuscript exists and belongs to the user
-                        const [manuscriptRecords] = await connection.query(
-                            "SELECT revision_id FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ?", 
-                            [mainSubmissionId, req.user.email]
-                        );
+                        // Verify the manuscript exists and belongs to the user using middleware data
+                        // Also check if this is a new submission that might not be in DB yet
+                        let manuscriptExists = false;
+                        
+                        if (!submissionData.isNew) {
+                            // For existing submissions, verify in database
+                            const [manuscriptRecords] = await connection.query(
+                                "SELECT revision_id FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ?", 
+                                [mainSubmissionId, req.user.email]
+                            );
+                            manuscriptExists = manuscriptRecords.length > 0;
+                        } else {
+                            // For new submissions, we trust the middleware
+                            manuscriptExists = true;
+                        }
 
-                        if (manuscriptRecords.length === 0) {
+                        if (!manuscriptExists) {
                             throw new Error("Manuscript not found or access denied");
                         }
 
@@ -143,17 +163,23 @@ const AddAuthorToPaper = async (req, res) => {
                                     );
 
                                     if (insertResult.affectedRows > 0) {
-                                        insertedAuthors.push(corresponding_author);
+                                        insertedAuthors.push({
+                                            email: corresponding_author,
+                                            name: loggedInFullname,
+                                            type: 'corresponding'
+                                        });
                                     } else {
                                         skippedAuthors.push({
                                             email: corresponding_author,
-                                            reason: "insertion_failed"
+                                            reason: "insertion_failed",
+                                            type: 'corresponding'
                                         });
                                     }
                                 } else {
                                     skippedAuthors.push({
                                         email: corresponding_author,
-                                        reason: "already_exists"
+                                        reason: "already_exists",
+                                        type: 'corresponding'
                                     });
                                 }
                             } catch (error) {
@@ -161,6 +187,7 @@ const AddAuthorToPaper = async (req, res) => {
                                 skippedAuthors.push({
                                     email: corresponding_author,
                                     reason: "processing_error",
+                                    type: 'corresponding',
                                     details: process.env.NODE_ENV === 'development' ? error.message : undefined
                                 });
                             }
@@ -178,6 +205,15 @@ const AddAuthorToPaper = async (req, res) => {
                                     authors_last_name?.[i],
                                     authors_other_name?.[i]
                                 ].filter(Boolean).join(' ');
+
+                                if (!authorFullname.trim()) {
+                                    skippedAuthors.push({
+                                        email: authorEmail,
+                                        reason: "missing_name",
+                                        type: 'additional'
+                                    });
+                                    continue;
+                                }
 
                                 // Check if author exists
                                 const [existingAuthor] = await connection.query(
@@ -199,17 +235,23 @@ const AddAuthorToPaper = async (req, res) => {
                                     );
 
                                     if (insertResult.affectedRows > 0) {
-                                        insertedAuthors.push(authorEmail);
+                                        insertedAuthors.push({
+                                            email: authorEmail,
+                                            name: authorFullname,
+                                            type: 'additional'
+                                        });
                                     } else {
                                         skippedAuthors.push({
                                             email: authorEmail,
-                                            reason: "insertion_failed"
+                                            reason: "insertion_failed",
+                                            type: 'additional'
                                         });
                                     }
                                 } else {
                                     skippedAuthors.push({
                                         email: authorEmail,
-                                        reason: "already_exists"
+                                        reason: "already_exists",
+                                        type: 'additional'
                                     });
                                 }
                             } catch (error) {
@@ -217,6 +259,7 @@ const AddAuthorToPaper = async (req, res) => {
                                 skippedAuthors.push({
                                     email: authorEmail,
                                     reason: "processing_error",
+                                    type: 'additional',
                                     details: process.env.NODE_ENV === 'development' ? error.message : undefined
                                 });
                             }
@@ -237,13 +280,20 @@ const AddAuthorToPaper = async (req, res) => {
                     }
                 }, 3, 500);
 
+                console.log("Authors processing completed:", {
+                    articleId: mainSubmissionId,
+                    inserted: insertedAuthors.length,
+                    skipped: skippedAuthors.length
+                });
+
                 return res.json({ 
                     status: "success",
                     success: "Authors processed successfully",
                     inserted: insertedAuthors,
                     skipped: skippedAuthors,
                     corresponding_author: corresponding_author || null,
-                    article_id: mainSubmissionId
+                    article_id: mainSubmissionId,
+                    submission_status: submissionData.submission?.status || 'draft'
                 });
 
             } catch (dbError) {

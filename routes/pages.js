@@ -9,16 +9,7 @@ const openfile = require("../external/openFile");
 const documentFileFormat = require("../external/otherWords");
 const generateArticleId = require("../controllers/generateArticleId");
 const uploadArticlePage = require("../controllers/pages/uploadArticlePage");
-const submitArticleType = require("../controllers/submitArticleType");
 const getUserData = require("../controllers/getUserData");
-const uploadSingleFile = require("../controllers/fileUploads/uploadSingleFiles");
-const submitTitle = require("../controllers/submitTitle");
-const submitAbstract = require("../controllers/submitAbstract");
-const submitKeyword = require("../controllers/submitKeyword");
-const authorsProfileSearch = require("../controllers/getAuthorsProfile");
-const AddAuthorToPaper = require("../controllers/AddAuthorPaper");
-const AddReviewerToPaper = require("../controllers/addSuggestedReviewers");
-const SubmitDisclosures = require("../controllers/submitDiscolosures");
 const verifyAccount = require("../controllers/account/verifyAccount");
 const convertFiles = require("../controllers/convertFiles");
 const combinedFilesPage = require("../controllers/pages/combineFilesPage");
@@ -102,6 +93,7 @@ const { config } = require("dotenv");
 const deleteAnnouncement = require("../controllers/editors/announcements/deleteAnnouncement");
 const updateAccount = require("../controllers/pages/updateAccountPage");
 const updateAccountData = require("../controllers/account/updateAccountData");
+const authorsProfileSearch = require("../controllers/getAuthorsProfile");
 
   config();
 
@@ -157,15 +149,19 @@ router.get("/doc", documentFileFormat)
 router.get("/uploadManuscript",getUserData, manuscrsciptDataMiddleWare, uploadArticlePage)
 
 router.post('/generateArticleId', generateArticleId)
-router.post("/submitArticleType", getUserData, manuscrsciptDataMiddleWare, submitArticleType)
-router.post("/uploadSingleFile/:field", getUserData, manuscrsciptDataMiddleWare, uploadSingleFile)
-router.post("/submitManuscriptTitle", getUserData, manuscrsciptDataMiddleWare, submitTitle)
-router.post("/submitAbstract", getUserData, manuscrsciptDataMiddleWare, submitAbstract)
-router.post("/submitKeyword", getUserData, manuscrsciptDataMiddleWare, submitKeyword)
+// SUBMISSION PROCESS MOVED TO submissionRoutes.js 
+// router.post("/submitArticleType", getUserData, manuscrsciptDataMiddleWare, submitArticleType)
+// router.post("/uploadSingleFile/:field", getUserData, manuscrsciptDataMiddleWare, uploadSingleFile)
+// router.post("/submitManuscriptTitle", getUserData, manuscrsciptDataMiddleWare, submitTitle)
+// router.post("/submitAbstract", getUserData, manuscrsciptDataMiddleWare, submitAbstract)
+// router.post("/submitKeyword", getUserData, manuscrsciptDataMiddleWare, submitKeyword)
+
 router.get("/authorProfileForSearch", getUserData, authorsProfileSearch)
-router.post("/addAuthorToPaper", getUserData, manuscrsciptDataMiddleWare, AddAuthorToPaper)
-router.post("/addReviewerToPaper", getUserData, manuscrsciptDataMiddleWare, AddReviewerToPaper )
-router.post("/submitDisclosures", getUserData, manuscrsciptDataMiddleWare, SubmitDisclosures)
+// router.post("/addAuthorToPaper", getUserData, manuscrsciptDataMiddleWare, AddAuthorToPaper)
+// router.post("/addReviewerToPaper", getUserData, manuscrsciptDataMiddleWare, AddReviewerToPaper )
+// router.post("/submitDisclosures", getUserData, manuscrsciptDataMiddleWare, SubmitDisclosures)
+
+
 router.get("/updateAccount", updateAccount)
 router.post("/updateAccountData", upload.none(), updateAccountData)
 router.get("/getUserInfo", getUserData, (req,res) =>{

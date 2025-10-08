@@ -99,6 +99,8 @@ const io = new Server(server, {
 // Your socket.io event handlers...
 
 // Routes
+app.use("/manuscript", require("./routes/submissionRoutes"))
+
 app.use("/", require("./routes/pages"));
 
 server.listen(PORT, () => {

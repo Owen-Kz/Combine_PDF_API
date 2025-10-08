@@ -134,6 +134,8 @@
   }
 </style>
 <input type="hidden" value="<%= _uid_token %>" id="uid">
+    <input type="text" name="_userEmail" id="_userEmail" value="<%= email %>" readonly hidden >
+<input type="text" name="article_id" id="article_id" value="<%=article_id%>" readonly hidden>
   <div class="preloader">
     <div class="loader-p"></div>
   </div>
@@ -326,7 +328,7 @@
     <script src="/assets/global/js/jquery-3.6.0.min.js"></script>
     <script src="/assets/global/js/bootstrap.bundle.min.js"></script>
     <script src="/assets/templates/metro_hyip/js/main.js"></script>
-    <!-- <script type="module" src="/js/forms/addAuthorForModal.js"></script> -->
+
 
     <script>
       'use strict';
@@ -339,7 +341,7 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 
-    <!-- <script type="module" src="/js/quill.js?v=<%= new Date() %>"></script> -->
+
     <script>
 function toggleInputField() {
     var manuscriptIDField = document.getElementById("manuscriptIDField");
@@ -386,7 +388,6 @@ function closeModal() {
 
 </script>
 
-<!-- <script src="/js/navbar.js" type="module"></script> -->
   </body>
 
 </html>

@@ -3,7 +3,10 @@
 <div id="author-information" class="form-section hidden">
     <form onsubmit="return false" id="submitAuthorsForm" enctype="multipart/form-data">
     <h3 class="manu_head">Author's Information</h3>
-    <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+    <input type="text" name="manuscript_id" value="<%=articleId%>" readonly hidden>
+    <input type="text" name="article_id" value="<%= articleId %>" readonly hidden>
+    <input type="text" name="corresponding_authors_email" value="<%= email %>" readonly hidden>
+
     <div id="addAuthor" style="width: 100%;">
       <div class="authorinfoContainer">
         <div class="authorname">
@@ -80,7 +83,7 @@
 
         <input type="submit" value="submit" id="submitAuthors" disabled hidden>
         <!-- next button  -->
-        <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitAuthors')" disabled>Save & Continue</button>
+        <button type="button" class="submit-next nextManuscript" id="submitAuthorsButton" disabled>Save & Continue</button>
         <!-- end next button  -->
       </div>
        </form>
@@ -278,46 +281,108 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // SubmitForm 
-submitAuthorsForm.addEventListener("submit", function(e){
-  e.preventDefault();
-  const formData = new FormData(submitAuthorsForm)
-  const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
-  const queriedID = "<%= queriedID %>";
-  fetch(`/addAuthorToPaper?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
-    method: "POST",
-    body: formData
-  }).then(res => res.json())
-  .then(data =>{
-    if(data.error){
-     
-      iziToast.error({
-        message: data.error,
-        position:"topRight"
-      })
-    }else if(data.success){
-    showProgressSavedPopup()
-showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6,6, 'submitAuthors')
+const submitAuthorsForm = document.getElementById("submitAuthorsForm");
+const submitAuthorsButton = document.getElementById("submitAuthorsButton");
 
-    }else{
-      showErrorPopup("An Error Occured")
+if (submitAuthorsForm) {
+    submitAuthorsForm.addEventListener("submit", function(e){
+        e.preventDefault();
+        submitAuthors();
+    });
+}
+
+if (submitAuthorsButton) {
+    submitAuthorsButton.addEventListener("click", function(){
+        submitAuthors();
+    });
+}
+
+function submitAuthors() {
+    // Show loading state
+    submitAuthorsButton.disabled = true;
+    submitAuthorsButton.textContent = 'Saving...';
+
+    const formData = new FormData(submitAuthorsForm);
+    const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+    const queriedID = "<%= queriedID %>";
+    
+    fetch(`/manuscript/addAuthorToPaper?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
+        method: "POST",
+        body: formData
+    }).then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            iziToast.error({
+                message: data.error,
+                position: "topRight"
+            });
+            // Reset button state on error
+            submitAuthorsButton.disabled = false;
+            submitAuthorsButton.textContent = 'Save & Continue';
+        } else if (data.success) {
+            showProgressSavedPopup();
+            // Update URL with PRG pattern
+            const url = new URL(window.location.href);
+            url.searchParams.set('prg', 'true');
+            history.pushState({}, '', url.toString());
+            showNext('suggest-reviewers', 'author-information', 'author_information_nav', 'suggest_reviewers_nav', 'keywords', 6, 6, 'submitAuthors');
+        } else {
+            showErrorPopup("An Error Occurred");
+            // Reset button state on error
+            submitAuthorsButton.disabled = false;
+            submitAuthorsButton.textContent = 'Save & Continue';
+        }
+    })
+    .catch(error => {
+        console.error("Submission error:", error);
+        showErrorPopup("Network error. Please check your connection.");
+        // Reset button state on error
+        submitAuthorsButton.disabled = false;
+        submitAuthorsButton.textContent = 'Save & Continue';
+    });
+}
+
+// Global function for submitSection to call
+function submitAuthorsSection() {
+    const submitAuthorsButton = document.getElementById('submitAuthorsButton');
+    if (submitAuthorsButton) {
+        submitAuthorsButton.click();
     }
-  })
-
-})
+}
   </script>
 
+<% 
+// Filter out the current author (corresponding author) from the Authors list
+let filteredAuthors = [];
+if (Authors && Array.isArray(Authors)) {
+    filteredAuthors = Authors.filter(author => {
+        // Exclude the current user (corresponding author) from the additional authors list
+        return author.authors_email !== email;
+    });
+}
+%>
 
-<% if(Authors && Authors !== null){  
-  for(let a=0; a<Authors.length; a++){
-    let fullName  = Authors[a].authors_fullname
-  let nameParts = fullName.split(" "); // Split the name by spaces
-    let prefix = nameParts[0]; // First part is the prefix
-  let firstName = nameParts[1] || ""; // Second part is the first name
-  let lastName = nameParts[nameParts.length - 1] || ""; // Last part is the last name
-  let otherNames = nameParts.slice(2, -1).join(" ") || ""; // Middle names
-  %>
+<% if(filteredAuthors && filteredAuthors.length > 0){  
+    for(let a = 0; a < filteredAuthors.length; a++){
+        let fullName = filteredAuthors[a].authors_fullname;
+        let nameParts = fullName.split(" "); // Split the name by spaces
+        let prefix = nameParts[0] || ""; // First part is the prefix
+        let firstName = nameParts[1] || ""; // Second part is the first name
+        let lastName = nameParts[nameParts.length - 1] || ""; // Last part is the last name
+        let otherNames = nameParts.slice(2, -1).join(" ") || ""; // Middle names
+%>
  <script>
-  PlainAuthorField('<%=prefix%>','<%=firstName%>','<%=otherNames%>','<%=lastName%>',
-  '<%=Authors[a].orcid_id%>','<%=Authors[a].affiliations%>','<%=Authors[a].affiliation_city%>','<%=Authors[a].affiliation_country%>','<%=Authors[a].authors_email%>','<%=Authors[a].asfi_membership_id%>')
-   </script>
-<%} } %>
+    PlainAuthorField(
+        '<%= prefix %>',
+        '<%= firstName %>',
+        '<%= otherNames %>',
+        '<%= lastName %>',
+        '<%= filteredAuthors[a].orcid_id %>',
+        '<%= filteredAuthors[a].affiliations %>',
+        '<%= filteredAuthors[a].affiliation_city %>',
+        '<%= filteredAuthors[a].affiliation_country %>',
+        '<%= filteredAuthors[a].authors_email %>',
+        '<%= filteredAuthors[a].asfi_membership_id %>'
+    );
+ </script>
+<% } } %>

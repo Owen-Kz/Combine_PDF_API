@@ -1,197 +1,250 @@
 <div id="keywords" class="form-section hidden">
     <form onsubmit="return false" id="submitKeywordsForm">
-        <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
-    <h3 class="manu-head"><span style="color: #e22424;">*</span>Keywords</h3>
-    <% if(Keywords &&Keywords!==null) {
-      for(let i=0; i<Keywords.length; i++){
-      
-      %>
-      <div>
-      <label for="">Keyword <%=i+1%></label>
-      <input type="text" class="form-control keyword-input" name="keyword[]" value="<%= Keywords[i].keyword %>">
-    </div>
-      <% } 
+        <input type="text" name="manuscript_id" value="<%=articleId%>" readonly hidden>
+        <input type="text" name="corresponding_authors_email" value="<%= email%>" readonly hidden>
+        <h3 class="manu-head"><span style="color: #e22424;">*</span>Keywords</h3>
+        
+        <% if(Keywords && Keywords.length > 0) { 
+            for(let i=0; i<Keywords.length; i++){ %>
+            <div>
+                <label for="">Keyword <%=i+1%></label>
+                <input type="text" class="form-control keyword-input" name="keyword[]" value="<%= Keywords[i].keyword %>">
+            </div>
+        <% } 
+        
+            for(let n=0; n< 8-Keywords.length; n++){ %>
+            <div>
+                <label for="">Keyword <%=n+Keywords.length+1%></label>
+                <input type="text" class="form-control keyword-input" name="keyword[]">
+            </div>
+        <% } %>
+        
+        <p style="color: #e22424;">* Indicates Mandatory Fields</p>
+        <div style="display: flex; justify-content: space-around;">
+            <!-- back button  -->
+            <button type="button" class="submit-next" onclick="NavigationNext('abstract', 'abstract_nav', 'keywords_nav', 3)">Back</button>
+            <!-- end back button  -->
 
-  
-        for(let n=0; n< 8-Keywords.length; n++){
+            <input type="submit" value="submit" id="submitKeywords" disabled hidden>
+            <!-- next button  -->
+            <% if(Keywords.length > 2){ %>
+            <button type="button" class="submit-next nextManuscript" id="nextButton">Save & Continue</button>
+            <!-- end next button  -->
+            <%} else{ %>
+            <button type="button" class="submit-next nextManuscript" id="nextButton" disabled>Save & Continue</button>
+            <!-- end next button  -->
+            <%}%>
+        </div>
+        
+        <% } else { %>
+        <div>
+            <label for="">Keyword 1</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 2</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 3</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 4</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 5</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 6</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 7</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
+        <div>
+            <label for="">Keyword 8</label>
+            <input type="text" class="form-control keyword-input" name="keyword[]">
+        </div>
 
-      %>
-      <div>
-      <label for="">Keyword <%=n+Keywords.length+1%></label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-   <%} %>
-   <p style="color: #e22424;">* Indicates Mandatory Fields</p>
-    <div style="display: flex; justify-content: space-around;">
-      <!-- back button  -->
-      <button type="button" class="submit-next" onclick="NavigationNext('abstract', 'abstract_nav', 'keywords_nav', 3)">Back</button>
-      <!-- end back button  -->
+        <p style="color: #e22424;">* Indicates Mandatory Fields</p>
+        <div style="display: flex; justify-content: space-around;">
+            <!-- back button  -->
+            <button type="button" class="submit-next" onclick="NavigationNext('abstract', 'abstract_nav', 'keywords_nav', 3)">Back</button>
+            <!-- end back button  -->
 
-      <input type="submit" value="submit" id="submitKeywords" disabled hidden>
-      <!-- next button  -->
-      <% if(Keywords.length > 2){ %>
-      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitKeywords')" id="nextButton" >Save & Continue</button>
-      <!-- end next button  -->
-      <%} else{ %>
-        <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitKeywords')" id="nextButton" disabled>Save & Continue</button>
-        <!-- end next button  -->
-        <%}%>
-    </div>
- <%  }else { %>
-
-     
-    <div>
-      <label for="">Keyword 1</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 2</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 3</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 4</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 5</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 6</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 7</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-    <div>
-      <label for="">Keyword 8</label>
-      <input type="text" class="form-control keyword-input" name="keyword[]">
-    </div>
-
-    <p style="color: #e22424;">* Indicates Mandatory Fields</p>
-    <div style="display: flex; justify-content: space-around;">
-      <!-- back button  -->
-      <button type="button" class="submit-next" onclick="NavigationNext('abstract', 'abstract_nav', 'keywords_nav', 3)">Back</button>
-      <!-- end back button  -->
-
-      <input type="submit" value="submit" id="submitKeywords" disabled hidden>
-      <!-- next button  -->
-      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitKeywords')" id="nextButton" disabled>Save & Continue</button>
-      <!-- end next button  -->
-    </div>
-
-    <%}%>
-    
-
+            <input type="submit" value="submit" id="submitKeywords" disabled hidden>
+            <!-- next button  -->
+            <button type="button" class="submit-next nextManuscript" id="nextButton" disabled>Save & Continue</button>
+            <!-- end next button  -->
+        </div>
+        <% } %>
     </form> 
 </div>
 
-
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    const keywordInputs = document.querySelectorAll('.keyword-input');
-    const nextButton = document.getElementById('nextButton');
+        const keywordInputs = document.querySelectorAll('.keyword-input');
+        const nextButton = document.getElementById('nextButton');
+        const submitKeywordsForm = document.getElementById("submitKeywordsForm");
+        const uid = document.getElementById("uid");
+        const _userEmail = document.getElementById("_userEmail");
+        const article_idContainer = document.querySelector("input[name='manuscript_id']");
 
-    // Add event listeners to each input field to monitor changes
-    keywordInputs.forEach(input => {
-        input.addEventListener('input', checkKeywords);
-    });
-
-    // Check filled inputs and enable/disable Next button
-    function checkKeywords() {
-        const filledCount = Array.from(keywordInputs).filter(input => input.value.trim() !== '').length;
-        nextButton.disabled = filledCount < 3;
-
-        // Update input styles based on their value
+        // Add event listeners to each input field to monitor changes
         keywordInputs.forEach(input => {
-            if (input.value.trim() === '') {
-                input.classList.add('required');
-                input.classList.remove('valid');
-            } else {
-                input.classList.remove('required');
-                input.classList.add('valid');
-            }
+            input.addEventListener('input', checkKeywords);
         });
-    }
 
-    // Add event listener for the Next button
-    nextButton.addEventListener('click', function() {
-        const filledCount = Array.from(keywordInputs).filter(input => input.value.trim() !== '').length;
+        // Check filled inputs and enable/disable Next button
+        function checkKeywords() {
+            const filledCount = Array.from(keywordInputs).filter(input => input.value.trim() !== '').length;
+            nextButton.disabled = filledCount < 3;
 
-        if (filledCount === 0) {
-            // Highlight all empty fields
-            keywordInputs.forEach(input => {
-                input.classList.add('required');
-                input.classList.remove('valid');
-            });
-            showErrorPopup("Please fill in at least 3 keywords before proceeding.");
-            return; // Prevent proceeding
-        }
-
-        if (filledCount < 3) {
-            // Highlight fields that are still empty
+            // Update input styles based on their value
             keywordInputs.forEach(input => {
                 if (input.value.trim() === '') {
                     input.classList.add('required');
                     input.classList.remove('valid');
                 } else {
-                    input.classList.add('valid'); // Mark filled fields as valid
+                    input.classList.remove('required');
+                    input.classList.add('valid');
                 }
             });
-            showErrorPopup("Please fill in at least 3 keywords before proceeding.");
-            return; // Prevent proceeding
         }
 
-        // Call the original showNext function
+        // Function to submit keywords
+        function submitKeywords() {
+            const filledCount = Array.from(keywordInputs).filter(input => input.value.trim() !== '').length;
+
+            if (filledCount === 0) {
+                // Highlight all empty fields
+                keywordInputs.forEach(input => {
+                    input.classList.add('required');
+                    input.classList.remove('valid');
+                });
+                showErrorPopup("Please fill in at least 3 keywords before proceeding.");
+                return false; // Prevent proceeding
+            }
+
+            if (filledCount < 3) {
+                // Highlight fields that are still empty
+                keywordInputs.forEach(input => {
+                    if (input.value.trim() === '') {
+                        input.classList.add('required');
+                        input.classList.remove('valid');
+                    } else {
+                        input.classList.add('valid'); // Mark filled fields as valid
+                    }
+                });
+                showErrorPopup("Please fill in at least 3 keywords before proceeding.");
+                return false; // Prevent proceeding
+            }
+
+            // Collect all non-empty keywords
+            const keywords = Array.from(keywordInputs)
+                .map(input => input.value.trim())
+                .filter(keyword => keyword !== "");
+            
+            if (keywords.length < 3) {
+                showErrorPopup("Please provide at least 3 keywords");
+                return false;
+            }
+
+            const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+            const queriedID = "<%= queriedID %>";
+
+            // Show loading state
+            nextButton.disabled = true;
+            nextButton.textContent = 'Saving...';
+
+            // Send all keywords as an array in one request
+            fetch(`/manuscript/submitKeyword?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json"
+                },
+                body: JSON.stringify({
+                    keywords: keywords,
+                    corresponding_authors_email: _userEmail.value,
+                    article_id: article_idContainer.value
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showProgressSavedPopup();
+                    // Update URL with PRG pattern
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('prg', 'true');
+                    history.pushState({}, '', url.toString());
+                    
+                    // Navigate to next section
+                    showNext('author-information', 'keywords', 'keywords_nav', 'author_information_nav', 'abstract', 5, 5, 'submitKeywords');
+                } else if (data.error) {
+                    iziToast.error({
+                        message: data.error,
+                        position: "topRight"
+                    });
+                    // Reset button state
+                    nextButton.disabled = false;
+                    nextButton.textContent = 'Save & Continue';
+                } else {
+                    showErrorPopup("Keywords could not be saved");
+                    // Reset button state
+                    nextButton.disabled = false;
+                    nextButton.textContent = 'Save & Continue';
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting keywords:', error);
+                showErrorPopup("Network error occurred while saving keywords");
+                // Reset button state
+                nextButton.disabled = false;
+                nextButton.textContent = 'Save & Continue';
+            });
+
+            return true;
+        }
+
+        // Add click event listener to the next button
+        nextButton.addEventListener('click', submitKeywords);
+
+        // Also handle form submission for completeness
+        submitKeywordsForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            submitKeywords();
+        });
+
+        // Initialize the form state
+        checkKeywords();
     });
 
-
-    // submit The Form 
-    const submitKeywordsForm = document.getElementById("submitKeywordsForm")
-    submitKeywordsForm.addEventListener("submit", function(){
-      // let KeywordsSubmitted = getCookie("_KeyCount")? getCookie("_KeyCount") : 0
-      const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
-      const queriedID = "<%= queriedID %>";
-
-      keywordInputs.forEach(keyword =>{
-        if(keyword.value !== ""){
-        fetch(`/submitKeyword?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`,{
-          method:"POST",
-          headers:{
-            "Content-type":"application/JSON"
-          },
-          body:JSON.stringify({keyword:keyword.value})
-        }).then(res =>res.json())
-        .then(data =>{
-          if(data.success){
-            // KeywordsSubmitted += 1
-        showProgressSavedPopup();
-
-          }else if(data.error){
-            iziToast.error({
-        message: data.error,
-        position:"topRight"
-      })
-          }else{
-            showErrorPopup("Keywords Could not be saved")
-          }
-        })
-      }
-      })
-      // console.log(KeywordsSubmitted)
-      // if(KeywordsSubmitted > 2){
-        showNext('author-information', 'keywords', 'keywords_nav', 'author_information_nav', 'abstract', 5, 5, 'submitKeywords');
-      // }else{
-      //   showErrorPopup("You are required to submit at least 3 Keywords")
-      // }
-    })
-
-    
-});
+    // Global function for submitSection to call
+    function submitKeywordsSection() {
+        const nextButton = document.getElementById('nextButton');
+        if (nextButton) {
+            nextButton.click();
+        }
+    }
 </script>
+
+<style>
+    .keyword-input.required {
+        border: 2px solid #e22424;
+        background-color: #ffe6e6;
+    }
+    
+    .keyword-input.valid {
+        border: 2px solid #28a745;
+        background-color: #e6ffe6;
+    }
+    
+    .keyword-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+</style>

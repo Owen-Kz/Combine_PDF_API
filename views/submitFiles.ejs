@@ -223,6 +223,7 @@ function checkRequiredFiles() {
   function UploadSingleFile(fieldName, publicName) {
     var fileInput = document.querySelector(`input[name="${fieldName}"]`);
     var file = fileInput.files[0];
+   
 
     if (!file) {
         iziToast.error({
@@ -255,6 +256,8 @@ function checkRequiredFiles() {
 
     var formData = new FormData();
     formData.append(fieldName, file);
+    formData.append("corresponsing_auhtors_email", _userEmail.value)
+    formData.append("article_id", article_idContainer.value)
 
     // Find the correct `.fileControls` container dynamically
     var fileControlContainer = fileInput.closest(".fileControls");
@@ -268,8 +271,9 @@ function checkRequiredFiles() {
     uploadButton.parentNode.insertBefore(spinner, uploadButton);
     const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
     const queriedID = "<%= queriedID %>";
+    const aritlcleId = document.getElementById("article_id").value
 
-    fetch(`/uploadSingleFile/${fieldName}?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
+    fetch(`/manuscript/uploadSingleFile/${fieldName}?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true&articleId=${aritlcleId}`, {
         method: "POST",
         body: formData
     })

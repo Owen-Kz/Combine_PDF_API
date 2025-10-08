@@ -1,9 +1,9 @@
 <div id="abstract" class="form-section hidden">
     <form onsubmit="return false" id="submitAbstractForm">
     <div>
-      <input type="text" id="abstract_value" value="<%= SavedAbstract%>" readonly hidden>
+      <input type="text" id="abstract_value" value="<%= SavedAbstract %>" readonly hidden>
       <h3 class="manu_head"><span style="color: #e22424;">*</span>Abstract</h3><br>
-      <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
+      <input type="text" name="manuscript_id" value="<%=articleId%>" readonly hidden>
 
       <!-- Quill container - make sure this is unique -->
       <div id="abstract-quill-container">
@@ -20,7 +20,7 @@
       <!-- end back button  -->
       <input type="submit" value="submit" id="submitAbstract" disabled hidden>
       <!-- next button  -->
-      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitAbstract')" >Save & Continue</button>
+      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitAbstract')">Save & Continue</button>
       <!-- end next button  -->
     </div>
     </form>
@@ -31,79 +31,250 @@
     
     let abstractQuill = null;
     let abstractInitialized = false;
+    let initializationInProgress = false;
 
     function initializeAbstractQuill() {
-      if (abstractInitialized) return abstractQuill;
+      // Prevent multiple simultaneous initializations
+      if (initializationInProgress) {
+        console.log("Initialization already in progress, skipping...");
+        return abstractQuill;
+      }
+      
+      if (abstractInitialized && abstractQuill) {
+        console.log("Quill already initialized, returning existing instance");
+        return abstractQuill;
+      }
+      
+      // Check if Quill container exists and is visible
+      const quillContainer = document.getElementById('quilleditor');
+      if (!quillContainer) {
+        console.error("Quill container not found");
+        return null;
+      }
+      
+      if (quillContainer.offsetParent === null) {
+        console.log("Quill container not visible, delaying initialization");
+        return null;
+      }
+      
+      initializationInProgress = true;
+      console.log("Starting Quill initialization...");
       
       const abstract_value = document.getElementById("abstract_value");
-      const savedAbstract = abstract_value?.value || '';
+      let savedAbstract = abstract_value?.value || '';
+      
+      // console.log("Raw saved abstract:", savedAbstract);
+      
+      let initialContent = { ops: [{ insert: '\n' }] };
       
       // Parse the abstract content
-      let parsedAbstract = { ops: [{ insert: "\n" }] };
-      
-      if (savedAbstract && savedAbstract !== 'null' && savedAbstract !== 'undefined') {
+      if (savedAbstract && savedAbstract !== 'null' && savedAbstract !== 'undefined' && savedAbstract !== '') {
         try {
-          // Clean the string
-          function prepareJSON(str) {
-            if (!str) return '{"ops":[{"insert":"\\n"}]}';
-            
-            const decoded = str.replace(/&[#\w]+;/g, m => 
-              new DOMParser().parseFromString(m, "text/html").body.textContent
-            );
-            
-            return decoded
-              .trim()
-              .replace(/([\w"])\s*$/, '$1')
-              .replace(/^([^[{])/, '')
-              .replace(/([^\]}])$/, '');
+          // Handle the case where abstract is already a Delta array like [{"insert":"Nothing breaks\n"}]
+          if (savedAbstract.startsWith('[') && savedAbstract.endsWith(']')) {
+            console.log("Detected Delta array format");
+            try {
+              const deltaArray = JSON.parse(savedAbstract);
+              if (Array.isArray(deltaArray)) {
+                initialContent = { ops: deltaArray };
+                console.log("Successfully parsed as Delta array");
+              }
+            } catch (parseError) {
+              console.error("Error parsing Delta array:", parseError);
+            }
+          } 
+          // Handle the case where abstract is a full Delta object like {"ops":[{"insert":"Nothing breaks\n"}]}
+          else if (savedAbstract.startsWith('{') && savedAbstract.endsWith('}')) {
+            console.log("Detected Delta object format");
+            try {
+              const deltaObject = JSON.parse(savedAbstract);
+              if (deltaObject && deltaObject.ops) {
+                initialContent = deltaObject;
+                console.log("Successfully parsed as Delta object");
+              }
+            } catch (parseError) {
+              console.error("Error parsing Delta object:", parseError);
+            }
           }
-
-          const cleanJSON = prepareJSON(savedAbstract);
-          parsedAbstract = JSON.parse(cleanJSON);
+          // Handle plain text
+          else {
+            console.log("Detected plain text format");
+            initialContent = { ops: [{ insert: savedAbstract + '\n' }] };
+          }
           
-          if (Array.isArray(parsedAbstract)) {
-            parsedAbstract = { ops: parsedAbstract };
-          } else if (!parsedAbstract.ops) {
-            parsedAbstract = { ops: [{ insert: "\n" }] };
-          }
         } catch (error) {
           console.error("Abstract parsing error:", error);
-          parsedAbstract = { ops: [{ insert: "\n" }] };
         }
+      } else {
+        console.log("No saved abstract found, using empty content");
       }
+      
+      // console.log("Final initial content for Quill:", initialContent);
 
       // Initialize Quill with the parsed content
-      abstractQuill = getQuillInstance('#quilleditor', parsedAbstract);
-      abstractInitialized = true;
+      try {
+        // Check if Quill is already initialized on this element
+        if (quillContainer.querySelector('.ql-editor')) {
+          console.log("Quill editor already exists, reusing...");
+          // Try to find the existing Quill instance
+          abstractQuill = window.Quill && window.Quill.find(quillContainer);
+          if (abstractQuill) {
+            console.log("Found existing Quill instance, setting content");
+            abstractQuill.setContents(initialContent);
+          }
+        } else {
+          console.log("Creating new Quill instance");
+          abstractQuill = getQuillInstance('#quilleditor', initialContent);
+        }
+        
+        abstractInitialized = true;
+        
+        // Force a refresh of the content
+        setTimeout(() => {
+          if (abstractQuill) {
+            console.log("Forcing content refresh...");
+            abstractQuill.setContents(initialContent);
+            
+            const loadedContent = abstractQuill.getContents();
+            const plainText = abstractQuill.getText();
+   
+            
+            // If still empty, try one more time with a different approach
+            if (plainText.trim().length === 0 && initialContent.ops && initialContent.ops.length > 0) {
+              console.log("Content still empty, trying alternative approach...");
+              setTimeout(() => {
+                abstractQuill.setContents(initialContent);
+            
+              }, 1000);
+            }
+          }
+        }, 100);
+        
+        // Add word count functionality
+        if (abstractQuill) {
+          abstractQuill.on('text-change', function() {
+            updateWordCount();
+          });
+          
+          // Initial word count
+          setTimeout(updateWordCount, 200);
+        }
+        
+      } catch (error) {
+        console.error("Quill initialization error:", error);
+        // Fallback: create basic Quill instance
+        try {
+          const Quill = window.Quill;
+          if (Quill && !quillContainer.querySelector('.ql-editor')) {
+            console.log("Using fallback Quill initialization");
+            abstractQuill = new Quill('#quilleditor', {
+              theme: 'snow',
+              modules: {
+                toolbar: [
+                  ['bold', 'italic', 'underline'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  ['clean']
+                ]
+              }
+            });
+            if (initialContent && initialContent.ops) {
+              abstractQuill.setContents(initialContent);
+            }
+            abstractInitialized = true;
+          }
+        } catch (fallbackError) {
+          console.error("Fallback Quill initialization failed:", fallbackError);
+        }
+      } finally {
+        initializationInProgress = false;
+      }
       
       return abstractQuill;
+    }
+
+    function updateWordCount() {
+      if (!abstractQuill) return;
+      
+      const text = abstractQuill.getText().trim();
+      const wordCount = text ? text.split(/\s+/).length : 0;
+      const wordCountElement = document.getElementById('word-count');
+      const limitExceedElement = document.getElementById('limit-exceed');
+      
+      if (wordCountElement) {
+        wordCountElement.textContent = `Word count: ${wordCount}`;
+        
+        // Add warning if approaching or exceeding limits
+        if (wordCount > 300) {
+          wordCountElement.style.color = '#e22424';
+          if (limitExceedElement) {
+            limitExceedElement.textContent = ' (Abstract should be 250-300 words)';
+            limitExceedElement.style.color = '#e22424';
+          }
+        } else if (wordCount > 250) {
+          wordCountElement.style.color = '#ff9800';
+          if (limitExceedElement) {
+            limitExceedElement.textContent = ' (Approaching word limit)';
+            limitExceedElement.style.color = '#ff9800';
+          }
+        } else {
+          wordCountElement.style.color = '#28a745';
+          if (limitExceedElement) {
+            limitExceedElement.textContent = '';
+          }
+        }
+      }
     }
 
     // Initialize when abstract section becomes visible
     function handleAbstractSectionVisibility() {
       const abstractSection = document.getElementById('abstract');
       if (abstractSection && !abstractSection.classList.contains('hidden')) {
-        if (!abstractInitialized) {
-          setTimeout(() => {
-            initializeAbstractQuill();
-          }, 100);
-        }
+        console.log("Abstract section became visible, initializing Quill...");
+        // Wait a bit longer to ensure DOM is fully ready
+        setTimeout(() => {
+          initializeAbstractQuill();
+        }, 500);
       }
     }
 
-    // Observe section visibility changes
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.attributeName === 'class') {
-          handleAbstractSectionVisibility();
-        }
-      });
+    // Use a single observer with proper configuration
+    let observerInitialized = false;
+    
+    function setupObserver() {
+      if (observerInitialized) return;
+      
+      const abstractSection = document.getElementById('abstract');
+      if (abstractSection) {
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+              handleAbstractSectionVisibility();
+            }
+          });
+        });
+        
+        observer.observe(abstractSection, { 
+          attributes: true,
+          attributeFilter: ['class']
+        });
+        observerInitialized = true;
+        console.log("MutationObserver setup complete");
+      }
+    }
+
+    // Initialize when DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("DOM loaded, setting up observer...");
+      setupObserver();
+      // Also check immediately in case abstract section is already visible
+      handleAbstractSectionVisibility();
     });
 
-    const abstractSection = document.getElementById('abstract');
-    if (abstractSection) {
-      observer.observe(abstractSection, { attributes: true });
-    }
+    // Manual initialization function for debugging
+    window.debugInitAbstract = function() {
+      console.log("Manual initialization triggered");
+      initializeAbstractQuill();
+    };
 
     // Form submission handler
     const submitAbstractForm = document.getElementById("submitAbstractForm");
@@ -115,13 +286,38 @@
           showErrorPopup("Editor not ready. Please wait...");
           return;
         }
+        
+        // Validate word count
+        const text = abstractQuill.getText().trim();
+        const wordCount = text ? text.split(/\s+/).length : 0;
+        
+        if (wordCount === 0) {
+          showErrorPopup("Please enter an abstract before saving.");
+          return;
+        }
+        
+        if (wordCount < 10) {
+          showErrorPopup("Abstract is too short. Please provide a more detailed abstract.");
+          return;
+        }
+        
+        if (wordCount > 350) {
+          showErrorPopup("Abstract is too long. Please keep it under 300 words.");
+          return;
+        }
 
         const data = {
-          abstract: JSON.stringify(abstractQuill.getContents().ops)
+          abstract: JSON.stringify(abstractQuill.getContents()),
+          corresponding_authors_email: _userEmail.value,
+          article_id: article_idContainer.value
         };
-       const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
-  const queriedID = "<%= queriedID %>";
-        fetch(`/submitAbstract?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
+        
+        console.log("Submitting abstract data:", data);
+        
+        const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
+        const queriedID = "<%= queriedID %>";
+
+        fetch(`/manuscript/submitAbstract?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
           method: "POST",
           headers: {
             "Content-type": "application/json"
@@ -137,6 +333,10 @@
             });
           } else if (data.success) {
             showProgressSavedPopup();
+            // Update URL with PRG pattern
+            const url = new URL(window.location.href);
+            url.searchParams.set('prg', 'true');
+            history.pushState({}, '', url.toString());
             showNext('keywords', 'abstract', 'abstract_nav', 'keywords_nav', 'title', 4, 4, 'submitAbstract');
           } else {
             showErrorPopup("An Error Occurred. Please try again");
@@ -155,4 +355,8 @@
         destroyQuillInstances();
       }
     });
+
+    // Make functions available globally for navigation
+    window.initializeAbstractQuill = initializeAbstractQuill;
+    window.getAbstractQuill = function() { return abstractQuill; };
   </script>

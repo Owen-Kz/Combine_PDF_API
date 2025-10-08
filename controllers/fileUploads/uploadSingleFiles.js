@@ -1,12 +1,11 @@
 require("dotenv").config();
-const express = require("express");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const path = require("path");
-const db = require("../../routes/db.config");
-const dbPromise = require("../../routes/dbPromise.config");
 
+const SubmissionManager = require("../utils/SubmissionManager");
+const dbPromise = require("../../routes/dbPromise.config");
 // Cloudinary Configuration
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -86,122 +85,6 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
     throw lastError;
 }
 
-// Enhanced session management
-const ensureSessionData = (req) => {
-    if (!req.session.manuscriptData) {
-        req.session.manuscriptData = {
-            // File flags
-            manFile: false,
-            covFile: false,
-            docFile: false,
-            // File URLs
-            manuscript_file: null,
-            cover_letter_file: null,
-            document_file: null,
-            // Session management
-            sessionID: null,
-            process: 'new',
-            hasNewFiles: false,
-            // Timestamps
-            lastUpdated: new Date().toISOString()
-        };
-    }
-    return req.session.manuscriptData;
-};
-
-// Save session with error handling
-const saveSession = async (req) => {
-    return new Promise((resolve, reject) => {
-        req.session.manuscriptData.lastUpdated = new Date().toISOString();
-        req.session.save((err) => {
-            if (err) {
-                console.error('Session save failed:', err);
-                reject(new Error('Failed to save session data'));
-            } else {
-                resolve();
-            }
-        });
-    });
-};
-
-// Validate manuscript requirements
-const validateManuscriptRequirements = (sessionData) => {
-    const errors = [];
-    
-    // Check if manuscript file is uploaded
-    if (!sessionData.manFile || !sessionData.manuscript_file) {
-        errors.push('Manuscript file is required');
-    }
-    
-    // Check if manuscript file URL is valid
-    if (sessionData.manuscript_file && typeof sessionData.manuscript_file === 'object') {
-        if (!sessionData.manuscript_file.url) {
-            errors.push('Manuscript file URL is invalid');
-        }
-    }
-    
-    return errors;
-};
-
-// Database operation with transaction support
-async function updateSubmissionDatabase(articleId, fieldName, fileUrl, maxRetries = 3) {
-    return await retryWithBackoff(async () => {
-        let connection;
-        try {
-            connection = await dbPromise.getConnection();
-            await connection.beginTransaction();
-
-            // First check if the submission exists
-            const [existingRecords] = await connection.query(
-                "SELECT revision_id, corresponding_authors_email FROM submissions WHERE revision_id = ?",
-                [articleId]
-            );
-
-            if (existingRecords.length > 0) {
-                // Update existing record
-                const [updateResult] = await connection.query(
-                    `UPDATE submissions SET ${fieldName} = ?, last_updated = NOW() 
-                     WHERE revision_id = ?`,
-                    [fileUrl, articleId]
-                );
-
-                if (updateResult.affectedRows === 0) {
-                    throw new Error("No rows affected during update");
-                }
-            } else {
-                // For new submissions, we need user email
-                if (!req.user?.email) {
-                    throw new Error("User email required for new submission");
-                }
-                
-                // Insert new record with user email
-                const [insertResult] = await connection.query(
-                    `INSERT INTO submissions (revision_id, ${fieldName}, corresponding_authors_email, last_updated) 
-                     VALUES (?, ?, ?, NOW())`,
-                    [articleId, fileUrl, req.user.email]
-                );
-
-                if (insertResult.affectedRows === 0) {
-                    throw new Error("No rows affected during insert");
-                }
-            }
-
-            await connection.commit();
-            return true;
-            
-        } catch (error) {
-            if (connection) {
-                await connection.rollback();
-            }
-            throw error;
-        } finally {
-            if (connection) {
-                connection.release();
-            }
-        }
-    }, maxRetries, 500);
-}
-
 // Clean up local files safely
 const cleanUpLocalFile = (filePath) => {
     if (filePath && fs.existsSync(filePath)) {
@@ -233,6 +116,18 @@ const uploadToCloudinary = async (filePath, fieldName) => {
     }, 3, 1000);
 };
 
+// Validate manuscript requirements
+const validateManuscriptRequirements = (submissionData) => {
+    const errors = [];
+    
+    // Check if manuscript file is uploaded
+    if (!submissionData.manuscript_file) {
+        errors.push('Manuscript file is required');
+    }
+    
+    return errors;
+};
+
 const uploadSingleFile = async (req, res) => {
     const FileField = req.params.field;
 
@@ -247,7 +142,6 @@ const uploadSingleFile = async (req, res) => {
     try {
         // Handle file upload
         upload.single(FileField)(req, res, async (err) => {
-            const sessionData = ensureSessionData(req);
             let localFilePath = req.file?.path;
 
             try {
@@ -306,92 +200,88 @@ const uploadSingleFile = async (req, res) => {
                     cleanUpLocalFile(localFilePath);
                 }
 
-                // Update session data
-                sessionData[FileField] = {
-                    url: cloudinaryResult.secure_url,
-                    public_id: cloudinaryResult.public_id,
-                    originalname: req.file.originalname,
-                    mimetype: req.file.mimetype,
-                    size: req.file.size,
-                    uploaded: true,
-                    timestamp: new Date().toISOString()
-                };
-
-                // Set specific flags for file types
-                if (FileField === 'manuscript_file') {
-                    sessionData.manFile = true;
-                    console.log('Manuscript file uploaded successfully');
-                } else if (FileField === 'cover_letter_file') {
-                    sessionData.covFile = true;
-                }
+                // Get article ID from request (set by middleware)
+                const articleId = req.articleId || req.submissionData?.articleId;
                 
-                sessionData.hasNewFiles = true;
-                sessionData.lastUpdated = new Date().toISOString();
-
-                // Update database
-                const articleId = req.session.manuscriptData?.sessionID || req.session.articleId;
                 if (!articleId) {
-                    // If no article ID, save to session only and return success
-                    await saveSession(req);
-                    
-                    return res.json({ 
-                        success: true, 
-                        fileUrl: cloudinaryResult.secure_url,
-                        field: FileField,
-                        message: "File uploaded successfully (saved to session)",
-                        flags: {
-                            manFile: FileField === 'manuscript_file',
-                            covFile: FileField === 'cover_letter_file',
-                            hasManuscript: sessionData.manFile
-                        },
-                        manuscriptStatus: sessionData.manFile ? 'COMPLETE' : 'REQUIRED'
+                    return res.status(400).json({ 
+                        error: "No active submission found",
+                        message: "Please start a new submission or reload the page"
                     });
                 }
 
+                // Update database using SubmissionManager
                 try {
-                    await updateSubmissionDatabase(articleId, FileField, cloudinaryResult.secure_url, 3);
+                    await SubmissionManager.saveStepData(articleId, 'upload_manuscript', {
+                        [FileField]: cloudinaryResult.secure_url,
+                        corresponding_authors_email: req.user.email
+                    });
+
+                    console.log(`File ${FileField} saved to database for submission: ${articleId}`);
+
                 } catch (dbError) {
                     console.error("Database update failed:", dbError);
-                    // Don't fail the upload if database update fails - file is already in session
-                    console.warn("File uploaded but database update failed, saved to session only");
+                    return res.status(500).json({ 
+                        error: "Failed to save file information to database",
+                        details: process.env.NODE_ENV === 'development' ? dbError.message : "Please try again later",
+                        fileUrl: cloudinaryResult.secure_url // Still return file URL for fallback
+                    });
                 }
 
-                // Save session explicitly
+                // Get updated submission data to check requirements
+                let submissionData;
                 try {
-                    await saveSession(req);
-                } catch (sessionError) {
-                    console.error("Session save failed:", sessionError);
-                    return res.status(500).json({ 
-                        error: "Failed to save session data",
-                        fileUrl: cloudinaryResult.secure_url // Still return file URL
-                    });
+                    submissionData = await SubmissionManager.getSubmissionData(articleId, req.user.email);
+                } catch (fetchError) {
+                    console.error("Failed to fetch submission data:", fetchError);
+                    submissionData = {};
                 }
 
                 // Validate manuscript requirements after upload
-                const requirementErrors = validateManuscriptRequirements(sessionData);
-                const hasManuscript = sessionData.manFile && sessionData.manuscript_file;
+                const requirementErrors = validateManuscriptRequirements(submissionData);
+                const hasManuscript = !!submissionData.manuscript_file;
+                const hasCoverLetter = !!submissionData.cover_letter_file;
 
-                return res.json({ 
+                // Prepare response
+                const response = {
                     success: true, 
                     fileUrl: cloudinaryResult.secure_url,
                     field: FileField,
-                    flags: {
-                        manFile: FileField === 'manuscript_file',
-                        covFile: FileField === 'cover_letter_file',
-                        hasManuscript: hasManuscript
+                    fileInfo: {
+                        originalname: req.file.originalname,
+                        mimetype: req.file.mimetype,
+                        size: req.file.size,
+                        uploaded: true,
+                        timestamp: new Date().toISOString()
                     },
-                    manuscriptStatus: hasManuscript ? 'COMPLETE' : 'REQUIRED',
+                    submission: {
+                        articleId: articleId,
+                        manuscriptUploaded: hasManuscript,
+                        coverLetterUploaded: hasCoverLetter
+                    },
                     requirements: {
                         manuscriptUploaded: hasManuscript,
+                        coverLetterUploaded: hasCoverLetter,
                         errors: requirementErrors,
                         isReadyForSubmission: requirementErrors.length === 0
-                    },
-                    session: {
-                        articleId: articleId,
-                        hasSession: true,
-                        lastUpdated: sessionData.lastUpdated
                     }
-                });
+                };
+
+                // Add specific flags based on file type
+                if (FileField === 'manuscript_file') {
+                    response.flags = {
+                        manFile: true,
+                        hasManuscript: true
+                    };
+                    response.manuscriptStatus = 'COMPLETE';
+                } else if (FileField === 'cover_letter_file') {
+                    response.flags = {
+                        covFile: true,
+                        hasCoverLetter: true
+                    };
+                }
+
+                return res.json(response);
 
             } catch (error) {
                 cleanUpLocalFile(localFilePath);
@@ -412,8 +302,91 @@ const uploadSingleFile = async (req, res) => {
     }
 };
 
-// Export validation function for use in other modules
+// Additional function to check file upload status
+uploadSingleFile.checkUploadStatus = async (req, res) => {
+    try {
+        const articleId = req.articleId || req.query.articleId;
+        
+        if (!articleId) {
+            return res.status(400).json({
+                success: false,
+                error: "No article ID provided"
+            });
+        }
+
+        const submission = await SubmissionManager.getSubmissionData(articleId, req.user.email);
+        
+        if (!submission) {
+            return res.status(404).json({
+                success: false,
+                error: "Submission not found"
+            });
+        }
+
+        const uploadStatus = {
+            manuscript_file: {
+                uploaded: !!submission.manuscript_file,
+                url: submission.manuscript_file,
+                required: true
+            },
+            cover_letter_file: {
+                uploaded: !!submission.cover_letter_file,
+                url: submission.cover_letter_file,
+                required: true
+            },
+            tables: {
+                uploaded: !!submission.tables,
+                url: submission.tables,
+                required: false
+            },
+            figures: {
+                uploaded: !!submission.figures,
+                url: submission.figures,
+                required: false
+            },
+            graphic_abstract: {
+                uploaded: !!submission.graphic_abstract,
+                url: submission.graphic_abstract,
+                required: false
+            },
+            supplementary_material: {
+                uploaded: !!submission.supplementary_material,
+                url: submission.supplementary_material,
+                required: false
+            },
+            tracked_manuscript_file: {
+                uploaded: !!submission.tracked_manuscript_file,
+                url: submission.tracked_manuscript_file,
+                required: false
+            }
+        };
+
+        // Check if all required files are uploaded
+        const allRequiredUploaded = uploadStatus.manuscript_file.uploaded && 
+                                  uploadStatus.cover_letter_file.uploaded;
+
+        return res.json({
+            success: true,
+            data: uploadStatus,
+            allRequiredUploaded,
+            submission: {
+                articleId: submission.revision_id,
+                title: submission.title,
+                status: submission.status
+            }
+        });
+
+    } catch (error) {
+        console.error("Upload status check error:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Failed to check upload status",
+            message: error.message
+        });
+    }
+};
+
+// Export for use in other modules
 module.exports = uploadSingleFile;
 module.exports.validateManuscriptRequirements = validateManuscriptRequirements;
-module.exports.ensureSessionData = ensureSessionData;
 module.exports.FILE_CONFIG = FILE_CONFIG;

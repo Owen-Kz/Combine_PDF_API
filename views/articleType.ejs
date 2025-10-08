@@ -1,19 +1,17 @@
-
 <div id="article-type" class="form-section">
-<form onsubmit="return false" id="submitArticleType" >
+<form onsubmit="return false" id="submitArticleType">
 
 
     <h3 class="manu_head">Article Type & Discipline</h3>
     <span class="manu_head"><span style="color: #e22424;">*</span>Choose Article Type:</span>
-    <input type="text" name="_article_id" id="_article_id" value="<%=article_id%>" readonly hidden>
+    <input type="text" name="_article_id" id="_article_id" value="<%=article_id%>" readonly hidden >
     <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
     <input type="text" name="submissionStatus" value="<%=currentProcess%>" readonly  hidden>
     <select name="article_type" id="article_type" class="form-control" required>
-      <!-- <option value="">Select an Option</option> -->
       <% if(article_type && article_type !== null) { %>
         <option value="<%=article_type%>"><%=article_type%></option>
       <% } else{ %>
-   <option value="">Select an Option</option>
+        <option value="">Select an Option</option>
       <% } %>
       <option value="Original Article">Original Article</option>
       <option value="Review">Narrative Review</option>
@@ -34,14 +32,11 @@
     
     <label for="discipline"><span style="color: #e22424;">*</span>Discipline</label>
     <select id="discipline" name="discipline" class="form-control" required>
-      <!-- <option value="">Select a Discipline</option> -->
       <% if(article_discipline && article_discipline !== null){ %>
         <option value="<%=article_discipline%>"><%= article_discipline %></option>
-
       <% }else { %>
         <option value="">Select a Discipline</option>
-
-        <% } %>
+      <% } %>
       <option value="Agricultural sciences">Agricultural sciences</option>
       <option value="Allied Health Sciences">Allied Health Sciences</option>
       <option value="Anthropology">Anthropology</option>
@@ -76,91 +71,126 @@
     <%}else if(is_women_in_contemporary === "no") {%>
     Yes <input type="radio" name="is_women_in_contemporary_science" value="yes" id="is_women_in_contemporary_science_yes"> <br>
     No <input type="radio" name="is_women_in_contemporary_science" value="no" id="is_women_in_contemporary_science_no" checked> <br>
-      <% }else{ %>
-
+    <% }else{ %>
     Yes <input type="radio" name="is_women_in_contemporary_science" value="yes" id="is_women_in_contemporary_science_yes"> <br>
     No <input type="radio" name="is_women_in_contemporary_science" value="no" id="is_women_in_contemporary_science_no"> <br>
-        <% } %>
+    <% } %>
+    
     <label for=""><span style="color: #e22424;">*</span>Has this manuscript been submitted previously to ASFIRJ? Click yes if this is a revision or correction.</label> <br>
-Yes <input type="radio" name="prevsub" id="prevsub_yes" onclick="toggleInputField()"> <br>
-No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField()"> <br>
+    Yes <input type="radio" name="prevsub" id="prevsub_yes" onclick="toggleInputField()"> <br>
+    No <input type="radio" name="prevsub" id="prevsub_no" onclick="toggleInputField()"> <br>
 
-<div id="manuscriptIDField" style="display: none;">
-<label for="">Please provide the manuscript ID</label>
-
-<% if(previousId) {%>
-    <input type="text" name="previous_manuscript_id" id="previous_manuscript_id" class="form-control" value="<%=previousId%>" readonly> <br>
-    <% }else{ %>
-<input type="text" name="previous_manuscript_id" id="previous_manuscript_id" class="form-control"> <br>
-   <% } %>
-
-</div>
-
+    <div id="manuscriptIDField" style="display: none;">
+        <label for="">Please provide the manuscript ID</label>
+        <% if(previousId) {%>
+            <input type="text" name="previous_manuscript_id" id="previous_manuscript_id" class="form-control" value="<%=previousId%>" readonly> <br>
+        <% }else{ %>
+            <input type="text" name="previous_manuscript_id" id="previous_manuscript_id" class="form-control"> <br>
+        <% } %>
+    </div>
 
     <p style="color: #e22424;">* Indicates Mandatory Fields</p>
     <div id="disciplineContainer"></div>
     <input type="submit" hidden value="submit" id="submitType" disabled>
 
-    <!-- <button type="button" class="submit-next nextManuscript" onclick="showNext('upload-manuscript', 'article-type', 'article_type_nav', 'upload_manuscript_nav', 0, 1,'submitType')" disabled>Save & Continue</button> -->
-
     <input type="button" class="submit-next nextManuscript" value="Save & continue" onclick="submitSection('submitType')">
 </form>
+</div>
 
-
-  </div>
-
-  <script>
- const headerMessageContainer = document.getElementById("headerMessage")
-    const uid = document.getElementById("uid")
-    const _article_id = document.getElementById("_article_id")
-
-
+<script>
+const headerMessageContainer = document.getElementById("headerMessage")
+const uid = document.getElementById("uid")
+const _article_id = document.getElementById("_article_id")
+const _userEmail = document.getElementById("_userEmail")
+    const urlParams = new URLSearchParams(window.location.search);
 headerMessageContainer.innerHTML = headerMessages[0]
 
 const submitArticleType = document.getElementById("submitArticleType")
-const article_idCOntainer = submitArticleType.querySelector("input[name='_article_id']")
+const article_idContainer = submitArticleType.querySelector("input[name='_article_id']")
 const submissionStatus = submitArticleType.querySelector("input[name='submissionStatus']")
-
 
 submitArticleType.addEventListener("submit", function(e){
     e.preventDefault()
+    
     const is_women_in_contemporary_science = submitArticleType.querySelector("input[name='is_women_in_contemporary_science']:checked");
+    if (!is_women_in_contemporary_science) {
+        iziToast.error({
+            message: "Please select if this is for Women in Contemporary Science special issue",
+            position:"topRight"
+        });
+        return;
+    }
+
     const data = {
         _article_id: _article_id.value,
-        article_id: article_idCOntainer.value,
-        discipline:discipline.value,
-        article_type:article_type.value,
-        previous_manuscript_id: previous_manuscript_id.value,
+        article_id: article_idContainer.value,
+        discipline: document.getElementById('discipline').value,
+        article_type: document.getElementById('article_type').value,
+        userEmail: _userEmail.value,
+        corresponding_authors_email: _userEmail.value,
+        previous_manuscript_id: document.getElementById('previous_manuscript_id').value,
         submissionStatus: submissionStatus.value,
         is_women_in_contemporary_science: is_women_in_contemporary_science.value
     }
+
     const currentSubmissionProcess = "<%= currentSubmissionProcess %>";
     const queriedID = "<%= queriedID %>";
-   fetch(`/submitArticleType?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
-    method:"POST",
-    headers:{
-        "Content-type":"application/JSON"
-    },
-    body:JSON.stringify(data)
-   }).then(res =>res.json())
-   .then(data =>{
-    if(data.success){
     
-  const url = new URL(window.location.href);
-url.searchParams.set('prg', 'true'); // Adds or updates ?prg=true
-history.pushState({}, '', url.toString());
-        showProgressSavedPopup()
-        showNext('upload-manuscript', 'article-type', 'article_type_nav', 'upload_manuscript_nav', 0, 1,'submitType')
-    }else if(data.error){
-        iziToast.error({
-        message: data.error,
-        position:"topRight"
-      })
-    }else{
-    
-        showErrorPopup("Internal Server Error")
+    // Build the URL with proper parameters
+    let url = `/manuscript/submitArticleType?_uid=${uid.value}&prg=true`;
+    if (queriedID) {
+        url += `&${queriedID}`;
     }
-   })
-})
-</script>
+    if (currentSubmissionProcess && currentSubmissionProcess !== "new") {
+        url += `&${currentSubmissionProcess}=true`;
+    }
 
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify(data)
+    }).then(res => res.json())
+    .then(data => {
+        if(data.success){
+            // Update URL with PRG pattern
+            const url = new URL(window.location.href);
+            url.searchParams.set('prg', 'true');
+            history.pushState({}, '', url.toString());
+            
+            showProgressSavedPopup();
+            showNext('upload-manuscript', 'article-type', 'article_type_nav', 'upload_manuscript_nav', 0, 1, 'submitType');
+        } else if(data.error){
+            iziToast.error({
+                message: data.error,
+                position: "topRight"
+            });
+        } else {
+            showErrorPopup("Internal Server Error");
+        }
+    }).catch(error => {
+        console.error('Fetch error:', error);
+        showErrorPopup("Network error occurred");
+    });
+});
+
+// Toggle function for previous manuscript ID field
+function toggleInputField() {
+    const manuscriptIDField = document.getElementById("manuscriptIDField");
+    const prevsubYes = document.getElementById("prevsub_yes");
+    
+    if (prevsubYes.checked) {
+        manuscriptIDField.style.display = "block";
+        document.getElementById("previous_manuscript_id").required = true;
+    } else {
+        manuscriptIDField.style.display = "none";
+        document.getElementById("previous_manuscript_id").required = false;
+    }
+}
+
+// Initialize the field state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleInputField();
+});
+</script>

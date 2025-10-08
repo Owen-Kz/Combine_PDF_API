@@ -1,7 +1,4 @@
-// import { EndPoint, submissionsEndpoint } from "../constants.js";
-// import { GetAccountData } from "../dashboards/accountData.js";
-// import { GetCookie } from "../setCookie.js";
-// import { quill } from "./quill.js";
+
 
 // const uploadForm = document.getElementById("uploadForm");
 const body = document.querySelector("body")
@@ -76,53 +73,4 @@ function showErrorPopup(message) {
         errorpopup.classList.add('hidden');
     }, 8000); // 8000 milliseconds = 8 seconds
 }
-
-
-// uploadForm.addEventListener("submit", function(e) {
-//     e.preventDefault();
-   
-//     const formData = new FormData(uploadForm);
-//     formData.append('abstract', JSON.stringify(quill.getContents().ops));
-
-
-// const SubmissionSTatus = document.querySelector('input[name="review_status"]')
-// if(SubmissionSTatus.value === "submitted"){
-//     body.removeAttribute("id")
-// }else{
-//     console.log("formSubmitted")
-//     body.setAttribute("id", "formNotSubmitted")
-// }
-//     fetch(`${submissionsEndpoint}/submit/`, {
-//         method: 'POST',
-//         body: formData
-//     })
-//     .then(response => response.json())
-//     .then(data => {
-//         if(data.status === "success"){
-//             if(SubmissionSTatus.value === "submitted"){
-//             alert("Manuscript Submitted Successfully")
-//             window.location.href = "/dashboard/authordash/manuscripts"
-//             }else[
-//                 showProgressSavedPopup()
-//             ]
-//         }else if(data.status === "error"){
-//             showErrorPopup(data.message)
-//             body.setAttribute("id", "formNotSubmitted")
-//             if(data.message === "A submission already exists with this title"){
-//                 NavigationNext('title', 'title_nav', 'abstract_nav', 2)
-//             }
-//         }else{
-//             alert(data)
-//             console.log(data)
-//             showErrorPopup("Internal Server Error")
-//             body.setAttribute("id", "formNotSubmitted")
-//         }
-
-//     })
-//     .catch(error => {
-//         alert(error)
-//         body.setAttribute("id", "formNotSubmitted")
-//         console.error('Error:', error);
-//     });
-// });
 
