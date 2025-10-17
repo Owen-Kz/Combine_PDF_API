@@ -17,7 +17,7 @@ const inviteReviewerPage = async (req,res) =>{
             }
             res.render("inviteReviewer", {user:req.user, articleData: getArticleData.article,  messageBody:JSON.stringify(EmailTemplate.emailContent)})
         }else{
-            res.render("ReviewerLogin")
+            res.render("editorLogin")
         }
     }catch(error){
         console.log(error)
