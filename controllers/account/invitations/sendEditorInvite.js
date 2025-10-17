@@ -5,7 +5,9 @@ const dotenv = require("dotenv");
 const db = require("../../../routes/db.config");
 const isAdminAccount = require("../../editors/isAdminAccount");
 const saveEmailDetails = require("./saveEmail");
-const { convertQUILLTOHTML, escapeHtml } = require("./convertHTML");
+const { escapeHtml } = require("../../utils/security");
+
+const { convertQUILLTOHTML} = require("./convertHTML");
 const { promisify } = require("util");
 
 dotenv.config();
