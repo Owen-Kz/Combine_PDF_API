@@ -12,6 +12,7 @@
 
   .disabled {
     opacity: 0.7;
+    cursor: not-allowed !important;
   }
 
   .delete_button {
@@ -55,7 +56,13 @@
     cursor: pointer;
     height: inherit;
   }
+
+  .submit-next:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
 </style>
+
 <div id="upload-manuscript" class="form-section hidden">
   <form onsubmit="return false" enctype="multipart/form-data" id="submitFiles">
     <div>
@@ -159,15 +166,32 @@
     <div style="display: flex; justify-content: space-around;">
       <button type="button" class="submit-next" onclick="NavigationNext('article-type', 'article_type_nav','upload_manuscript_nav',0)">Back</button>
       <input type="submit" value="submit" id="submitFiles" disabled hidden>
-      <button type="button" class="submit-next nextManuscript" onclick="checkRequiredFiles()">Save & Continue</button>
+      <button type="button" class="submit-next nextManuscript" id="continueButton" onclick="checkRequiredFiles()" disabled>Save & Continue</button>
     </div>
   </form>
 </div>
 
 <script>
-  // Initialize flags based on what's rendered from the server
-  let manuscriptFileUploaded = `<%= manuscript_file ? 1 : 0 %>`;
-  let coverLetterUploaded = `<%= (coverLetter && coverLetter !== null && coverLetter !== "N/A") ? 1 : 0 %>`;
+  // Track upload status
+  let manuscriptFileUploaded = <%= manuscript_file ? 'true' : 'false' %>;
+  let coverLetterUploaded = <%= (coverLetter && coverLetter !== null && coverLetter !== "N/A") ? 'true' : 'false' %>;
+
+  // Initialize the continue button state
+  document.addEventListener('DOMContentLoaded', function() {
+    updateContinueButton();
+  });
+
+  // Function to update the continue button state
+  function updateContinueButton() {
+    const continueButton = document.getElementById('continueButton');
+    if (manuscriptFileUploaded && coverLetterUploaded) {
+      continueButton.disabled = false;
+      continueButton.classList.remove('disabled');
+    } else {
+      continueButton.disabled = true;
+      continueButton.classList.add('disabled');
+    }
+  }
 
   function createFileField(fieldname, publicName, buttonIndex) {
     const fileControls = document.querySelectorAll(".fileControls")[buttonIndex];
@@ -178,10 +202,12 @@
     
     // Update flags when file is removed
     if (fieldname === 'manuscript_file') {
-        manuscriptFileUploaded = 0;
+        manuscriptFileUploaded = false;
     } else if (fieldname === 'cover_letter_file') {
-        coverLetterUploaded = 0;
+        coverLetterUploaded = false;
     }
+    
+    updateContinueButton();
   }
 
   function createPlainField(fieldname, publicName, buttonIndex) {
@@ -189,41 +215,24 @@
   }
 
   // Function to check if both manuscript file and cover letter are uploaded
-function checkRequiredFiles() {
-  // Check both rendered state and session flags
-  const manuscriptFileExists = `<%= manuscript_file ? true : false %>` || 
-                             (window.manuscriptFileUploaded > 0);
+  function checkRequiredFiles() {
+    if (!manuscriptFileUploaded) {
+      iziToast.error({message: 'Please upload your manuscript file.', position: "topRight"});
+      return;
+    }
 
-  const coverLetterExists = `<%= (coverLetter && coverLetter !== null && coverLetter !== "N/A") ? true : false %>` || 
-                           (window.coverLetterUploaded > 0);
-  
-  // Also check if files are currently selected in form inputs
-  const manuscriptFileInput = document.querySelector('input[name="manuscript_file"]');
-  const coverLetterFileInput = document.querySelector('input[name="cover_letter_file"]');
-  
-  const manuscriptAvailable = manuscriptFileExists || 
-                             (manuscriptFileInput && manuscriptFileInput.files.length > 0);
-  
-  const coverLetterAvailable = coverLetterExists || 
-                              (coverLetterFileInput && coverLetterFileInput.files.length > 0);
-  
-  if (!manuscriptAvailable) {
-    iziToast.error({message: 'Please upload your manuscript file.', position: "topRight"});
-    return;
+    if (!coverLetterUploaded) {
+      iziToast.error({message: 'Please upload your cover letter file.', position: "topRight"});
+      return;
+    }
+
+    // Proceed to next step
+    showNext('title', 'upload-manuscript', 'upload_manuscript_nav', 'title_nav', 'article-type', 2, 2, 'submitFiles');
   }
 
-  if (!coverLetterAvailable) {
-    iziToast.error({message: 'Please upload your cover letter file.', position: "topRight"});
-    return;
-  }
-
-  // Proceed to next step
-  showNext('title', 'upload-manuscript', 'upload_manuscript_nav', 'title_nav', 'article-type', 2, 2, 'submitFiles');
-}
   function UploadSingleFile(fieldName, publicName) {
     var fileInput = document.querySelector(`input[name="${fieldName}"]`);
     var file = fileInput.files[0];
-   
 
     if (!file) {
         iziToast.error({
@@ -294,11 +303,14 @@ function checkRequiredFiles() {
 
             // Update the session flags
             if (fieldName === 'manuscript_file') {
-                manuscriptFileUploaded = 1;
+                manuscriptFileUploaded = true;
             } else if (fieldName === 'cover_letter_file') {
-                coverLetterUploaded = 1;
+                coverLetterUploaded = true;
             }
 
+            // Update the continue button state
+            updateContinueButton();
+            
             showProgressSavedPopup();
         } else {
             iziToast.error({

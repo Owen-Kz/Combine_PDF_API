@@ -6,35 +6,35 @@
 
     <!-- Main toolbar -->
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id=""><span>I confirm that the manuscript has been submitted solely to ASFIRJ and is not published, in press,
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_1" id="disclosure_1"><span>I confirm that the manuscript has been submitted solely to ASFIRJ and is not published, in press,
         or submitted elsewhere, with exception of submission to preprint servers.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name=""><span>I am aware that ASFIRJ requires that all authors disclose all potential sources of conflict of
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_2" id="disclosure_2"><span>I am aware that ASFIRJ requires that all authors disclose all potential sources of conflict of
         interest in regarding the submitted manuscript and I confirm that all authors have done so.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id=""><span>I confirm that the research that yielded the manuscript being submitted meets the ethical
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_3" id="disclosure_3"><span>I confirm that the research that yielded the manuscript being submitted meets the ethical
         guidelines and adheres to all legal research requirements of the study country.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id=""><span>I have prepared my manuscript and files, including text, tables, and figures, in accordance with
-        ASFIRJ’s style and formatting requirements as described at: <a href="https://asfirj.org/authors.html" style="color: blueviolet;">asfirj.org/authors.html</a>.</span>
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_4" id="disclosure_4"><span>I have prepared my manuscript and files, including text, tables, and figures, in accordance with
+        ASFIRJ's style and formatting requirements as described at: <a href="https://asfirj.org/authors.html" style="color: blueviolet;">asfirj.org/authors.html</a>.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id=""><span>I confirm that each of the co-authors acknowledges their participation in the research that yielded
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_5" id="disclosure_5"><span>I confirm that each of the co-authors acknowledges their participation in the research that yielded
         the manuscript being submitted and agrees to the submission of the manuscript to ASFIRJ.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id=""><span>I confirm that the contributions each author made to the manuscript are specified in the authors’
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_6" id="disclosure_6"><span>I confirm that the contributions each author made to the manuscript are specified in the authors'
         contribution section of the manuscript.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id=""><span>I confirm that the manuscript being submitted and the data it contains are unpublished and
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_7" id="disclosure_7"><span>I confirm that the manuscript being submitted and the data it contains are unpublished and
         original.</span>
     </div>
     <div class="bg-body border rounded-bottom"><span style="color: #e22424;">*</span>
-      <input type="checkbox" class="disclosure-checkbox" name="" id="disclosure_confirm"><span>I confirm that I am willing to pay ASFIRJ’s APC for the submitted manuscript if it is accepted for
+      <input type="checkbox" class="disclosure-checkbox" name="disclosure_8" id="disclosure_8"><span>I confirm that I am willing to pay ASFIRJ's APC for the submitted manuscript if it is accepted for
         publication in the journal as indicated at <a href="https://asfirj.org/aboutus.html" style="color:blueviolet;">asfirj.org/aboutus.html</a>.</span>
     </div>
     <p style="color: #e22424;">* Indicates Mandatory Fields</p>
@@ -47,7 +47,7 @@
        <!-- end back button  -->
 
       <!-- next button  -->
-      <button type="button" class="submit-next" style="width: 30%; padding: 10px;" onclick="reviewAll(8)">Review & Submit</button>
+      <button type="button" class="submit-next" style="width: 30%; padding: 10px;" id="reviewSubmitButton" onclick="reviewAll(8)" disabled>Review & Submit</button>
       <!-- end next button  -->
     </div>
     
@@ -73,55 +73,79 @@
 
 
   <script>
-    function reviewAll(index) {
-    const hiddenItms = document.querySelectorAll(".form-section");
-    const removeButton = document.querySelectorAll(".submit-next");
-    const showSubmit = document.querySelectorAll('button[name="review_stat"]');
-    const checkboxes = document.querySelectorAll('.disclosure-checkbox');
-    let allChecked = true;
-
-    // // Reset styles
-    checkboxes.forEach(checkbox => {
-        checkbox.parentElement.style.borderColor = '';
+    // Initialize the review button state
+    document.addEventListener('DOMContentLoaded', function() {
+      updateReviewSubmitButton();
+      
+      // Add event listeners to all checkboxes
+      const checkboxes = document.querySelectorAll('.disclosure-checkbox');
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateReviewSubmitButton);
+      });
     });
 
-    // Check if all checkboxes are checked
-    checkboxes.forEach(checkbox => {
-        if (!checkbox.checked) {
-            allChecked = false;
-            checkbox.parentElement.style.borderColor = 'red'; // Highlight unchecked
-        }
-    });
-
-    if (!allChecked) {
-        showErrorPopup('Please confirm all disclosures before proceeding.');
-        return; // Prevent further action
+    // Function to update the Review & Submit button state
+    function updateReviewSubmitButton() {
+      const checkboxes = document.querySelectorAll('.disclosure-checkbox');
+      const reviewSubmitButton = document.getElementById('reviewSubmitButton');
+      
+      // Check if all checkboxes are checked
+      const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+      
+      if (allChecked) {
+        reviewSubmitButton.disabled = false;
+        reviewSubmitButton.classList.remove('disabled');
+        // Reset border colors
+        checkboxes.forEach(checkbox => {
+          checkbox.parentElement.style.borderColor = '';
+        });
+      } else {
+        reviewSubmitButton.disabled = true;
+        reviewSubmitButton.classList.add('disabled');
+      }
     }
 
-    // Proceed with submission logic (if all checkboxes are checked)
-    console.log('All disclosures confirmed. Proceeding to step:', index);
-    // Your submission logic goes here
+    function reviewAll(index) {
+      const hiddenItms = document.querySelectorAll(".form-section");
+      const removeButton = document.querySelectorAll(".submit-next");
+      const showSubmit = document.querySelectorAll('button[name="review_stat"]');
+      const checkboxes = document.querySelectorAll('.disclosure-checkbox');
+      
+      // Double-check all checkboxes are checked (should already be true if button is enabled)
+      const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
-    hiddenItms.forEach(item=>{
+      if (!allChecked) {
+        showErrorPopup('Please confirm all disclosures before proceeding.');
+        // Highlight unchecked checkboxes
+        checkboxes.forEach(checkbox => {
+          if (!checkbox.checked) {
+            checkbox.parentElement.style.borderColor = 'red';
+          }
+        });
+        return;
+      }
+
+      // Proceed with submission logic (if all checkboxes are checked)
+      console.log('All disclosures confirmed. Proceeding to step:', index);
+
+      hiddenItms.forEach(item => {
         item.classList.remove('hidden');
-    })
+      });
 
-    removeButton.forEach(item=>{
-        item.style.display="none";
-    })
-    const headerMessageContainer = document.getElementById("headerMessage")
+      removeButton.forEach(item => {
+        item.style.display = "none";
+      });
+      
+      const headerMessageContainer = document.getElementById("headerMessage");
+      headerMessageContainer.innerHTML = headerMessages[index];
 
-    headerMessageContainer.innerHTML = headerMessages[index]
-
-    showSubmit.forEach(submitbutton =>{
+      showSubmit.forEach(submitbutton => {
         submitbutton.removeAttribute('hidden');
-
-    })
-    scrollTo(0, 0);  // Scroll to the top of the page if needed
-            // HEader messages 
-        headerMessageContainer.innerHTML = headerMessages[index]
-}
-
+      });
+      
+      scrollTo(0, 0);  // Scroll to the top of the page if needed
+      headerMessageContainer.innerHTML = headerMessages[index];
+    }
   </script>
 
 
@@ -143,34 +167,25 @@
     .then(data =>{
 
       if(data.success){
-        // showProgressSavedPopup()
-
         iziToast.success({
-        message: "Manuscript Submitted Successfully",
-        position:"topRight"
-      })
-            window.location.href = "/dashboard"
-            // }else[
-            
-        }else if(data.error){
-            iziToast.error({
-        message: data.error,
-        position:"topRight"
-      })
-            body.setAttribute("id", "formNotSubmitted")
-       
-        }else{
-          
-            console.log(data)
-            // showErrorPopup("Internal Server Error")
-                 iziToast.error({
-        message: 'Internal Server Error',
-        position:"topRight"
-      })
-            body.setAttribute("id", "formNotSubmitted")
-        }
-
+          message: "Manuscript Submitted Successfully",
+          position:"topRight"
+        })
+        window.location.href = "/dashboard"
+      } else if(data.error){
+        iziToast.error({
+          message: data.error,
+          position:"topRight"
+        })
+        body.setAttribute("id", "formNotSubmitted")
+      } else {
+        console.log(data)
+        iziToast.error({
+          message: 'Internal Server Error',
+          position:"topRight"
+        })
+        body.setAttribute("id", "formNotSubmitted")
+      }
     })
   })
-
 </script>

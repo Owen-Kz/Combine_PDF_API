@@ -4,9 +4,9 @@
         <input type="text" name="manuscript_id" value="<%=article_id%>" readonly hidden>
     <b style="text-align: center;"><span style="color: #e22424;">*</span>Manuscript Title</b>
     <% if(title && title !== null){ %>
-      <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title" value="<%= title %>">
+      <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title" value="<%= title %>" id="titleInput">
     <% } else {%>
-      <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title">
+      <input type="text" class="form-control" placeholder="Full Title" name="manuscript_full_title" id="titleInput">
       <% } %>
     <p style="color: #e22424;">* Indicates Mandatory Fields</p> <br>
 
@@ -16,7 +16,7 @@
       <!-- end back button  -->
       <input type="submit" value="submit" id="submitTitle" disabled hidden>
       <!-- next button  -->
-      <button type="button" class="submit-next nextManuscript" onclick="submitSection('submitTitle')">Save & Continue</button>
+      <button type="button" class="submit-next nextManuscript" id="titleContinueButton" onclick="submitSection('submitTitle')" disabled>Save & Continue</button>
       <!-- end next button  -->
     </div>
     
@@ -26,17 +26,43 @@
 
   <script>
     const submitTitleForm = document.getElementById("submitTitleForm")
-    const title = submitTitleForm.querySelector("input[name='manuscript_full_title']")
+    const titleInput = document.getElementById("titleInput")
+    const titleContinueButton = document.getElementById("titleContinueButton")
     const currentSubmissionProcess = "<%= currentSubmissionProcess %>"
     const queriedID = "<%= queriedID %>"
+
+    // Initialize the continue button state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      updateTitleContinueButton();
+    });
+
+    // Update continue button based on title input
+    function updateTitleContinueButton() {
+      if (titleInput && titleInput.value.trim() !== "") {
+        titleContinueButton.disabled = false;
+        titleContinueButton.classList.remove('disabled');
+      } else {
+        titleContinueButton.disabled = true;
+        titleContinueButton.classList.add('disabled');
+      }
+    }
+
+    // Listen for input changes in the title field
+    titleInput.addEventListener('input', function() {
+      updateTitleContinueButton();
+    });
+
+    // Also check on page load in case there's a pre-filled title
+    updateTitleContinueButton();
 
     submitTitleForm.addEventListener("submit", function(e){
       e.preventDefault()
       const data = {
-        title:title.value,
-        corresponding_authors_email:_userEmail.value,
+        title: titleInput.value.trim(),
+        corresponding_authors_email: _userEmail.value,
       }
-      if(title && title.value !== ""){
+      
+      if(titleInput && titleInput.value.trim() !== ""){
         fetch(`/manuscript/submitManuscriptTitle?_uid=${uid.value}&prg=true&${queriedID}&${currentSubmissionProcess}=true`, {
           method:"POST",
           headers:{
@@ -48,11 +74,10 @@
           
           if(data.error){
             iziToast.error({
-        message: data.error,
-        position:"topRight"
-      })
+              message: data.error,
+              position:"topRight"
+            })
           }else if(data.success){
-
             showProgressSavedPopup()
             showNext('abstract', 'title', 'title_nav', 'abstract_nav', 'upload-manuscript', 3,3, 'submitTitle')
           }else{

@@ -4,6 +4,18 @@ import { getQuillInstance, initializeQuill } from "./quill.js";
 // Track current active section globally
 let currentActiveSection = null;
 
+// Validation rules for each step
+const validationRules = {
+  'article-type': validateArticleType,
+  'upload-manuscript': validateUploadManuscript,
+  'title': validateTitle,
+  'abstract': validateAbstract,
+  'keywords': validateKeywords,
+  'author-information': validateAuthorInformation,
+  'suggest-reviewers': validateReviewers,
+  'disclosures': validateDisclosures
+};
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
   initializeApplication();
@@ -250,30 +262,162 @@ function initializeStepCompletion() {
   });
 }
 
-// Button initialization functions
-function initializeArticleTypeButtons() {
+// VALIDATION FUNCTIONS
+function validateArticleType() {
   const articleTypeSelect = document.getElementById('article_type');
   const disciplineSelect = document.getElementById('discipline');
-  const nextButton = document.querySelector('.nextManuscript');
+  const isYesChecked = document.getElementById("is_women_in_contemporary_science_yes")?.checked;
+  const isNotChecked = document.getElementById("is_women_in_contemporary_science_no")?.checked;
+
+  return articleTypeSelect?.value !== '' &&
+         disciplineSelect?.value !== '' &&
+         (isYesChecked || isNotChecked);
+}
+
+function validateUploadManuscript() {
+  const fileFields = document.querySelectorAll("#upload-manuscript .requiredFiles");
+  const allFilesFilled = Array.from(fileFields).every(field => field.value !== "");
+  const allFilesValid = Array.from(fileFields).every(field => {
+    if (!field.files[0]) return false;
+    
+    const file = field.files[0];
+    const validTypes = [
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
+      "application/pdf"
+    ];
+    
+    return file.size <= 50000000 && validTypes.includes(file.type);
+  });
+
+  return allFilesFilled && allFilesValid;
+}
+
+function validateTitle() {
+  const titleInputs = document.querySelectorAll("#title input[type=text]");
+  return Array.from(titleInputs).every(input => input.value.trim() !== "");
+}
+
+function validateAbstract() {
+  const quill = getQuillInstance();
+  if (!quill) return false;
   
-  if (!articleTypeSelect || !disciplineSelect || !nextButton) return;
+  const text = quill.getText().trim();
+  const words = text.split(/\s+/).filter(word => word.length > 0);
+  const wordCount = words.length;
+  const charCount = text.length;
+
+  return wordCount > 0 && wordCount <= 300 && charCount <= 3000;
+}
+
+function validateKeywords() {
+  const keywordInputs = document.querySelectorAll("#keywords input[type=text]");
+  return Array.from(keywordInputs).some(input => input.value.trim() !== "");
+}
+
+function validateAuthorInformation() {
+  const authorElements = document.querySelectorAll('.author-item');
+  if (authorElements.length === 0) return false;
+
+  // At least one author must be fully filled
+  return Array.from(authorElements).some(author => {
+    const fullname = author.querySelector('[name="authors_fullname"]')?.value.trim();
+    const email = author.querySelector('[name="authors_email"]')?.value.trim();
+    const affiliation = author.querySelector('[name="affiliations"]')?.value.trim();
+    
+    return fullname && fullname.length > 0 && 
+           email && email.length > 0 && 
+           affiliation && affiliation.length > 0;
+  });
+}
+
+function validateReviewers() {
+  // Reviewers are optional, so always return true
+  return true;
+}
+
+function validateDisclosures() {
+  const disclosureConfirm = document.querySelector('input[name="disclosure_confirm"]:checked');
+  return disclosureConfirm !== null;
+}
+
+// Check if current step is valid
+function isCurrentStepValid() {
+  const activeSection = document.querySelector('.submit-body section:not([style*="display: none"])');
+  if (!activeSection) return false;
+  
+  const validator = validationRules[activeSection.id];
+  return validator ? validator() : false;
+}
+
+// Show validation errors
+function showValidationErrors() {
+  const activeSection = document.querySelector('.submit-body section:not([style*="display: none"])');
+  if (!activeSection) return;
+
+  // Highlight required fields that are empty
+  const requiredFields = activeSection.querySelectorAll('[required]');
+  let hasErrors = false;
+  
+  requiredFields.forEach(field => {
+    if (!field.value || field.value.trim() === '') {
+      field.style.borderColor = '#ff4444';
+      hasErrors = true;
+    } else {
+      field.style.borderColor = '';
+    }
+  });
+
+  if (hasErrors) {
+    showErrorPopup('Please complete all required fields before proceeding.');
+    return;
+  }
+
+  // Section-specific validation messages
+  switch (activeSection.id) {
+    case 'article-type':
+      if (!validateArticleType()) {
+        showErrorPopup('Please select article type, discipline, and indicate if this is for Women in Contemporary Science.');
+      }
+      break;
+    case 'upload-manuscript':
+      if (!validateUploadManuscript()) {
+        showErrorPopup('Please upload all required files. Files must be Word documents or PDFs under 50MB.');
+      }
+      break;
+    case 'abstract':
+      if (!validateAbstract()) {
+        showErrorPopup('Abstract must be between 1-300 words and under 3000 characters.');
+      }
+      break;
+    case 'author-information':
+      if (!validateAuthorInformation()) {
+        showErrorPopup('Please provide at least one author with full name, email, and affiliation.');
+      }
+      break;
+    case 'disclosures':
+      if (!validateDisclosures()) {
+        showErrorPopup('Please confirm the disclosure statement before proceeding.');
+      }
+      break;
+  }
+}
+
+// Button initialization functions
+function initializeArticleTypeButtons() {
+  const nextButton = document.querySelector('#article-type .nextManuscript');
+  if (!nextButton) return;
 
   // Remove existing event listeners by cloning and replacing
   const newNextButton = nextButton.cloneNode(true);
   nextButton.parentNode.replaceChild(newNextButton, nextButton);
 
-  function checkSelection() {
-    const isYesChecked = document.getElementById("is_women_in_contemporary_science_yes")?.checked;
-    const isNotChecked = document.getElementById("is_women_in_contemporary_science_no")?.checked;
-
-    const isValid = articleTypeSelect.value !== '' &&
-                   disciplineSelect.value !== '' &&
-                   (isYesChecked || isNotChecked);
-
+  function updateButtonState() {
+    const isValid = validateArticleType();
+    
     if (isValid) {
       newNextButton.classList.remove("disabled");
       newNextButton.disabled = false;
-      article_type_nav?.setAttribute("onclick", "NavigationNext('article-type', 'article_type_nav','upload_manuscript_nav',0)");
     } else {
       newNextButton.classList.add("disabled");
       newNextButton.disabled = true;
@@ -281,18 +425,27 @@ function initializeArticleTypeButtons() {
   }
 
   // Set initial state
-  checkSelection();
+  updateButtonState();
 
-  // Add event listeners
-  articleTypeSelect.addEventListener('change', checkSelection);
-  disciplineSelect.addEventListener('change', checkSelection);
-  document.getElementById("is_women_in_contemporary_science_yes")?.addEventListener('change', checkSelection);
-  document.getElementById("is_women_in_contemporary_science_no")?.addEventListener('change', checkSelection);
+  // Add event listeners to all relevant fields
+  const articleTypeSelect = document.getElementById('article_type');
+  const disciplineSelect = document.getElementById('discipline');
+  const womenYes = document.getElementById("is_women_in_contemporary_science_yes");
+  const womenNo = document.getElementById("is_women_in_contemporary_science_no");
+
+  [articleTypeSelect, disciplineSelect, womenYes, womenNo].forEach(element => {
+    if (element) {
+      element.addEventListener('change', function() {
+        updateButtonState();
+        saveCurrentStep('article-type');
+      });
+    }
+  });
 
   newNextButton.addEventListener('click', function(e) {
-    if (newNextButton.disabled) {
+    if (!validateArticleType()) {
       e.preventDefault();
-      showErrorPopup('Please complete all required fields before proceeding.');
+      showValidationErrors();
     }
   });
 }
@@ -304,29 +457,15 @@ function initializeUploadButtons() {
   
   if (!fileFields || !nextButton) return;
 
-  // Clone button to remove existing listeners
   const newNextButton = nextButton.cloneNode(true);
   nextButton.parentNode.replaceChild(newNextButton, nextButton);
 
-  function checkFiles() {
-    const allFilesFilled = Array.from(fileFields).every(field => field.value !== "");
-    const allFilesValid = Array.from(fileFields).every(field => {
-      if (!field.files[0]) return false;
-      
-      const file = field.files[0];
-      const validTypes = [
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-        "application/pdf"
-      ];
-      
-      return file.size <= 50000000 && validTypes.includes(file.type);
-    });
-
-    if (allFilesFilled && allFilesValid) {
+  function updateButtonState() {
+    const isValid = validateUploadManuscript();
+    
+    if (isValid) {
       newNextButton.classList.remove("disabled");
       newNextButton.disabled = false;
-      upload_manuscript_nav?.setAttribute("onclick", "NavigationNext('upload-manuscript', 'upload_manuscript_nav', 'title_nav',1)");
     } else {
       newNextButton.classList.add("disabled");
       newNextButton.disabled = true;
@@ -334,7 +473,7 @@ function initializeUploadButtons() {
   }
 
   // Set initial state
-  checkFiles();
+  updateButtonState();
 
   // Add event listeners
   fileFields.forEach(field => {
@@ -353,9 +492,16 @@ function initializeUploadButtons() {
           this.value = '';
         }
       }
-      checkFiles();
+      updateButtonState();
       saveCurrentStep('upload-manuscript');
     });
+  });
+
+  newNextButton.addEventListener('click', function(e) {
+    if (!validateUploadManuscript()) {
+      e.preventDefault();
+      showValidationErrors();
+    }
   });
 }
 
@@ -369,26 +515,32 @@ function initializeTitleButtons() {
   const newNextButton = nextButton.cloneNode(true);
   nextButton.parentNode.replaceChild(newNextButton, nextButton);
 
-  function checkTitles() {
-    const allTitlesFilled = Array.from(titleInputs).every(input => input.value.trim() !== "");
+  function updateButtonState() {
+    const isValid = validateTitle();
     
-    if (allTitlesFilled) {
+    if (isValid) {
       newNextButton.classList.remove("disabled");
       newNextButton.disabled = false;
-      title_nav?.setAttribute("onclick", "NavigationNext('title', 'title_nav', 'abstract_nav', 2)");
     } else {
       newNextButton.classList.add("disabled");
       newNextButton.disabled = true;
     }
   }
 
-  checkTitles();
+  updateButtonState();
 
   titleInputs.forEach(input => {
     input.addEventListener("input", function() {
-      checkTitles();
+      updateButtonState();
       saveCurrentStep('title');
     });
+  });
+
+  newNextButton.addEventListener('click', function(e) {
+    if (!validateTitle()) {
+      e.preventDefault();
+      showValidationErrors();
+    }
   });
 }
 
@@ -403,11 +555,31 @@ function initializeAbstractButtons() {
 
   const quill = getQuillInstance();
   if (quill) {
+    function updateButtonState() {
+      const isValid = validateAbstract();
+      
+      if (isValid) {
+        newNextButton.classList.remove("disabled");
+        newNextButton.disabled = false;
+      } else {
+        newNextButton.classList.add("disabled");
+        newNextButton.disabled = true;
+      }
+    }
+
     checkAbstractWordCount(quill, newNextButton);
     
     quill.on('text-change', function() {
       checkAbstractWordCount(quill, newNextButton);
+      updateButtonState();
       saveCurrentStep('abstract');
+    });
+
+    newNextButton.addEventListener('click', function(e) {
+      if (!validateAbstract()) {
+        e.preventDefault();
+        showValidationErrors();
+      }
     });
   } else {
     console.error("Quill editor not initialized");
@@ -426,26 +598,32 @@ function initializeKeywordsButtons() {
   const newNextButton = nextButton.cloneNode(true);
   nextButton.parentNode.replaceChild(newNextButton, nextButton);
 
-  function checkKeywords() {
-    const hasKeywords = Array.from(keywordInputs).some(input => input.value.trim() !== "");
+  function updateButtonState() {
+    const isValid = validateKeywords();
     
-    if (hasKeywords) {
+    if (isValid) {
       newNextButton.classList.remove("disabled");
       newNextButton.disabled = false;
-      keywords_nav?.setAttribute("onclick", "NavigationNext('keywords', 'keywords_nav', 'author_information_nav', 4)");
     } else {
       newNextButton.classList.add("disabled");
       newNextButton.disabled = true;
     }
   }
 
-  checkKeywords();
+  updateButtonState();
 
   keywordInputs.forEach(input => {
     input.addEventListener("input", function() {
-      checkKeywords();
+      updateButtonState();
       saveCurrentStep('keywords');
     });
+  });
+
+  newNextButton.addEventListener('click', function(e) {
+    if (!validateKeywords()) {
+      e.preventDefault();
+      showValidationErrors();
+    }
   });
 }
 
@@ -453,11 +631,41 @@ function initializeAuthorButtons() {
   const authorSection = document.getElementById("author-information");
   const nextButton = authorSection?.querySelector(".nextManuscript");
   
-  if (nextButton) {
-    nextButton.classList.remove("disabled");
-    nextButton.disabled = false;
-    author_information_nav?.setAttribute("onclick", "NavigationNext('author-information', 'author_information_nav', 'suggest_reviewers_nav', 5)");
+  if (!nextButton) return;
+
+  const newNextButton = nextButton.cloneNode(true);
+  nextButton.parentNode.replaceChild(newNextButton, nextButton);
+
+  function updateButtonState() {
+    const isValid = validateAuthorInformation();
+    
+    if (isValid) {
+      newNextButton.classList.remove("disabled");
+      newNextButton.disabled = false;
+    } else {
+      newNextButton.classList.add("disabled");
+      newNextButton.disabled = true;
+    }
   }
+
+  // Set initial state
+  updateButtonState();
+
+  // Add event listeners to author fields
+  const authorInputs = authorSection.querySelectorAll('input[name="authors_fullname"], input[name="authors_email"], input[name="affiliations"]');
+  authorInputs.forEach(input => {
+    input.addEventListener('input', function() {
+      updateButtonState();
+      saveCurrentStep('author-information');
+    });
+  });
+
+  newNextButton.addEventListener('click', function(e) {
+    if (!validateAuthorInformation()) {
+      e.preventDefault();
+      showValidationErrors();
+    }
+  });
 }
 
 function initializeReviewerButtons() {
@@ -465,21 +673,59 @@ function initializeReviewerButtons() {
   const nextButton = reviewerSection?.querySelector(".nextManuscript");
   
   if (nextButton) {
+    // Reviewers are optional, so button is always enabled
     nextButton.classList.remove("disabled");
     nextButton.disabled = false;
-    suggest_reviewers_nav?.setAttribute("onclick", "NavigationNext('suggest-reviewers', 'suggest_reviewers_nav', 'disclosures_nav', 6)");
+    
+    const newNextButton = nextButton.cloneNode(true);
+    nextButton.parentNode.replaceChild(newNextButton, nextButton);
+
+    newNextButton.addEventListener('click', function(e) {
+      // No validation needed for optional reviewers
+      saveCurrentStep('suggest-reviewers');
+    });
   }
 }
 
 function initializeDisclosureButtons() {
-  // Similar pattern for disclosures section
   const disclosureSection = document.getElementById("disclosures");
   const nextButton = disclosureSection?.querySelector(".nextManuscript");
   
-  if (nextButton) {
-    nextButton.classList.remove("disabled");
-    nextButton.disabled = false;
+  if (!nextButton) return;
+
+  const newNextButton = nextButton.cloneNode(true);
+  nextButton.parentNode.replaceChild(newNextButton, nextButton);
+
+  function updateButtonState() {
+    const isValid = validateDisclosures();
+    
+    if (isValid) {
+      newNextButton.classList.remove("disabled");
+      newNextButton.disabled = false;
+    } else {
+      newNextButton.classList.add("disabled");
+      newNextButton.disabled = true;
+    }
   }
+
+  // Set initial state
+  updateButtonState();
+
+  // Add event listeners to radio buttons
+  const disclosureRadios = disclosureSection.querySelectorAll('input[name="disclosure_confirm"]');
+  disclosureRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      updateButtonState();
+      saveCurrentStep('disclosures');
+    });
+  });
+
+  newNextButton.addEventListener('click', function(e) {
+    if (!validateDisclosures()) {
+      e.preventDefault();
+      showValidationErrors();
+    }
+  });
 }
 
 // Abstract word count function (keep your existing implementation)
@@ -501,20 +747,9 @@ function checkAbstractWordCount(quill, nextButton) {
 
   if (wordCount > 300 || charCount > 3000) {
     limitExceed.innerHTML = `<p>Word Limit Exceeded. Please adjust to expected limit before proceeding. Maximum of 300 Words!</p>`;
-    nextButton.classList.add("disabled");
-    nextButton.disabled = true;
   } else {
     limitExceed.innerHTML = " ";
     wordCountElement.textContent = 'Word Count: ' + wordCount + ' words';
-    
-    if (wordCount > 0) {
-      nextButton.classList.remove("disabled");
-      nextButton.disabled = false;
-      abstract_nav?.setAttribute("onclick", "NavigationNext('abstract', 'abstract_nav','keywords_nav', 3)");
-    } else {
-      nextButton.classList.add("disabled");
-      nextButton.disabled = true;
-    }
   }
 }
 
@@ -539,5 +774,7 @@ export {
   saveCurrentStep,
   getStepData,
   updateStepCompletion,
-  initializeButtonStates
+  initializeButtonStates,
+  isCurrentStepValid,
+  showValidationErrors
 }
