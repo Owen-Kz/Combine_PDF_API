@@ -7,8 +7,8 @@ const isAdminAccount = require("../../editors/isAdminAccount");
 const saveEmailDetails = require("./saveEmail");
 const { escapeHtml } = require("../../utils/security");
 
-const { convertQUILLTOHTML} = require("./convertHTML");
 const { promisify } = require("util");
+const convertQUILLTOHTML = require("./convertHTML");
 
 dotenv.config();
 
