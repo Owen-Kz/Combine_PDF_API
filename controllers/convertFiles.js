@@ -4,6 +4,7 @@ const { config } = require("dotenv");
 const convertFiles = async (req, res) => {
   try {
     // Validate request query parameters
+    console.log(req.query)
     if (!req.query || typeof req.query !== 'object') {
       console.error('Invalid request query parameters');
       return res.status(400).json({ 
@@ -108,6 +109,7 @@ const convertFiles = async (req, res) => {
               // Add timeout handling
               signal: AbortSignal.timeout(30000) // 30 second timeout
             });
+          
           } catch (fetchError) {
             console.error('Fetch request failed:', fetchError);
             return res.status(502).json({ 
