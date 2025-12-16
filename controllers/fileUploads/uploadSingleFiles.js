@@ -6,6 +6,7 @@ const path = require("path");
 
 const SubmissionManager = require("../utils/SubmissionManager");
 const dbPromise = require("../../routes/dbPromise.config");
+
 // Cloudinary Configuration
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -26,7 +27,7 @@ const FILE_CONFIG = {
         'application/zip',
         'application/x-zip-compressed'
     ],
-    REQUIRED_FIELDS: ['manuscript_file'], // Manuscript is mandatory
+    REQUIRED_FIELDS: ['manuscript_file'],
     VALID_FIELDS: [
         'manuscript_file',
         'cover_letter_file',
@@ -35,7 +36,18 @@ const FILE_CONFIG = {
         'graphic_abstract',
         'supplementary_material',
         'tracked_manuscript_file'
-    ]
+    ],
+    // Map MIME types to Cloudinary resource types
+    RESOURCE_TYPE_MAP: {
+        'application/pdf': 'raw',
+        'application/msword': 'raw',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'raw',
+        'application/zip': 'raw',
+        'application/x-zip-compressed': 'raw',
+        'image/jpeg': 'image',
+        'image/png': 'image',
+        'image/gif': 'image'
+    }
 };
 
 // Multer Configuration
@@ -53,7 +65,7 @@ const upload = multer({
     }
 });
 
-// Enhanced retry function with exponential backoff and jitter
+// Enhanced retry function with exponential backoff
 async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
     let lastError;
     
@@ -63,13 +75,13 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
         } catch (error) {
             lastError = error;
             
-            // Don't retry on client errors (4xx) except 408 (Timeout) and 429 (Too Many Requests)
+            // Don't retry on client errors (4xx) except 408 and 429
             if (error.http_code >= 400 && error.http_code < 500 && 
                 error.http_code !== 408 && error.http_code !== 429) {
                 throw error;
             }
             
-            console.log(`Operation attempt ${attempt}/${maxRetries} failed:`, error.message);
+            console.log(`Attempt ${attempt}/${maxRetries} failed:`, error.message);
             
             if (attempt < maxRetries) {
                 const delay = baseDelay * Math.pow(2, attempt - 1);
@@ -85,7 +97,7 @@ async function retryWithBackoff(operation, maxRetries = 3, baseDelay = 1000) {
     throw lastError;
 }
 
-// Clean up local files safely
+// Clean up local files
 const cleanUpLocalFile = (filePath) => {
     if (filePath && fs.existsSync(filePath)) {
         try {
@@ -96,43 +108,82 @@ const cleanUpLocalFile = (filePath) => {
     }
 };
 
-// Upload to Cloudinary with enhanced error handling
-const uploadToCloudinary = async (filePath, fieldName) => {
-    return await retryWithBackoff(async () => {
-        const result = await cloudinary.uploader.upload(filePath, {
-            folder: `asfirj/original/${fieldName}`,
-            resource_type: "auto",
-            timeout: 120000,
-            chunk_size: 6000000,
-            quality: 'auto',
-            format: 'auto'
-        });
-        
-        if (!result.secure_url) {
-            throw new Error('Cloudinary upload failed - no URL returned');
+// Get resource type for Cloudinary
+const getResourceType = (mimeType) => {
+    return FILE_CONFIG.RESOURCE_TYPE_MAP[mimeType] || 'auto';
+};
+
+// Get upload options based on file type
+const getUploadOptions = (mimeType, fieldName) => {
+    const resourceType = getResourceType(mimeType);
+    const options = {
+        folder: `asfirj/original/${fieldName}`,
+        resource_type: resourceType,
+        timeout: 120000,
+        chunk_size: 6000000
+    };
+
+    // Only add quality and format for images
+    if (resourceType === 'image') {
+        options.quality = 'auto';
+        // Use specific format or omit format parameter entirely
+        if (mimeType === 'image/jpeg') {
+            options.format = 'jpg';
+        } else if (mimeType === 'image/png') {
+            options.format = 'png';
+        } else if (mimeType === 'image/gif') {
+            options.format = 'gif';
         }
+    }
+
+    return options;
+};
+
+// Upload to Cloudinary with enhanced error handling
+const uploadToCloudinary = async (filePath, fieldName, mimeType) => {
+    return await retryWithBackoff(async () => {
+        const uploadOptions = getUploadOptions(mimeType, fieldName);
         
-        return result;
+        // For raw files (PDF, Word, ZIP), use different approach
+        if (uploadOptions.resource_type === 'raw') {
+            // Remove format parameter for raw files
+            delete uploadOptions.format;
+            delete uploadOptions.quality;
+            
+            // Use upload_stream for better control
+            return new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    uploadOptions,
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                
+                fs.createReadStream(filePath).pipe(uploadStream);
+            });
+        } else {
+            // For images, use regular upload
+            return await cloudinary.uploader.upload(filePath, uploadOptions);
+        }
     }, 3, 1000);
 };
 
 // Validate manuscript requirements
 const validateManuscriptRequirements = (submissionData) => {
     const errors = [];
-    
-    // Check if manuscript file is uploaded
     if (!submissionData.manuscript_file) {
         errors.push('Manuscript file is required');
     }
-    
     return errors;
 };
 
+// Main upload handler
 const uploadSingleFile = async (req, res) => {
-    const FileField = req.params.field;
+    const fileField = req.params.field;
 
     // Validate field parameter
-    if (!FILE_CONFIG.VALID_FIELDS.includes(FileField)) {
+    if (!FILE_CONFIG.VALID_FIELDS.includes(fileField)) {
         return res.status(400).json({ 
             error: "Invalid file field specified",
             validFields: FILE_CONFIG.VALID_FIELDS
@@ -141,7 +192,7 @@ const uploadSingleFile = async (req, res) => {
 
     try {
         // Handle file upload
-        upload.single(FileField)(req, res, async (err) => {
+        upload.single(fileField)(req, res, async (err) => {
             let localFilePath = req.file?.path;
 
             try {
@@ -175,18 +226,24 @@ const uploadSingleFile = async (req, res) => {
                     });
                 }
 
-                // Validate file properties
-                if (!req.file.originalname || !req.file.mimetype) {
+                // Get article ID from request
+                const articleId = req.articleId || req.submissionData?.articleId;
+                if (!articleId) {
                     cleanUpLocalFile(localFilePath);
                     return res.status(400).json({ 
-                        error: "Invalid file properties" 
+                        error: "No active submission found",
+                        message: "Please start a new submission or reload the page"
                     });
                 }
 
                 let cloudinaryResult;
                 try {
-                    // Upload to Cloudinary
-                    cloudinaryResult = await uploadToCloudinary(localFilePath, FileField);
+                    // Upload to Cloudinary with proper resource type
+                    cloudinaryResult = await uploadToCloudinary(
+                        localFilePath, 
+                        fileField, 
+                        req.file.mimetype
+                    );
                 } catch (cloudinaryError) {
                     cleanUpLocalFile(localFilePath);
                     console.error("Cloudinary upload failed:", cloudinaryError);
@@ -196,39 +253,26 @@ const uploadSingleFile = async (req, res) => {
                         details: process.env.NODE_ENV === 'development' ? cloudinaryError.message : "Please try again later"
                     });
                 } finally {
-                    // Always clean up local file
                     cleanUpLocalFile(localFilePath);
                 }
 
-                // Get article ID from request (set by middleware)
-                const articleId = req.articleId || req.submissionData?.articleId;
-                
-                if (!articleId) {
-                    return res.status(400).json({ 
-                        error: "No active submission found",
-                        message: "Please start a new submission or reload the page"
-                    });
-                }
-
-                // Update database using SubmissionManager
+                // Update database
                 try {
                     await SubmissionManager.saveStepData(articleId, 'upload_manuscript', {
-                        [FileField]: cloudinaryResult.secure_url,
+                        [fileField]: cloudinaryResult.secure_url,
                         corresponding_authors_email: req.user.email
                     });
-
-                    console.log(`File ${FileField} saved to database for submission: ${articleId}`);
-
+                    console.log(`File ${fileField} saved to database for submission: ${articleId}`);
                 } catch (dbError) {
                     console.error("Database update failed:", dbError);
                     return res.status(500).json({ 
                         error: "Failed to save file information to database",
                         details: process.env.NODE_ENV === 'development' ? dbError.message : "Please try again later",
-                        fileUrl: cloudinaryResult.secure_url // Still return file URL for fallback
+                        fileUrl: cloudinaryResult.secure_url
                     });
                 }
 
-                // Get updated submission data to check requirements
+                // Get updated submission data
                 let submissionData;
                 try {
                     submissionData = await SubmissionManager.getSubmissionData(articleId, req.user.email);
@@ -237,16 +281,15 @@ const uploadSingleFile = async (req, res) => {
                     submissionData = {};
                 }
 
-                // Validate manuscript requirements after upload
-                const requirementErrors = validateManuscriptRequirements(submissionData);
+                // Prepare response
                 const hasManuscript = !!submissionData.manuscript_file;
                 const hasCoverLetter = !!submissionData.cover_letter_file;
+                const requirementErrors = validateManuscriptRequirements(submissionData);
 
-                // Prepare response
                 const response = {
                     success: true, 
                     fileUrl: cloudinaryResult.secure_url,
-                    field: FileField,
+                    field: fileField,
                     fileInfo: {
                         originalname: req.file.originalname,
                         mimetype: req.file.mimetype,
@@ -267,18 +310,9 @@ const uploadSingleFile = async (req, res) => {
                     }
                 };
 
-                // Add specific flags based on file type
-                if (FileField === 'manuscript_file') {
-                    response.flags = {
-                        manFile: true,
-                        hasManuscript: true
-                    };
+                // Add specific flags
+                if (fileField === 'manuscript_file') {
                     response.manuscriptStatus = 'COMPLETE';
-                } else if (FileField === 'cover_letter_file') {
-                    response.flags = {
-                        covFile: true,
-                        hasCoverLetter: true
-                    };
                 }
 
                 return res.json(response);
@@ -286,7 +320,6 @@ const uploadSingleFile = async (req, res) => {
             } catch (error) {
                 cleanUpLocalFile(localFilePath);
                 console.error("File processing error:", error);
-                
                 return res.status(500).json({ 
                     error: "File processing failed",
                     details: process.env.NODE_ENV === 'development' ? error.message : "Please try again later"
@@ -302,11 +335,10 @@ const uploadSingleFile = async (req, res) => {
     }
 };
 
-// Additional function to check file upload status
+// Check upload status
 uploadSingleFile.checkUploadStatus = async (req, res) => {
     try {
         const articleId = req.articleId || req.query.articleId;
-        
         if (!articleId) {
             return res.status(400).json({
                 success: false,
@@ -315,7 +347,6 @@ uploadSingleFile.checkUploadStatus = async (req, res) => {
         }
 
         const submission = await SubmissionManager.getSubmissionData(articleId, req.user.email);
-        
         if (!submission) {
             return res.status(404).json({
                 success: false,
@@ -323,47 +354,18 @@ uploadSingleFile.checkUploadStatus = async (req, res) => {
             });
         }
 
-        const uploadStatus = {
-            manuscript_file: {
-                uploaded: !!submission.manuscript_file,
-                url: submission.manuscript_file,
-                required: true
-            },
-            cover_letter_file: {
-                uploaded: !!submission.cover_letter_file,
-                url: submission.cover_letter_file,
-                required: true
-            },
-            tables: {
-                uploaded: !!submission.tables,
-                url: submission.tables,
-                required: false
-            },
-            figures: {
-                uploaded: !!submission.figures,
-                url: submission.figures,
-                required: false
-            },
-            graphic_abstract: {
-                uploaded: !!submission.graphic_abstract,
-                url: submission.graphic_abstract,
-                required: false
-            },
-            supplementary_material: {
-                uploaded: !!submission.supplementary_material,
-                url: submission.supplementary_material,
-                required: false
-            },
-            tracked_manuscript_file: {
-                uploaded: !!submission.tracked_manuscript_file,
-                url: submission.tracked_manuscript_file,
-                required: false
-            }
-        };
+        const uploadStatus = FILE_CONFIG.VALID_FIELDS.reduce((acc, field) => {
+            acc[field] = {
+                uploaded: !!submission[field],
+                url: submission[field],
+                required: FILE_CONFIG.REQUIRED_FIELDS.includes(field)
+            };
+            return acc;
+        }, {});
 
-        // Check if all required files are uploaded
-        const allRequiredUploaded = uploadStatus.manuscript_file.uploaded && 
-                                  uploadStatus.cover_letter_file.uploaded;
+        const allRequiredUploaded = FILE_CONFIG.REQUIRED_FIELDS.every(
+            field => uploadStatus[field]?.uploaded
+        );
 
         return res.json({
             success: true,
