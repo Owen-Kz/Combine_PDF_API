@@ -4,7 +4,7 @@ const mysql = require("mysql2/promise");
 const pool = mysql.createPool({
     host: process.env.DB_HOST || "localhost",
     user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
+    password: process.env.JOURNAL_DB_PASSWORD || "",
     database: process.env.JOURNAL_DB_NAME || "wepeugsn_asfi_journal",
     waitForConnections: true,
     connectionLimit: 20,               // Increased for higher concurrency
@@ -18,10 +18,10 @@ const pool = mysql.createPool({
 (async () => {
     try {
         const conn = await pool.getConnection();
-        console.log('✅ Database connected successfully');
+        console.log(' Database connected successfully');
         conn.release();
     } catch (err) {
-        console.error('❌ Database connection failed:', err.message);
+        console.error(' Database connection failed:', err.message);
         process.exit(1);
     }
 })();
