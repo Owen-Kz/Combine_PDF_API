@@ -92,7 +92,7 @@ const admin_nav = `<ul id="sidebarnav">
                             </a>
                         </li>
                          <li class="sidebar-item">
-                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="/editors/manage" target="_blank"
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" href="/editors/manage"
                                 aria-expanded="false">
                                 <i class="bi bi-person-gear" aria-hidden="true"></i>
                                 <span class="hide-menu">Manage Editors</span>

@@ -84,6 +84,7 @@ app.use("/fonts", express.static(path.join(__dirname, "public/css/fonts")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 app.use("/editorStatic/", express.static(path.join(__dirname, "public/editors")));
+app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploads/editors")));
 
 // Socket.io setup
 const { Server } = require('socket.io');

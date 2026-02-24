@@ -17,6 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://asfirj.org">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -323,7 +324,7 @@
         }
 
         .prefix-badge {
-            /* display: inline-block;
+            display: inline-block;
             background-color: #9333ea;
             color: white;
             padding: 2px 8px;
@@ -331,7 +332,7 @@
             font-size: 12px;
             font-weight: 600;
             margin-right: 6px;
-            vertical-align: middle; */
+            vertical-align: middle;
         }
 
         .editor-role {
@@ -918,11 +919,36 @@
                                     
                                     if (fieldEditors.length > 0) { 
                                         fieldEditors.forEach(function(editor) { 
+                                            // Construct image URL
+                                            var imageUrl = '/assets/images/default-avatar.png';
+                                            if (editor.photo) {
+                                                // Check if it's already a full URL
+                                                if (editor.photo.startsWith('http://') || editor.photo.startsWith('https://')) {
+                                                    imageUrl = editor.photo;
+                                                } 
+                                                // Check if it contains asfirj.org (with or without protocol)
+                                                else if (editor.photo.includes('asfirj.org')) {
+                                                    // Ensure it has https protocol
+                                                    if (editor.photo.startsWith('//')) {
+                                                        imageUrl = 'https:' + editor.photo;
+                                                    } else if (!editor.photo.startsWith('http')) {
+                                                        imageUrl = 'https://' + editor.photo.replace(/^\/+/, '');
+                                                    } else {
+                                                        imageUrl = editor.photo;
+                                                    }
+                                                }
+                                                // Local file
+                                                else {
+                                                    // Remove any leading slashes and construct local path
+                                                    var cleanPath = editor.photo.replace(/^\/+/, '');
+                                                    imageUrl = '/useruploads/editors/' + cleanPath;
+                                                }
+                                            }
                                 %>
                                     <div class="editor-card" data-editor-id="<%= editor.id %>">
                                         <div class="card-content">
                                             <div class="avatar-container">
-                                                <img src="<%= editor.photo ? 'https://asfirj.org/useruploads/editors/' + editor.photo : '/assets/images/default-avatar.png' %>" 
+                                                <img src="<%= imageUrl %>" 
                                                      alt="<%= editor.fullname %>" 
                                                      class="avatar"
                                                      loading="lazy"
@@ -1028,9 +1054,7 @@
                         <i class="fas fa-plus mr-2"></i> Add New Editor
                     </button>
                     
-                    <a href="/editors/dashboard/" class="btn-block btn-secondary text-center">
-                        Go to Dashboard
-                    </a>
+            
                     
                     <ul class="sidebar-nav mt-6">
                         <li>
@@ -1156,14 +1180,16 @@
         const userLevel = '<%= user ? user.editorial_level : "" %>';
         const canEdit = userLevel === 'editor_in_chief' || userLevel === 'editorial_assistant';
         
-        // Debug logging
-        console.log('Fields Data:', fieldsData);
-        console.log('First Editors Data:', firstEditorsData);
+        // Track loaded fields to prevent duplicate loads
+        const loadedFields = new Set();
+        let isLoadingRemaining = false;
         
         // State
         const loadedEditors = {};
         let currentEditorId = null;
         let quillInstance = null;
+        let isQuillLoading = false;
+        let quillLoadPromise = null;
 
         // Prefix options for dropdown
         const prefixOptions = [
@@ -1177,11 +1203,38 @@
             'Hon.'
         ];
 
-        // Field/Role options
-        const fieldOptionsList = fieldsData.map(f => f.field);
-
-        // ==================== UTILITY FUNCTIONS ====================
+        // ==================== HELPER FUNCTIONS ====================
         
+        // Get correct image URL based on path (for client-side created cards)
+        function getImageUrl(photoPath) {
+            if (!photoPath) return '/assets/images/default-avatar.png';
+            
+            // If it's already a full URL (starts with http:// or https://)
+            if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+                return photoPath;
+            }
+            
+            // Check if it contains asfirj.org (with or without protocol)
+            if (photoPath.includes('asfirj.org')) {
+                // If it starts with // (protocol-relative URL)
+                if (photoPath.startsWith('//')) {
+                    return 'https:' + photoPath;
+                }
+                // If it doesn't have a protocol, add https://
+                if (!photoPath.startsWith('http')) {
+                    // Remove any leading slashes and add https://
+                    const cleanPath = photoPath.replace(/^\/+/, '');
+                    return 'https://' + cleanPath;
+                }
+                return photoPath;
+            }
+            
+            // Local file - construct proper path
+            // Remove any leading slashes to avoid double slashes
+            const cleanPath = photoPath.replace(/^\/+/, '');
+            return '/useruploads/editors/' + cleanPath;
+        }
+
         // Parse Quill JSON to HTML
         function parseQuillContent(quillJson) {
             try {
@@ -1255,14 +1308,13 @@
             }
         }
 
-        // Create editor card element
+        // Create editor card element (for dynamically loaded editors)
         function createEditorCard(editor) {
             const col = document.createElement('div');
             col.className = 'editor-card';
             col.setAttribute('data-editor-id', editor.id);
 
-            const defaultImage = '/assets/images/default-avatar.png';
-            const imageUrl = editor.photo ? `https://asfirj.org/useruploads/editors/${editor.photo}` : defaultImage;
+            const imageUrl = getImageUrl(editor.photo);
             
             // Parse bio for preview
             let bioText = 'No bio available';
@@ -1283,7 +1335,7 @@
                         <img src="${imageUrl}" alt="${editor.fullname || 'Editor'}" 
                              class="avatar"
                              loading="lazy"
-                             onerror="this.src='${defaultImage}'">
+                             onerror="this.src='/assets/images/default-avatar.png'">
                         ${canEdit ? `
                             <div class="edit-buttons">
                                 <button onclick="event.stopPropagation(); openEditModal(${editor.id})" class="edit-btn" title="Edit Editor">
@@ -1324,6 +1376,11 @@
 
         // Load editors for a specific field
         async function loadEditorsByField(field, fieldIndex, offset = 0, limit = 6, append = true) {
+            // Prevent duplicate loads
+            const loadKey = `${field}-${offset}`;
+            if (loadedFields.has(loadKey)) return;
+            loadedFields.add(loadKey);
+
             const container = document.getElementById(`editors-${fieldIndex}`);
             if (!container) return;
 
@@ -1367,31 +1424,155 @@
             }
         }
 
-        // Load editors for remaining fields (staggered)
+        // Load editors for remaining fields (staggered) - only once
         function loadRemainingFields() {
-            if (!fieldsData || !fieldsData.length) return;
+            if (isLoadingRemaining || !fieldsData || !fieldsData.length) return;
+            isLoadingRemaining = true;
             
             fieldsData.forEach(function(field, idx) {
                 if (idx === 0) return; // Skip first field (already loaded)
                 
                 setTimeout(function() {
                     const container = document.getElementById('editors-' + idx);
-                    if (container) {
-                        // Check if the container has skeleton cards (no real data yet)
-                        const hasSkeleton = Array.from(container.children).some(child => 
-                            child.classList.contains('skeleton-card')
-                        );
-                        
-                        if (hasSkeleton || container.children.length === 0) {
-                            console.log(`Loading editors for field: ${field.field} (index: ${idx})`);
-                            loadEditorsByField(field.field, idx, 0, EDITORS_PER_LOAD, false);
-                        }
+                    if (container && container.children.length === 0) {
+                        console.log(`Loading editors for field: ${field.field} (index: ${idx})`);
+                        loadEditorsByField(field.field, idx, 0, EDITORS_PER_LOAD, false);
                     }
                 }, 200 * (idx + 1));
             });
         }
 
         // ==================== MODAL FUNCTIONS ====================
+
+        // Ensure Quill is loaded (with caching)
+        async function ensureQuill() {
+            if (window.Quill) return true;
+            if (isQuillLoading) return quillLoadPromise;
+            
+            isQuillLoading = true;
+            quillLoadPromise = new Promise((resolve, reject) => {
+                // Load Quill CSS
+                if (!document.querySelector('#quill-css')) {
+                    const link = document.createElement('link');
+                    link.id = 'quill-css';
+                    link.rel = 'stylesheet';
+                    link.href = 'https://cdn.quilljs.com/1.3.6/quill.snow.css';
+                    document.head.appendChild(link);
+                }
+                
+                // Load Quill JS
+                const script = document.createElement('script');
+                script.src = 'https://cdn.quilljs.com/1.3.6/quill.min.js';
+                script.onload = () => {
+                    isQuillLoading = false;
+                    resolve(true);
+                };
+                script.onerror = (err) => {
+                    isQuillLoading = false;
+                    reject(err);
+                };
+                document.body.appendChild(script);
+            });
+            
+            return quillLoadPromise;
+        }
+
+        // Open add editor modal
+        window.openAddEditorModal = async function() {
+            try {
+                document.getElementById('overlayX').style.display = 'flex';
+                await ensureQuill();
+                
+                const modal = document.getElementById('addEditorModal');
+                const form = document.getElementById('addEditorForm');
+                
+                let fieldOptions = '<option value="">Select Field/Role</option>';
+                if (fieldsData && fieldsData.length) {
+                    fieldsData.forEach(function(f) {
+                        fieldOptions += '<option value="' + f.field.replace(/"/g, '&quot;') + '">' + f.field + '</option>';
+                    });
+                }
+                
+                let prefixOptionsHtml = '<option value="">Select Prefix</option>';
+                prefixOptions.forEach(function(prefix) {
+                    prefixOptionsHtml += '<option value="' + prefix + '">' + prefix + '</option>';
+                });
+                
+                form.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Editor</h2>
+                    <form id="addEditorFormSubmit" onsubmit="submitAddEditor(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Prefix</label>
+                                <select name="prefix" class="form-select">
+                                    ${prefixOptionsHtml}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" name="fullname" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Field/Role *</label>
+                                <select name="field" class="form-select" required>
+                                    ${fieldOptions}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Discipline *</label>
+                                <input type="text" name="discipline" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Country</label>
+                                <input type="text" name="country" class="form-input">
+                            </div>
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label">Photo</label>
+                                <input type="file" name="photo" accept="image/*" class="form-input">
+                            </div>
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label">Biography</label>
+                                <div id="add-bio-editor" style="height: 300px;"></div>
+                                <input type="hidden" name="bio" id="add-bio-input">
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Editor</button>
+                        </div>
+                    </form>
+                `;
+                
+                modal.style.display = 'block';
+                
+                setTimeout(function() {
+                    const editorContainer = document.getElementById('add-bio-editor');
+                    if (editorContainer) {
+                        if (quillInstance) {
+                            quillInstance = null;
+                        }
+                        
+                        quillInstance = new Quill(editorContainer, {
+                            theme: 'snow',
+                            placeholder: 'Enter editor biography...',
+                            modules: {
+                                toolbar: [
+                                    ['bold', 'italic', 'underline'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    ['clean']
+                                ]
+                            }
+                        });
+                    }
+                }, 100);
+            } catch (error) {
+                console.error('Error opening add editor modal:', error);
+                alert('Error loading editor. Please try again.');
+            } finally {
+                document.getElementById('overlayX').style.display = 'none';
+            }
+        };
 
         window.showEditorDetails = async function(editorId) {
             document.getElementById('overlayX').style.display = 'flex';
@@ -1406,16 +1587,14 @@
                     const modal = document.getElementById('viewEditorModal');
                     const details = document.getElementById('viewEditorDetails');
                     
-                    const defaultImage = '/assets/images/default-avatar.png';
-                    const imageUrl = editor.photo ? `https://asfirj.org/useruploads/editors/${editor.photo}` : defaultImage;
-                    
+                    const imageUrl = getImageUrl(editor.photo);
                     const bioHtml = editor.bio ? parseQuillContent(editor.bio) : '<p>No biography available.</p>';
                     
                     details.innerHTML = `
                         <div class="text-center">
                             <img src="${imageUrl}" alt="${editor.fullname}" 
                                  class="avatar" style="width: 160px; height: 160px; margin: 0 auto 24px;"
-                                 onerror="this.src='${defaultImage}'">
+                                 onerror="this.src='/assets/images/default-avatar.png'">
                             <h2 class="text-2xl font-bold text-gray-800">
                                 ${editor.prefix ? `<span class="prefix-badge" style="display: inline-block; margin-right: 8px;">${editor.prefix}</span>` : ''}
                                 ${editor.fullname}
@@ -1476,110 +1655,6 @@
             } finally {
                 document.getElementById('overlayX').style.display = 'none';
             }
-        };
-
-        async function ensureQuill() {
-            if (window.Quill) return true;
-            
-            return new Promise((resolve, reject) => {
-                if (!document.querySelector('#quill-css')) {
-                    const link = document.createElement('link');
-                    link.id = 'quill-css';
-                    link.rel = 'stylesheet';
-                    link.href = 'https://cdn.quilljs.com/1.3.6/quill.snow.css';
-                    document.head.appendChild(link);
-                }
-                
-                const script = document.createElement('script');
-                script.src = 'https://cdn.quilljs.com/1.3.6/quill.min.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.body.appendChild(script);
-            });
-        }
-
-        window.openAddEditorModal = async function() {
-            await ensureQuill();
-            
-            const modal = document.getElementById('addEditorModal');
-            const form = document.getElementById('addEditorForm');
-            
-            let fieldOptions = '<option value="">Select Field/Role</option>';
-            if (fieldsData && fieldsData.length) {
-                fieldsData.forEach(function(f) {
-                    fieldOptions += '<option value="' + f.field.replace(/"/g, '&quot;') + '">' + f.field + '</option>';
-                });
-            }
-            
-            let prefixOptionsHtml = '<option value="">Select Prefix</option>';
-            prefixOptions.forEach(function(prefix) {
-                prefixOptionsHtml += '<option value="' + prefix + '">' + prefix + '</option>';
-            });
-            
-            form.innerHTML = `
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Editor</h2>
-                <form id="addEditorFormSubmit" onsubmit="submitAddEditor(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Prefix</label>
-                            <select name="prefix" class="form-select">
-                                ${prefixOptionsHtml}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Full Name *</label>
-                            <input type="text" name="fullname" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Field/Role *</label>
-                            <select name="field" class="form-select" required>
-                                ${fieldOptions}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Discipline *</label>
-                            <input type="text" name="discipline" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Country</label>
-                            <input type="text" name="country" class="form-input">
-                        </div>
-                        <div class="form-group md:col-span-2">
-                            <label class="form-label">Photo</label>
-                            <input type="file" name="photo" accept="image/*" class="form-input">
-                        </div>
-                        <div class="form-group md:col-span-2">
-                            <label class="form-label">Biography</label>
-                            <div id="add-bio-editor" style="height: 300px;"></div>
-                            <input type="hidden" name="bio" id="add-bio-input">
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Editor</button>
-                    </div>
-                </form>
-            `;
-            
-            modal.style.display = 'block';
-            
-            setTimeout(function() {
-                const editorContainer = document.getElementById('add-bio-editor');
-                if (editorContainer && !quillInstance) {
-                    quillInstance = new Quill(editorContainer, {
-                        theme: 'snow',
-                        placeholder: 'Enter editor biography...',
-                        modules: {
-                            toolbar: [
-                                ['bold', 'italic', 'underline'],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                ['clean']
-                            ]
-                        }
-                    });
-                }
-            }, 100);
         };
 
         window.openEditModal = async function(editorId) {
@@ -1855,6 +1930,15 @@
             if (event.target === addModal) addModal.style.display = 'none';
         };
 
+        // Check URL hash on load and when it changes
+        function checkUrlForAddModal() {
+            if (window.location.hash === '#add' && canEdit) {
+                setTimeout(() => {
+                    openAddEditorModal();
+                }, 500);
+            }
+        }
+
         // ==================== INITIALIZATION ====================
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1863,23 +1947,6 @@
                     loadedEditors[field.field] = Math.min(field.editorCount || 0, 6);
                 });
             }
-
-            // Check if first field has data, if not, load it
-            setTimeout(function() {
-                if (fieldsData && fieldsData.length > 0) {
-                    const firstContainer = document.getElementById('editors-0');
-                    if (firstContainer) {
-                        const hasRealData = Array.from(firstContainer.children).some(child => 
-                            child.classList.contains('editor-card')
-                        );
-                        
-                        if (!hasRealData || firstContainer.children.length === 0) {
-                            console.log('Loading first field editors...');
-                            loadEditorsByField(fieldsData[0].field, 0, 0, EDITORS_PER_LOAD, false);
-                        }
-                    }
-                }
-            }, 100);
 
             document.querySelectorAll('.load-more-btn').forEach(function(btn) {
                 btn.addEventListener('click', async function(e) {
@@ -1947,7 +2014,14 @@
                 });
             }
 
+            // Load remaining fields only once after a delay
             setTimeout(loadRemainingFields, 500);
+            
+            // Check URL hash for #add
+            checkUrlForAddModal();
+            
+            // Listen for hash changes
+            window.addEventListener('hashchange', checkUrlForAddModal);
         });
     </script>
 
