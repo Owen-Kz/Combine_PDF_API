@@ -1,0 +1,1957 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ASFI Research Journal - Editors</title>
+
+    <!-- SEO meta tags (keep as is) -->
+    <meta name="description" content="ASFI Research Journal - Meet our editors">
+    <meta name="keywords" content="research,journal,africa,scholars,asfi">
+    <link rel="shortcut icon" href="/assets/images/logoIcon/favicon.png" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/assets/images/logoIcon/logo.png">
+
+    <!-- Preconnect for faster resource loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit;
+        }
+
+        /* ===== LAYOUT ===== */
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Left Sidebar */
+        .left-sidebar {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #ffffff;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            z-index: 40;
+            padding: 24px 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            margin-right: 320px;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        /* Right Sidebar */
+        .right-sidebar {
+            width: 320px;
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #ffffff;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+            z-index: 40;
+            padding: 24px;
+        }
+
+        /* ===== SIDEBAR CONTENT ===== */
+        .sidebar-header {
+            padding: 0 24px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0 16px;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: #475569;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar-link i {
+            margin-right: 8px;
+            width: 20px;
+            color: #64748b;
+        }
+
+        .sidebar-link:hover {
+            background-color: #faf5ff;
+            color: #9333ea;
+        }
+
+        .sidebar-link:hover i {
+            color: #9333ea;
+        }
+
+        .sidebar-link.active {
+            background-color: #9333ea;
+            color: white;
+        }
+
+        .sidebar-link.active i {
+            color: white;
+        }
+
+        .editor-count {
+            float: right;
+            background-color: #e2e8f0;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .sidebar-link.active .editor-count {
+            background-color: #a855f7;
+            color: white;
+        }
+
+        /* ===== MAIN CONTENT HEADER ===== */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .breadcrumb {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .breadcrumb a {
+            color: #9333ea;
+        }
+
+        .breadcrumb a:hover {
+            color: #7e22ce;
+        }
+
+        .breadcrumb-separator {
+            margin: 0 8px;
+            color: #94a3b8;
+        }
+
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 20px;
+            color: #64748b;
+        }
+
+        /* ===== EDITOR SECTIONS ===== */
+        .editor-section {
+            margin-bottom: 48px;
+            scroll-margin-top: 24px;
+        }
+
+        .section-title {
+            font-size: 30px;
+            font-weight: 700;
+            color: #9333ea;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #9333ea;
+        }
+
+        .editors-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 24px;
+        }
+
+        @media (min-width: 768px) {
+            .editors-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .editors-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Editor Card */
+        .editor-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .editor-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-content {
+            padding: 24px;
+            text-align: center;
+        }
+
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .avatar {
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #f3e8ff;
+            margin: 0 auto 16px;
+        }
+
+        .edit-buttons {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 4px;
+        }
+
+        .edit-btn {
+            background-color: #3b82f6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .edit-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .delete-btn {
+            background-color: #ef4444;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .delete-btn:hover {
+            background-color: #dc2626;
+        }
+
+        .editor-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 16px 0 4px;
+        }
+
+        .prefix-badge {
+            /* display: inline-block;
+            background-color: #9333ea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 6px;
+            vertical-align: middle; */
+        }
+
+        .editor-role {
+            color: #9333ea;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .editor-discipline {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .editor-country {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .editor-bio-preview {
+            color: #475569;
+            font-size: 14px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .view-profile-btn {
+            width: 100%;
+            background-color: #9333ea;
+            color: white;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+
+        .view-profile-btn:hover {
+            background-color: #7e22ce;
+        }
+
+        .view-profile-btn i {
+            margin-right: 8px;
+        }
+
+        /* Skeleton Loading */
+        .skeleton-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        .skeleton-avatar {
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+        }
+
+        .skeleton-line {
+            height: 20px;
+            margin-bottom: 8px;
+        }
+
+        .skeleton-line-sm {
+            width: 60%;
+        }
+
+        .skeleton-line-md {
+            width: 80%;
+        }
+
+        .skeleton-line-lg {
+            width: 100%;
+        }
+
+        .skeleton-btn {
+            height: 44px;
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Load More Button */
+        .load-more-container {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .load-more-btn {
+            background-color: #9333ea;
+            color: white;
+            font-weight: 600;
+            padding: 12px 32px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            font-size: 16px;
+        }
+
+        .load-more-btn:hover:not(:disabled) {
+            background-color: #7e22ce;
+        }
+
+        .load-more-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* ===== RIGHT SIDEBAR TOOLS ===== */
+        .tools-section {
+            margin-bottom: 24px;
+        }
+
+        .tools-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .btn-block {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: #9333ea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #7e22ce;
+        }
+
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-outline:hover {
+            background-color: #f8fafc;
+        }
+
+        /* ===== MODAL STYLES ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            margin: 2% auto;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            animation: slideDown 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content.edit-modal-content {
+            max-width: 900px;
+        }
+
+        .modal-content.delete-modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .close {
+            position: sticky;
+            top: 10px;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #64748b;
+            z-index: 10;
+            background: white;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .close:hover {
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+
+        /* ===== FORM STYLES ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #9333ea;
+            box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.1);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .form-grid .md\:col-span-2 {
+                grid-column: span 2;
+            }
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+
+        /* ===== OVERLAY LOADER ===== */
+        .overlayX {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9998;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f1f5f9;
+            border-top: 3px solid #9333ea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== QUICK UTILITIES ===== */
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .mt-2 { margin-top: 8px; }
+        .mt-4 { margin-top: 16px; }
+        .mt-6 { margin-top: 24px; }
+        .mt-8 { margin-top: 32px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mb-6 { margin-bottom: 24px; }
+        .mb-8 { margin-bottom: 32px; }
+        .mr-1 { margin-right: 4px; }
+        .mr-2 { margin-right: 8px; }
+        .ml-3 { margin-left: 12px; }
+        .p-4 { padding: 16px; }
+        .p-6 { padding: 24px; }
+        .px-4 { padding-left: 16px; padding-right: 16px; }
+        .px-6 { padding-left: 24px; padding-right: 24px; }
+        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .py-3 { padding-top: 12px; padding-bottom: 12px; }
+        .w-full { width: 100%; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-end { justify-content: flex-end; }
+        .gap-2 { gap: 8px; }
+        .gap-4 { gap: 16px; }
+        .text-gray-500 { color: #64748b; }
+        .text-gray-600 { color: #475569; }
+        .text-gray-700 { color: #334155; }
+        .text-gray-800 { color: #1e293b; }
+        .text-purple-600 { color: #9333ea; }
+        .bg-purple-600 { background-color: #9333ea; }
+        .bg-purple-500 { background-color: #a855f7; }
+        .bg-red-600 { background-color: #ef4444; }
+        .bg-red-700 { background-color: #dc2626; }
+        .bg-gray-100 { background-color: #f1f5f9; }
+        .bg-gray-200 { background-color: #e2e8f0; }
+        .bg-yellow-50 { background-color: #fffbeb; }
+        .border { border: 1px solid #e2e8f0; }
+        .border-t { border-top: 1px solid #e2e8f0; }
+        .rounded-lg { border-radius: 8px; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .font-medium { font-weight: 500; }
+        .text-sm { font-size: 14px; }
+        .text-xl { font-size: 20px; }
+        .text-2xl { font-size: 24px; }
+        .text-3xl { font-size: 30px; }
+        .text-4xl { font-size: 36px; }
+        .text-5xl { font-size: 48px; }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .left-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .left-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                margin-right: 0;
+                padding: 16px;
+            }
+            
+            .right-sidebar {
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .right-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-title {
+                font-size: 28px;
+            }
+            
+            .page-subtitle {
+                font-size: 18px;
+            }
+            
+            .section-title {
+                font-size: 24px;
+            }
+            
+            .modal-content {
+                margin: 0;
+                width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+            }
+        }
+
+        /* Mobile Navigation Buttons */
+        .mobile-nav-btn {
+            position: fixed;
+            background-color: #9333ea;
+            color: white;
+            padding: 16px;
+            border-radius: 50%;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            z-index: 50;
+            transition: background-color 0.2s;
+        }
+
+        .mobile-nav-btn:hover {
+            background-color: #7e22ce;
+        }
+
+        .mobile-nav-btn.left {
+            bottom: 80px;
+            right: 16px;
+        }
+
+        .mobile-nav-btn.right {
+            bottom: 16px;
+            right: 16px;
+        }
+
+        @media (min-width: 1025px) {
+            .mobile-nav-btn {
+                display: none;
+            }
+        }
+
+        /* Quill Content Styles */
+        .quill-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .quill-content p {
+            margin-bottom: 12px;
+        }
+
+        .quill-content strong {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .quill-content h1,
+        .quill-content h2,
+        .quill-content h3 {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .quill-content ul,
+        .quill-content ol {
+            padding-left: 24px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Overlay loader for AJAX operations -->
+    <div class="overlayX" id="overlayX">    
+        <div class="spinner"></div>
+        <div class="mt-4 font-bold text-gray-800">Loading...please wait...</div>
+    </div>
+
+    <!-- Three-column Layout -->
+    <div class="layout-container">
+        <!-- Left Sidebar - Editors by Field -->
+        <div class="left-sidebar" id="leftSidebar">
+            <div class="sidebar-header">
+                <h3 class="sidebar-title">Editors by Field</h3>
+            </div>
+            
+            <ul class="sidebar-nav" id="editorialNav">
+                <% if (fields && fields.length > 0) { %>
+                    <% fields.forEach(function(field, index) { %>
+                        <li>
+                            <a class="sidebar-link <%= index === 0 ? 'active' : '' %>" 
+                               href="#field-<%= field.field.replace(/\s+/g, '-').toLowerCase() %>"
+                               data-field-index="<%= index %>">
+                                <i class="fa fa-book"></i>
+                                <span><%= field.field %></span>
+                                <% if (field.editorCount) { %>
+                                    <span class="editor-count"><%= field.editorCount %></span>
+                                <% } %>
+                            </a>
+                        </li>
+                    <% }); %>
+                <% } else { %>
+                    <li class="text-gray-500 text-center py-4">No fields available</li>
+                <% } %>
+            </ul>
+        </div>
+
+        <!-- Main Content - Editors Grid -->
+        <main class="main-content" id="mainContent">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-separator">>>></span>
+                    <a href="/editors" class="text-gray-600">Editors</a>
+                </div>
+                <h1 class="page-title">Editors</h1>
+                <p class="page-subtitle">Meet The Editors</p>
+            </div>
+
+            <!-- Editors Content -->
+            <div id="editorsContent">
+                <% if (fields && fields.length > 0) { 
+                    var firstEditorsData = typeof firstEditors !== 'undefined' ? JSON.parse(firstEditors) : {};
+                %>
+                    <% fields.forEach(function(field, fieldIndex) { %>
+                        <div class="editor-section" id="field-<%= field.field.replace(/\s+/g, '-').toLowerCase() %>">
+                            <h2 class="section-title"><%= field.field %></h2>
+                            <div class="editors-grid" id="editors-<%= fieldIndex %>" data-field="<%= field.field %>">
+                                <% 
+                                    var fieldEditors = firstEditorsData[field.field] || [];
+                                    
+                                    if (fieldEditors.length > 0) { 
+                                        fieldEditors.forEach(function(editor) { 
+                                %>
+                                    <div class="editor-card" data-editor-id="<%= editor.id %>">
+                                        <div class="card-content">
+                                            <div class="avatar-container">
+                                                <img src="<%= editor.photo ? 'https://asfirj.org/useruploads/editors/' + editor.photo : '/assets/images/default-avatar.png' %>" 
+                                                     alt="<%= editor.fullname %>" 
+                                                     class="avatar"
+                                                     loading="lazy"
+                                                     onerror="this.src='/assets/images/default-avatar.png'">
+                                                <% if (user && (user.editorial_level === 'editor_in_chief' || user.editorial_level === 'editorial_assistant')) { %>
+                                                    <div class="edit-buttons">
+                                                        <button onclick="event.stopPropagation(); openEditModal(<%= editor.id %>)" class="edit-btn" title="Edit Editor">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button onclick="event.stopPropagation(); openDeleteModal(<%= editor.id %>)" class="delete-btn" title="Delete Editor">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                            <h3 class="editor-name">
+                                                <% if (editor.prefix) { %>
+                                                    <span class="prefix-badge"><%= editor.prefix %></span>
+                                                <% } %>
+                                                <%= editor.fullname || 'N/A' %>
+                                            </h3>
+                                            <p class="editor-role"><%= editor.field || 'Editor' %></p>
+                                            <p class="editor-discipline">
+                                                <i class="fa fa-university"></i>
+                                                <%= editor.discipline || 'Discipline not specified' %>
+                                            </p>
+                                            <% if (editor.country) { %>
+                                                <p class="editor-country">
+                                                    <i class="fa fa-globe"></i>
+                                                    <%= editor.country %>
+                                                </p>
+                                            <% } %>
+                                            <p class="editor-bio-preview">
+                                                <% 
+                                                    var bioText = 'No bio available';
+                                                    if (editor.bio) {
+                                                        try {
+                                                            var bioContent = JSON.parse(editor.bio);
+                                                            if (Array.isArray(bioContent)) {
+                                                                bioText = bioContent.map(function(op) { return op.insert || ''; }).join('').substring(0, 120);
+                                                                if (bioText.length >= 120) bioText += '...';
+                                                            } else {
+                                                                bioText = String(editor.bio).substring(0, 120) + (String(editor.bio).length > 120 ? '...' : '');
+                                                            }
+                                                        } catch(e) {
+                                                            bioText = String(editor.bio).substring(0, 120) + (String(editor.bio).length > 120 ? '...' : '');
+                                                        }
+                                                    }
+                                                %>
+                                                <%= bioText %>
+                                            </p>
+                                            <button class="view-profile-btn" onclick="showEditorDetails(<%= editor.id %>)">
+                                                <i class="fa fa-user"></i> View Profile
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% 
+                                        });
+                                    } else { 
+                                        for (var i = 0; i < 6; i++) { 
+                                %>
+                                    <div class="skeleton-card">
+                                        <div class="skeleton skeleton-avatar"></div>
+                                        <div class="skeleton skeleton-line skeleton-line-sm mx-auto mt-4"></div>
+                                        <div class="skeleton skeleton-line skeleton-line-sm mx-auto mt-2"></div>
+                                        <div class="skeleton skeleton-line skeleton-line-md mx-auto mt-3"></div>
+                                        <div class="skeleton skeleton-line skeleton-line-lg mt-3"></div>
+                                        <div class="skeleton skeleton-line skeleton-line-lg mt-2"></div>
+                                        <div class="skeleton skeleton-btn mt-4"></div>
+                                    </div>
+                                <% 
+                                        }
+                                    } 
+                                %>
+                            </div>
+                            <% if (field.editorCount > 6) { %>
+                                <div class="load-more-container">
+                                    <button class="load-more-btn" 
+                                            data-field="<%= field.field %>"
+                                            data-field-index="<%= fieldIndex %>"
+                                            data-offset="6">
+                                        Load More Editors (<%= field.editorCount - 6 %> remaining)
+                                    </button>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="bg-yellow-50 border text-yellow-800 p-6 rounded-lg">
+                        No editors available at the moment.
+                    </div>
+                <% } %>
+            </div>
+        </main>
+
+        <!-- Right Sidebar - Admin/Editor Tools -->
+        <div class="right-sidebar" id="rightSidebar">
+            <% if (user && (user.editorial_level === 'editor_in_chief' || user.editorial_level === 'editorial_assistant')) { %>
+                <div class="tools-section">
+                    <h3 class="tools-title">Editor Tools</h3>
+                    
+                    <button onclick="openAddEditorModal()" class="btn-block btn-primary">
+                        <i class="fas fa-plus mr-2"></i> Add New Editor
+                    </button>
+                    
+                    <a href="/editors/dashboard/" class="btn-block btn-secondary text-center">
+                        Go to Dashboard
+                    </a>
+                    
+                    <ul class="sidebar-nav mt-6">
+                        <li>
+                            <a class="sidebar-link <%= currentPath === '/editors/dashboard/' ? 'active' : '' %>" href="/editors/dashboard/">
+                                <i class="far fa-clock"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-link <%= currentPath === '/editors/Authors/' ? 'active' : '' %>" href="/editors/Authors/">
+                                <i class="bi bi-person"></i>
+                                <span>Authors</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-link <%= currentPath === '/editors/Inbox/' ? 'active' : '' %>" href="/editors/Inbox/">
+                                <i class="fas fa-envelope"></i>
+                                <span>Inbox</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-link <%= currentPath === '/editors/EditorInvitations/' ? 'active' : '' %>" href="/editors/EditorInvitations/">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Editor Invitations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-link" href="https://asfirj.org/manageEditors.html" target="_blank">
+                                <i class="bi bi-person-gear"></i>
+                                <span>Manage Editors</span>
+                            </a>
+                        </li>
+                        <li class="mt-6">
+                            <a href="/editors/logout/" class="btn-block btn-danger text-center">
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            <% } else if (user && (user.editorial_level === 'sectional_editor' || user.editorial_level === 'associate_editor')) { %>
+                <div class="tools-section">
+                    <h3 class="tools-title">Editor Tools</h3>
+                    
+                    <ul class="sidebar-nav">
+                        <li>
+                            <a class="sidebar-link <%= currentPath === '/editors/dashboard/' ? 'active' : '' %>" href="/editors/dashboard/">
+                                <i class="far fa-clock"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-link <%= currentPath === '/editors/Inbox/' ? 'active' : '' %>" href="/editors/Inbox/">
+                                <i class="fas fa-envelope"></i>
+                                <span>Inbox</span>
+                            </a>
+                        </li>
+                        <li class="mt-6">
+                            <a href="/editors/logout/" class="btn-block btn-danger text-center">
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Mobile Navigation Buttons -->
+        <button id="showLeftNavButton" class="mobile-nav-btn left">
+            <i class="fa fa-book text-xl"></i>
+        </button>
+        
+        <button id="showRightNavButton" class="mobile-nav-btn right">
+            <i class="fa fa-user-edit text-xl"></i>
+        </button>
+    </div>
+
+    <!-- View Editor Modal -->
+    <div id="viewEditorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeViewModal()">&times;</span>
+            <div id="viewEditorDetails" class="p-4"></div>
+        </div>
+    </div>
+
+    <!-- Edit Editor Modal -->
+    <div id="editEditorModal" class="modal">
+        <div class="modal-content edit-modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <div id="editEditorForm" class="p-4"></div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteEditorModal" class="modal">
+        <div class="modal-content delete-modal-content">
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+            <div class="p-6 text-center">
+                <i class="fas fa-exclamation-triangle text-5xl mb-4" style="color: #ef4444;"></i>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Confirm Deletion</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to delete this editor? This action cannot be undone.</p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="confirmDelete()" class="btn btn-danger px-6 py-2">Delete</button>
+                    <button onclick="closeDeleteModal()" class="btn btn-secondary px-6 py-2">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Editor Modal -->
+    <div id="addEditorModal" class="modal">
+        <div class="modal-content edit-modal-content">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <div id="addEditorForm" class="p-4"></div>
+        </div>
+    </div>
+
+    <!-- Main JavaScript -->
+    <script>
+        // ==================== CONFIGURATION ====================
+        const EDITORS_PER_LOAD = 6;
+        const fieldsData = <%- JSON.stringify(fields) %>;
+        const firstEditorsData = <%- JSON.stringify(firstEditors) %>;
+        const userLevel = '<%= user ? user.editorial_level : "" %>';
+        const canEdit = userLevel === 'editor_in_chief' || userLevel === 'editorial_assistant';
+        
+        // Debug logging
+        console.log('Fields Data:', fieldsData);
+        console.log('First Editors Data:', firstEditorsData);
+        
+        // State
+        const loadedEditors = {};
+        let currentEditorId = null;
+        let quillInstance = null;
+
+        // Prefix options for dropdown
+        const prefixOptions = [
+            'Prof.',
+            'Dr.',
+            'Mr.',
+            'Mrs.',
+            'Ms.',
+            'Miss',
+            'Rev.',
+            'Hon.'
+        ];
+
+        // Field/Role options
+        const fieldOptionsList = fieldsData.map(f => f.field);
+
+        // ==================== UTILITY FUNCTIONS ====================
+        
+        // Parse Quill JSON to HTML
+        function parseQuillContent(quillJson) {
+            try {
+                if (!quillJson) return 'No bio available.';
+                
+                let content;
+                if (typeof quillJson === 'string') {
+                    try {
+                        content = JSON.parse(quillJson);
+                    } catch {
+                        return quillJson;
+                    }
+                } else {
+                    content = quillJson;
+                }
+
+                if (!Array.isArray(content)) {
+                    return String(content);
+                }
+
+                let html = '';
+                let currentParagraph = [];
+
+                content.forEach((op) => {
+                    if (op.insert) {
+                        const text = op.insert;
+                        
+                        if (text === '\n') {
+                            if (currentParagraph.length > 0) {
+                                let paragraphHtml = '';
+                                currentParagraph.forEach(segment => {
+                                    paragraphHtml += segment;
+                                });
+                                html += `<p>${paragraphHtml}</p>`;
+                                currentParagraph = [];
+                            } else {
+                                html += '<p><br></p>';
+                            }
+                            return;
+                        }
+
+                        let formattedText = text;
+                        if (op.attributes) {
+                            if (op.attributes.bold) {
+                                formattedText = `<strong>${formattedText}</strong>`;
+                            }
+                            if (op.attributes.italic) {
+                                formattedText = `<em>${formattedText}</em>`;
+                            }
+                            if (op.attributes.underline) {
+                                formattedText = `<u>${formattedText}</u>`;
+                            }
+                        }
+
+                        currentParagraph.push(formattedText);
+                    }
+                });
+
+                if (currentParagraph.length > 0) {
+                    let paragraphHtml = '';
+                    currentParagraph.forEach(segment => {
+                        paragraphHtml += segment;
+                    });
+                    html += `<p>${paragraphHtml}</p>`;
+                }
+
+                return html || 'No bio available.';
+            } catch (e) {
+                console.error('Error parsing Quill content:', e);
+                return String(quillJson || 'No bio available.');
+            }
+        }
+
+        // Create editor card element
+        function createEditorCard(editor) {
+            const col = document.createElement('div');
+            col.className = 'editor-card';
+            col.setAttribute('data-editor-id', editor.id);
+
+            const defaultImage = '/assets/images/default-avatar.png';
+            const imageUrl = editor.photo ? `https://asfirj.org/useruploads/editors/${editor.photo}` : defaultImage;
+            
+            // Parse bio for preview
+            let bioText = 'No bio available';
+            if (editor.bio) {
+                try {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = parseQuillContent(editor.bio);
+                    bioText = tempDiv.textContent || tempDiv.innerText || '';
+                    bioText = bioText.substring(0, 120) + (bioText.length > 120 ? '...' : '');
+                } catch {
+                    bioText = String(editor.bio).substring(0, 120) + (String(editor.bio).length > 120 ? '...' : '');
+                }
+            }
+
+            col.innerHTML = `
+                <div class="card-content">
+                    <div class="avatar-container">
+                        <img src="${imageUrl}" alt="${editor.fullname || 'Editor'}" 
+                             class="avatar"
+                             loading="lazy"
+                             onerror="this.src='${defaultImage}'">
+                        ${canEdit ? `
+                            <div class="edit-buttons">
+                                <button onclick="event.stopPropagation(); openEditModal(${editor.id})" class="edit-btn" title="Edit Editor">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); openDeleteModal(${editor.id})" class="delete-btn" title="Delete Editor">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <h3 class="editor-name">
+                        ${editor.prefix ? `<span class="prefix-badge">${editor.prefix}</span>` : ''}
+                        ${editor.fullname || 'N/A'}
+                    </h3>
+                    <p class="editor-role">${editor.field || 'Editor'}</p>
+                    <p class="editor-discipline">
+                        <i class="fa fa-university"></i>
+                        ${editor.discipline || 'Discipline not specified'}
+                    </p>
+                    ${editor.country ? `
+                        <p class="editor-country">
+                            <i class="fa fa-globe"></i>
+                            ${editor.country}
+                        </p>
+                    ` : ''}
+                    <p class="editor-bio-preview">${bioText}</p>
+                    <button class="view-profile-btn" onclick="showEditorDetails(${editor.id})">
+                        <i class="fa fa-user"></i> View Profile
+                    </button>
+                </div>
+            `;
+            
+            return col;
+        }
+
+        // ==================== API FUNCTIONS ====================
+
+        // Load editors for a specific field
+        async function loadEditorsByField(field, fieldIndex, offset = 0, limit = 6, append = true) {
+            const container = document.getElementById(`editors-${fieldIndex}`);
+            if (!container) return;
+
+            if (offset === 0 && container.children.length === 0) {
+                container.innerHTML = '<div class="text-center py-12"><div class="spinner" style="margin: 0 auto;"></div></div>';
+            }
+
+            try {
+                const response = await fetch(`/api/editors/by-field?field=${encodeURIComponent(field)}&offset=${offset}&limit=${limit}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    if (!append) container.innerHTML = '';
+
+                    data.editors.forEach(editor => {
+                        container.appendChild(createEditorCard(editor));
+                    });
+
+                    loadedEditors[field] = (loadedEditors[field] || 0) + data.editors.length;
+
+                    const loadMoreBtn = document.querySelector(`.load-more-btn[data-field="${field}"]`);
+                    if (loadMoreBtn) {
+                        if (data.hasMore) {
+                            loadMoreBtn.style.display = 'block';
+                            loadMoreBtn.dataset.offset = loadedEditors[field];
+                            const remaining = data.total - loadedEditors[field];
+                            loadMoreBtn.innerHTML = `Load More Editors ${remaining > 0 ? '(' + remaining + ' remaining)' : ''}`;
+                        } else {
+                            loadMoreBtn.style.display = 'none';
+                        }
+                    }
+                } else {
+                    throw new Error(data.message || 'Failed to load editors');
+                }
+            } catch (error) {
+                console.error('Error loading editors:', error);
+                if (offset === 0) {
+                    container.innerHTML = '<div class="text-center py-8" style="color: #ef4444;">Error loading editors. Please try again.</div>';
+                }
+            }
+        }
+
+        // Load editors for remaining fields (staggered)
+        function loadRemainingFields() {
+            if (!fieldsData || !fieldsData.length) return;
+            
+            fieldsData.forEach(function(field, idx) {
+                if (idx === 0) return; // Skip first field (already loaded)
+                
+                setTimeout(function() {
+                    const container = document.getElementById('editors-' + idx);
+                    if (container) {
+                        // Check if the container has skeleton cards (no real data yet)
+                        const hasSkeleton = Array.from(container.children).some(child => 
+                            child.classList.contains('skeleton-card')
+                        );
+                        
+                        if (hasSkeleton || container.children.length === 0) {
+                            console.log(`Loading editors for field: ${field.field} (index: ${idx})`);
+                            loadEditorsByField(field.field, idx, 0, EDITORS_PER_LOAD, false);
+                        }
+                    }
+                }, 200 * (idx + 1));
+            });
+        }
+
+        // ==================== MODAL FUNCTIONS ====================
+
+        window.showEditorDetails = async function(editorId) {
+            document.getElementById('overlayX').style.display = 'flex';
+            
+            try {
+                const response = await fetch(`/api/editors/${editorId}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.editor) {
+                    const editor = data.editor;
+                    const modal = document.getElementById('viewEditorModal');
+                    const details = document.getElementById('viewEditorDetails');
+                    
+                    const defaultImage = '/assets/images/default-avatar.png';
+                    const imageUrl = editor.photo ? `https://asfirj.org/useruploads/editors/${editor.photo}` : defaultImage;
+                    
+                    const bioHtml = editor.bio ? parseQuillContent(editor.bio) : '<p>No biography available.</p>';
+                    
+                    details.innerHTML = `
+                        <div class="text-center">
+                            <img src="${imageUrl}" alt="${editor.fullname}" 
+                                 class="avatar" style="width: 160px; height: 160px; margin: 0 auto 24px;"
+                                 onerror="this.src='${defaultImage}'">
+                            <h2 class="text-2xl font-bold text-gray-800">
+                                ${editor.prefix ? `<span class="prefix-badge" style="display: inline-block; margin-right: 8px;">${editor.prefix}</span>` : ''}
+                                ${editor.fullname}
+                            </h2>
+                            <p class="text-purple-600 font-medium mt-1 editor-role">${editor.field}</p>
+                            
+                            ${canEdit ? `
+                                <div class="flex justify-center gap-4 mt-4">
+                                    <button onclick="openEditModal(${editor.id})" class="btn btn-primary">
+                                        <i class="fas fa-edit mr-2"></i> Edit
+                                    </button>
+                                    <button onclick="openDeleteModal(${editor.id})" class="btn btn-danger">
+                                        <i class="fas fa-trash mr-2"></i> Delete
+                                    </button>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="mt-6 text-left">
+                                <div class="flex items-start gap-2 mb-3">
+                                    <i class="fa fa-book text-purple-600 mt-1"></i>
+                                    <div>
+                                        <span class="font-semibold">Field/Role:</span>
+                                        <span class="text-gray-600"> ${editor.field}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-2 mb-3">
+                                    <i class="fa fa-tag text-purple-600 mt-1"></i>
+                                    <div>
+                                        <span class="font-semibold">Discipline:</span>
+                                        <span class="text-gray-600"> ${editor.discipline || 'N/A'}</span>
+                                    </div>
+                                </div>
+                                ${editor.country ? `
+                                    <div class="flex items-start gap-2 mb-4">
+                                        <i class="fa fa-globe text-purple-600 mt-1"></i>
+                                        <div>
+                                            <span class="font-semibold">Country:</span>
+                                            <span class="text-gray-600"> ${editor.country}</span>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="mt-4 pt-4 border-t">
+                                    <h5 class="font-semibold text-gray-800 mb-2">Biography</h5>
+                                    <div class="quill-content">${bioHtml}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    modal.style.display = 'block';
+                } else {
+                    throw new Error(data.message || 'Failed to load editor details');
+                }
+            } catch (error) {
+                console.error('Error loading editor details:', error);
+                alert('Error loading editor details. Please try again.');
+            } finally {
+                document.getElementById('overlayX').style.display = 'none';
+            }
+        };
+
+        async function ensureQuill() {
+            if (window.Quill) return true;
+            
+            return new Promise((resolve, reject) => {
+                if (!document.querySelector('#quill-css')) {
+                    const link = document.createElement('link');
+                    link.id = 'quill-css';
+                    link.rel = 'stylesheet';
+                    link.href = 'https://cdn.quilljs.com/1.3.6/quill.snow.css';
+                    document.head.appendChild(link);
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdn.quilljs.com/1.3.6/quill.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.body.appendChild(script);
+            });
+        }
+
+        window.openAddEditorModal = async function() {
+            await ensureQuill();
+            
+            const modal = document.getElementById('addEditorModal');
+            const form = document.getElementById('addEditorForm');
+            
+            let fieldOptions = '<option value="">Select Field/Role</option>';
+            if (fieldsData && fieldsData.length) {
+                fieldsData.forEach(function(f) {
+                    fieldOptions += '<option value="' + f.field.replace(/"/g, '&quot;') + '">' + f.field + '</option>';
+                });
+            }
+            
+            let prefixOptionsHtml = '<option value="">Select Prefix</option>';
+            prefixOptions.forEach(function(prefix) {
+                prefixOptionsHtml += '<option value="' + prefix + '">' + prefix + '</option>';
+            });
+            
+            form.innerHTML = `
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Editor</h2>
+                <form id="addEditorFormSubmit" onsubmit="submitAddEditor(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Prefix</label>
+                            <select name="prefix" class="form-select">
+                                ${prefixOptionsHtml}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" name="fullname" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Field/Role *</label>
+                            <select name="field" class="form-select" required>
+                                ${fieldOptions}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Discipline *</label>
+                            <input type="text" name="discipline" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Country</label>
+                            <input type="text" name="country" class="form-input">
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Photo</label>
+                            <input type="file" name="photo" accept="image/*" class="form-input">
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Biography</label>
+                            <div id="add-bio-editor" style="height: 300px;"></div>
+                            <input type="hidden" name="bio" id="add-bio-input">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Editor</button>
+                    </div>
+                </form>
+            `;
+            
+            modal.style.display = 'block';
+            
+            setTimeout(function() {
+                const editorContainer = document.getElementById('add-bio-editor');
+                if (editorContainer && !quillInstance) {
+                    quillInstance = new Quill(editorContainer, {
+                        theme: 'snow',
+                        placeholder: 'Enter editor biography...',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['clean']
+                            ]
+                        }
+                    });
+                }
+            }, 100);
+        };
+
+        window.openEditModal = async function(editorId) {
+            currentEditorId = editorId;
+            document.getElementById('overlayX').style.display = 'flex';
+            
+            try {
+                await ensureQuill();
+                
+                const response = await fetch(`/api/editors/${editorId}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.editor) {
+                    const editor = data.editor;
+                    const modal = document.getElementById('editEditorModal');
+                    const form = document.getElementById('editEditorForm');
+                    
+                    let fieldOptions = '<option value="">Select Field/Role</option>';
+                    if (fieldsData && fieldsData.length) {
+                        fieldsData.forEach(function(f) {
+                            const selected = f.field === editor.field ? 'selected' : '';
+                            fieldOptions += '<option value="' + f.field.replace(/"/g, '&quot;') + '" ' + selected + '>' + f.field + '</option>';
+                        });
+                    }
+                    
+                    let prefixOptionsHtml = '<option value="">Select Prefix</option>';
+                    prefixOptions.forEach(function(prefix) {
+                        const selected = prefix === editor.prefix ? 'selected' : '';
+                        prefixOptionsHtml += '<option value="' + prefix + '" ' + selected + '>' + prefix + '</option>';
+                    });
+                    
+                    form.innerHTML = `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Editor</h2>
+                        <form id="editEditorFormSubmit" onsubmit="submitEditEditor(event)">
+                            <input type="hidden" name="id" value="${editor.id}">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Prefix</label>
+                                    <select name="prefix" class="form-select">
+                                        ${prefixOptionsHtml}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Full Name *</label>
+                                    <input type="text" name="fullname" value="${editor.fullname ? editor.fullname.replace(/"/g, '&quot;') : ''}" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Field/Role *</label>
+                                    <select name="field" class="form-select" required>
+                                        ${fieldOptions}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Discipline *</label>
+                                    <input type="text" name="discipline" value="${editor.discipline ? editor.discipline.replace(/"/g, '&quot;') : ''}" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Country</label>
+                                    <input type="text" name="country" value="${editor.country ? editor.country.replace(/"/g, '&quot;') : ''}" class="form-input">
+                                </div>
+                                <div class="form-group md:col-span-2">
+                                    <label class="form-label">Photo</label>
+                                    ${editor.photo ? '<p class="text-sm text-gray-600 mb-2">Current: ' + editor.photo + '</p>' : ''}
+                                    <input type="file" name="photo" accept="image/*" class="form-input">
+                                </div>
+                                <div class="form-group md:col-span-2">
+                                    <label class="form-label">Biography</label>
+                                    <div id="edit-bio-editor" style="height: 300px;"></div>
+                                    <input type="hidden" name="bio" id="edit-bio-input">
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Update Editor</button>
+                            </div>
+                        </form>
+                    `;
+                    
+                    modal.style.display = 'block';
+                    
+                    setTimeout(function() {
+                        const editorContainer = document.getElementById('edit-bio-editor');
+                        if (editorContainer) {
+                            if (quillInstance) {
+                                quillInstance = null;
+                            }
+                            
+                            quillInstance = new Quill(editorContainer, {
+                                theme: 'snow',
+                                placeholder: 'Enter editor biography...',
+                                modules: {
+                                    toolbar: [
+                                        ['bold', 'italic', 'underline'],
+                                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                        ['clean']
+                                    ]
+                                }
+                            });
+                            
+                            if (editor.bio) {
+                                try {
+                                    let content;
+                                    if (typeof editor.bio === 'string') {
+                                        try {
+                                            content = JSON.parse(editor.bio);
+                                        } catch {
+                                            content = [{ insert: editor.bio }];
+                                        }
+                                    } else {
+                                        content = editor.bio;
+                                    }
+                                    
+                                    if (Array.isArray(content)) {
+                                        quillInstance.setContents(content);
+                                    } else if (content.ops) {
+                                        quillInstance.setContents(content.ops);
+                                    }
+                                } catch (e) {
+                                    console.error('Error setting Quill content:', e);
+                                }
+                            }
+                        }
+                    }, 100);
+                } else {
+                    throw new Error(data.message || 'Failed to load editor data');
+                }
+            } catch (error) {
+                console.error('Error loading editor for edit:', error);
+                alert('Error loading editor data. Please try again.');
+            } finally {
+                document.getElementById('overlayX').style.display = 'none';
+            }
+        };
+
+        window.openDeleteModal = function(editorId) {
+            currentEditorId = editorId;
+            document.getElementById('deleteEditorModal').style.display = 'block';
+        };
+
+        window.submitAddEditor = async function(event) {
+            event.preventDefault();
+            document.getElementById('overlayX').style.display = 'flex';
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            if (quillInstance) {
+                const delta = quillInstance.getContents();
+                formData.set('bio', JSON.stringify(delta.ops));
+            } else {
+                formData.set('bio', '');
+            }
+            
+            try {
+                const response = await fetch('/api/editors/add', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('Editor added successfully!');
+                    closeAddModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error adding editor:', error);
+                alert('Error adding editor. Please try again.');
+            } finally {
+                document.getElementById('overlayX').style.display = 'none';
+            }
+        };
+
+        window.submitEditEditor = async function(event) {
+            event.preventDefault();
+            document.getElementById('overlayX').style.display = 'flex';
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            if (quillInstance) {
+                const delta = quillInstance.getContents();
+                formData.set('bio', JSON.stringify(delta.ops));
+            } else {
+                formData.set('bio', '');
+            }
+            
+            try {
+                const response = await fetch('/api/editors/update', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('Editor updated successfully!');
+                    closeEditModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error updating editor:', error);
+                alert('Error updating editor. Please try again.');
+            } finally {
+                document.getElementById('overlayX').style.display = 'none';
+            }
+        };
+
+        window.confirmDelete = async function() {
+            document.getElementById('overlayX').style.display = 'flex';
+            
+            try {
+                const response = await fetch(`/api/editors/delete/${currentEditorId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('Editor deleted successfully!');
+                    closeDeleteModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting editor:', error);
+                alert('Error deleting editor. Please try again.');
+            } finally {
+                document.getElementById('overlayX').style.display = 'none';
+            }
+        };
+
+        window.closeViewModal = function() {
+            document.getElementById('viewEditorModal').style.display = 'none';
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('editEditorModal').style.display = 'none';
+            if (quillInstance) {
+                quillInstance = null;
+            }
+        };
+
+        window.closeDeleteModal = function() {
+            document.getElementById('deleteEditorModal').style.display = 'none';
+            currentEditorId = null;
+        };
+
+        window.closeAddModal = function() {
+            document.getElementById('addEditorModal').style.display = 'none';
+            if (quillInstance) {
+                quillInstance = null;
+            }
+        };
+
+        window.onclick = function(event) {
+            const viewModal = document.getElementById('viewEditorModal');
+            const editModal = document.getElementById('editEditorModal');
+            const deleteModal = document.getElementById('deleteEditorModal');
+            const addModal = document.getElementById('addEditorModal');
+            
+            if (event.target === viewModal) viewModal.style.display = 'none';
+            if (event.target === editModal) editModal.style.display = 'none';
+            if (event.target === deleteModal) deleteModal.style.display = 'none';
+            if (event.target === addModal) addModal.style.display = 'none';
+        };
+
+        // ==================== INITIALIZATION ====================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (fieldsData && fieldsData.length) {
+                fieldsData.forEach(function(field) {
+                    loadedEditors[field.field] = Math.min(field.editorCount || 0, 6);
+                });
+            }
+
+            // Check if first field has data, if not, load it
+            setTimeout(function() {
+                if (fieldsData && fieldsData.length > 0) {
+                    const firstContainer = document.getElementById('editors-0');
+                    if (firstContainer) {
+                        const hasRealData = Array.from(firstContainer.children).some(child => 
+                            child.classList.contains('editor-card')
+                        );
+                        
+                        if (!hasRealData || firstContainer.children.length === 0) {
+                            console.log('Loading first field editors...');
+                            loadEditorsByField(fieldsData[0].field, 0, 0, EDITORS_PER_LOAD, false);
+                        }
+                    }
+                }
+            }, 100);
+
+            document.querySelectorAll('.load-more-btn').forEach(function(btn) {
+                btn.addEventListener('click', async function(e) {
+                    const field = this.dataset.field;
+                    const fieldIndex = this.dataset.fieldIndex;
+                    const offset = parseInt(this.dataset.offset) || 6;
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> Loading...';
+                    
+                    await loadEditorsByField(field, fieldIndex, offset, EDITORS_PER_LOAD);
+                    
+                    this.disabled = false;
+                });
+            });
+
+            const showLeftNavButton = document.getElementById('showLeftNavButton');
+            const showRightNavButton = document.getElementById('showRightNavButton');
+            const leftSidebar = document.getElementById('leftSidebar');
+            const rightSidebar = document.getElementById('rightSidebar');
+
+            if (showLeftNavButton) {
+                showLeftNavButton.addEventListener('click', function() {
+                    leftSidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            if (showRightNavButton) {
+                showRightNavButton.addEventListener('click', function() {
+                    rightSidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 1024) {
+                    if (leftSidebar && !leftSidebar.contains(event.target) && showLeftNavButton && !showLeftNavButton.contains(event.target)) {
+                        leftSidebar.classList.remove('mobile-open');
+                    }
+                    if (rightSidebar && !rightSidebar.contains(event.target) && showRightNavButton && !showRightNavButton.contains(event.target)) {
+                        rightSidebar.classList.remove('mobile-open');
+                    }
+                }
+            });
+
+            const navLinks = document.querySelectorAll('#editorialNav a');
+            const sections = document.querySelectorAll('[id^="field-"]');
+            
+            if (navLinks.length && sections.length) {
+                window.addEventListener('scroll', function() {
+                    let current = '';
+                    sections.forEach(function(section) {
+                        const sectionTop = section.offsetTop - 100;
+                        if (window.pageYOffset >= sectionTop) {
+                            current = section.getAttribute('id');
+                        }
+                    });
+
+                    navLinks.forEach(function(link) {
+                        link.classList.remove('active');
+                        
+                        if (link.getAttribute('href') === '#' + current) {
+                            link.classList.add('active');
+                        }
+                    });
+                });
+            }
+
+            setTimeout(loadRemainingFields, 500);
+        });
+    </script>
+
+    <!-- Polyfill for older browsers -->
+    <script nomodule src="https://polyfill.io/v3/polyfill.min.js?features=fetch%2CPromise%2CArray.prototype.includes%2CObject.assign%2CArray.from"></script>
+</body>
+</html>

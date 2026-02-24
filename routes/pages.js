@@ -94,6 +94,9 @@ const deleteAnnouncement = require("../controllers/editors/announcements/deleteA
 const updateAccount = require("../controllers/pages/updateAccountPage");
 const updateAccountData = require("../controllers/account/updateAccountData");
 const authorsProfileSearch = require("../controllers/getAuthorsProfile");
+const { getEditorById, getEditorsPage, getEditorsByField, getDisciplinesByField, getAllFields, addEditor, updateEditor, deleteEditor } = require("../controllers/editors/admin/getEditors");
+
+
 
   config();
 
@@ -310,10 +313,32 @@ router.get("/editors/logout", (req,res) =>{
   res.redirect("/editors/dashboard")
 })
 
+// EDITOR MANAGMENENT 
+// Public routes
+router.get("/editors/manage", EditorLoggedIn, getEditorsPage);
 
-router.get("/editors/*", async (req,res) =>{
-  res.redirect("/editors/dashboard")
-}) 
+// API routes for AJAX requests
+router.get("/api/editors/by-field", EditorLoggedIn, getEditorsByField);
+router.get("/api/editors/:id", EditorLoggedIn, getEditorById);
+router.get("/api/disciplines/by-field", EditorLoggedIn, getDisciplinesByField);
+router.get("/api/fields", EditorLoggedIn, getAllFields);
+
+// Protected routes (require authentication)
+router.post('/api/editors/add', 
+    EditorLoggedIn,
+    addEditor
+);
+
+router.post('/api/editors/update', 
+    EditorLoggedIn, 
+    updateEditor
+);
+
+router.delete('/api/editors/delete/:id', 
+    EditorLoggedIn, 
+    deleteEditor
+);
+
 
 
 // For reiewers 
@@ -327,6 +352,9 @@ router.get("/reviewers/signup/:e", async (req,res)=>{
 router.post("/backend/reviewers/createReviewerAccount", reviewerSignup)
 
 
+router.get("/editors/*", async (req,res) =>{
+  res.redirect("/editors/dashboard")
+}) 
 router.get("*", async (req,res) =>{
     res.redirect("https://asfirj.org")
 }) 

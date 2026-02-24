@@ -1,0 +1,150 @@
+<header class="bg-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between py-4">
+            <!-- Logo -->
+            <div class="flex-shrink-0">
+                <a href="/">
+                    <img src="/assets/images/logoIcon/logo.png" alt="Logo" class="h-12 w-auto" />
+                </a>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden lg:flex items-center space-x-8">
+                <!-- About Us Dropdown -->
+                <div class="relative group">
+                    <button class="text-gray-700 hover:text-blue-600 font-medium flex items-center">
+                        About Us
+                        <i class="fa fa-chevron-down ml-1 text-xs"></i>
+                    </button>
+                    <div class="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                        <div class="py-2">
+                            <a href="/aboutus#ASFI" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">African Science Frontiers Initiatives</a>
+                            <a href="/aboutus#aims" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">ASFIRJ's AIMS & SCOPE</a>
+                            <a href="/aboutus#values" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">ASFIRJ Values</a>
+                            <a href="/aboutus#prompt" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">Prompt Decisions</a>
+                            <a href="/aboutus#why-section" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">Why Publish in ASFIRJ?</a>
+                            <a href="/aboutus#open-access" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">Open Access</a>
+                            <a href="/aboutus#fees" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">Article Publication Fee</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Browse Issues Dropdown -->
+                <div class="relative group">
+                    <button class="text-gray-700 hover:text-blue-600 font-medium flex items-center">
+                        Browse Issues
+                        <i class="fa fa-chevron-down ml-1 text-xs"></i>
+                    </button>
+                    <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                        <div class="py-2">
+                            <a href="/issues" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">Issues</a>
+                            <a href="/supplements" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">Supplements</a>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="/editors" class="text-blue-600 font-medium">Meet The Editors</a>
+
+                <!-- Authors/Reviewers Dropdown -->
+                <div class="relative group">
+                    <button class="text-gray-700 hover:text-blue-600 font-medium flex items-center">
+                        Authors / Reviewers
+                        <i class="fa fa-chevron-down ml-1 text-xs"></i>
+                    </button>
+                    <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                        <div class="py-2">
+                            <a href="/authors" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">For Authors</a>
+                            <a href="/reviewers" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">For Reviewers</a>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="/contact" class="text-gray-700 hover:text-blue-600 font-medium">Contact Us</a>
+
+                <!-- Submit Manuscript Button -->
+                <a href="/portal" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    Submit Manuscript
+                </a>
+            </nav>
+
+            <!-- Mobile Menu Button -->
+            <div class="lg:hidden">
+                <button id="mobileMenuBtn" class="text-gray-700 hover:text-blue-600 focus:outline-none">
+                    <i class="fa fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="lg:hidden hidden py-4 border-t border-gray-200">
+            <div class="space-y-3">
+                <!-- Mobile menu items with accordion -->
+                <div>
+                    <button class="mobile-dropdown-btn w-full text-left text-gray-700 font-medium py-2 flex justify-between items-center" data-target="mobileAbout">
+                        About Us
+                        <i class="fa fa-chevron-down text-sm transition-transform"></i>
+                    </button>
+                    <div id="mobileAbout" class="hidden pl-4 space-y-2 mt-2">
+                        <a href="/aboutus#ASFI" class="block text-gray-600 py-1">African Science Frontiers Initiatives</a>
+                        <a href="/aboutus#aims" class="block text-gray-600 py-1">ASFIRJ's AIMS & SCOPE</a>
+                        <a href="/aboutus#values" class="block text-gray-600 py-1">ASFIRJ Values</a>
+                        <a href="/aboutus#prompt" class="block text-gray-600 py-1">Prompt Decisions</a>
+                        <a href="/aboutus#why-section" class="block text-gray-600 py-1">Why Publish in ASFIRJ?</a>
+                        <a href="/aboutus#open-access" class="block text-gray-600 py-1">Open Access</a>
+                        <a href="/aboutus#fees" class="block text-gray-600 py-1">Article Publication Fee</a>
+                    </div>
+                </div>
+
+                <div>
+                    <button class="mobile-dropdown-btn w-full text-left text-gray-700 font-medium py-2 flex justify-between items-center" data-target="mobileIssues">
+                        Browse Issues
+                        <i class="fa fa-chevron-down text-sm transition-transform"></i>
+                    </button>
+                    <div id="mobileIssues" class="hidden pl-4 space-y-2 mt-2">
+                        <a href="/issues" class="block text-gray-600 py-1">Issues</a>
+                        <a href="/supplements" class="block text-gray-600 py-1">Supplements</a>
+                    </div>
+                </div>
+
+                <a href="/editors" class="block text-blue-600 font-medium py-2">Meet The Editors</a>
+
+                <div>
+                    <button class="mobile-dropdown-btn w-full text-left text-gray-700 font-medium py-2 flex justify-between items-center" data-target="mobileAuthors">
+                        Authors / Reviewers
+                        <i class="fa fa-chevron-down text-sm transition-transform"></i>
+                    </button>
+                    <div id="mobileAuthors" class="hidden pl-4 space-y-2 mt-2">
+                        <a href="/authors" class="block text-gray-600 py-1">For Authors</a>
+                        <a href="/reviewers" class="block text-gray-600 py-1">For Reviewers</a>
+                    </div>
+                </div>
+
+                <a href="/contact" class="block text-gray-700 font-medium py-2">Contact Us</a>
+
+                <a href="/portal" class="block bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg text-center">
+                    Submit Manuscript
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<script>
+    // Mobile menu toggle
+    document.getElementById('mobileMenuBtn')?.addEventListener('click', function() {
+        const menu = document.getElementById('mobileMenu');
+        menu.classList.toggle('hidden');
+    });
+
+    // Mobile dropdowns
+    document.querySelectorAll('.mobile-dropdown-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const target = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            target.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        });
+    });
+</script>
