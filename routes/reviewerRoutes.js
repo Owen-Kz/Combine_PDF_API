@@ -9,6 +9,7 @@ const getOverdueReviews = require("../controllers/reviewers/getOverdueReviews");
 const getCompletedReviews = require("../controllers/reviewers/getCompletedReviews");
 const submitReview = require("../controllers/reviewers/submitReviews");
 const getReviewDraft = require("../controllers/reviewers/getReviewDraft");
+const getReviewerStats = require("../controllers/reviewers/getReviewerStats");
 const router = express.Router()
 config()
 
@@ -25,6 +26,8 @@ router.post("/invitations/decline", AuthorLoggedIn, declineReviewerInvitation);
 router.get("/pending-reviews", getPendingReviews);
 router.get("/completed-reviews", getCompletedReviews);
 router.get("/overdue-reviews", getOverdueReviews);
+router.get("/stats", getReviewerStats);
+
 
 
 // Review submission endpoints
