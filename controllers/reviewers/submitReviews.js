@@ -3,7 +3,17 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+// const { v4: uuidv4 } = require('uuid');
+// Change from:
 const { v4: uuidv4 } = require('uuid');
+
+// To:
+import('uuid').then(({ v4: uuidv4 }) => {
+  // Use uuidv4 here
+  const id = uuidv4();
+}).catch(err => {
+  console.error('Failed to load uuid:', err);
+});
 const db = require("../../routes/db.config");
 
 // Configure multer for file uploads
