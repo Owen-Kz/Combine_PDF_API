@@ -38,7 +38,7 @@ const dbQuery = promisify(db.query).bind(db);
 const inviteReviewerEmail = async (req, res) => {
   try {
     // Validate user authentication
-    if (!req.cookies.asfirj_userRegistered) {
+    if (!req.user) {
       return res.status(401).json({ 
         status: "error", 
         message: "Authentication required" 
@@ -123,8 +123,8 @@ const inviteReviewerEmail = async (req, res) => {
     // Get editor details
     const editorData = await dbQuery(
       `SELECT email FROM editors 
-       WHERE id = ? AND editorial_level IN (?, ?, ?)`,
-      [editorId, "editor_in_chief", "associate_editor", "editorial_assistant"]
+       WHERE email = ? AND editorial_level IN (?, ?, ?)`,
+      [req.user.email, "editor_in_chief", "associate_editor", "editorial_assistant"]
     );
 
     if (!editorData.length) {

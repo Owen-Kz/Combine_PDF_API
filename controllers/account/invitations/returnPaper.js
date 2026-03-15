@@ -65,21 +65,53 @@ const ReturnPaper = async (req, res) => {
     }
 
     // Collect file attachments
-    let attachments = [];
-    if (req.files) {
-      for (const file of req.files) {
-        try {
-          const cloudinaryUrl = await uploadToCloudinary(file.path, file.originalname);
-          attachments.push({
-            content: file.buffer.toString("base64"),
-            name: file.originalname,
-            url: cloudinaryUrl,
-          });
-        } catch (error) {
-          console.error("Error uploading to Cloudinary:", error);
-        }
-      }
+ // In your ReturnPaper function, update the attachments handling section:
+
+// Collect file attachments with retry logic
+let attachments = [];
+if (req.files && req.files.length > 0) {
+  console.log(`Processing ${req.files.length} file(s) for upload...`);
+  
+  for (const file of req.files) {
+    try {
+      // Use the enhanced upload function with retry logic
+      const cloudinaryUrl = await uploadToCloudinary(
+        file.path, // or file.buffer if using memory storage
+        file.originalname,
+        3, // max retries
+        1000 // initial delay
+      );
+      
+      attachments.push({
+        content: file.buffer ? file.buffer.toString("base64") : null,
+        name: file.originalname,
+        url: cloudinaryUrl,
+        size: file.size,
+        mimetype: file.mimetype
+      });
+      
+      console.log(`Successfully uploaded: ${file.originalname}`);
+      
+    } catch (error) {
+      console.error(`Failed to upload ${file.originalname} after retries:`, error.message);
+      
+      // Optionally, you can still proceed without this attachment
+      // or notify the user about the failure
+      attachments.push({
+        name: file.originalname,
+        error: error.message,
+        failed: true
+      });
     }
+  }
+  
+  // Check if any files failed to upload
+  const failedUploads = attachments.filter(att => att.failed);
+  if (failedUploads.length > 0) {
+    console.warn(`${failedUploads.length} file(s) failed to upload:`, 
+      failedUploads.map(f => f.name).join(', '));
+  }
+}
 
     // Convert comma-separated CC and BCC to arrays
     const ccEmails = ccEmail ? ccEmail.split(",") : [];
@@ -88,8 +120,6 @@ const ReturnPaper = async (req, res) => {
     // Update article status
     await connection.execute("UPDATE submissions SET status = 'returned_for_correction' WHERE revision_id = ?", [articleId]);
 
-    // Save email details
-    // await saveEmailDetails(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_correction");
 
     // Send email to reviewer
     const emailSent = await ReviewerAccountEmail(reviewerEmail, subject, message, editor_email, articleId, ccEmails, bccEmails, attachments, "return_for_correction");
@@ -97,15 +127,9 @@ const ReturnPaper = async (req, res) => {
     if (emailSent.status !== "success") {
       responseSent = true
      return res.status(500).json({ status: "error", message: "Could not send email" });
-      // responseSent = true;
-      // return;
+  
     }
 
-    // Mark email as sent
-    // await connection.execute(
-    //   "INSERT INTO sent_emails (article_id, sender, subject, status) VALUES (?, ?, ?, 'Delivered') ON DUPLICATE KEY UPDATE status = 'Delivered'",
-    //   [articleId, editor_email, subject]
-    // );
 
 
     

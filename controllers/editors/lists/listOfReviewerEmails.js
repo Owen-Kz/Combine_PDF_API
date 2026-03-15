@@ -1,36 +1,45 @@
+// controllers/account/invitations/listOfReviewerEmails.js
 const db = require("../../../routes/db.config");
 
+const listOfReviewerEmails = async (req, res) => {
+    const editorId = req.user.email;
+    const { articleId } = req.body;
 
-// API endpoint to get a list of emails for authors available for review
-const listOfReviewerEmails =  async (req, res) => {
-    const editorId = req.user.email;  // Editor ID from session
-
-    if (editorId) {
-        try {
-            // Find the editor details using the provided editor ID
-            const [editorRows] = await db.promise().query("SELECT * FROM editors WHERE email = ?", [editorId]);
-
-            if (editorRows.length > 0) {
-                // Find authors who are available for review
-                const [authors] = await db.promise().query("SELECT email FROM authors_account WHERE is_available_for_review = 'yes'");
-
-                const listOfEmails = authors.map(authorRow => authorRow.email);
-
-                // Respond with the list of emails
-                return res.json({
-                    success: "List of Emails",
-                    emails: listOfEmails
-                });
-            } else {
-                return res.status(404).json({ error: "Could Not Find Authors" });
-            }
-        } catch (err) {
-            console.error("Error fetching author emails:", err);
-            return res.status(500).json({ error: "Database query failed" });
-        }
-    } else {
-        return res.status(400).json({ error: "Invalid Editor ID" });
+    if (!editorId) {
+        return res.status(401).json({ error: "Unauthorized" });
     }
-}
 
-module.exports = listOfReviewerEmails
+    if (!articleId) {
+        return res.status(400).json({ error: "Article ID is required" });
+    }
+
+    try {
+        // First, get all authors of this submission to exclude them
+        const [submissionAuthors] = await db.promise().query(
+            "SELECT authors_email FROM submission_authors WHERE submission_id = ?",
+            [articleId]
+        );
+
+        const authorEmails = submissionAuthors.map(author => author.authors_email);
+
+        // Find authors who are available for review and not in the submission authors
+        const [authors] = await db.promise().query(
+            `SELECT email FROM authors_account 
+             WHERE is_available_for_review = 'yes' 
+             AND email NOT IN (?)`,
+            [authorEmails.length > 0 ? authorEmails : ['']]
+        );
+
+        const listOfEmails = authors.map(authorRow => authorRow.email);
+
+        return res.json({
+            success: "List of Emails",
+            emails: listOfEmails
+        });
+    } catch (err) {
+        console.error("Error fetching reviewer emails:", err);
+        return res.status(500).json({ error: "Database query failed" });
+    }
+};
+
+module.exports = listOfReviewerEmails;

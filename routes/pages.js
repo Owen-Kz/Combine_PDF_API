@@ -10,28 +10,20 @@ const documentFileFormat = require("../external/otherWords");
 const generateArticleId = require("../controllers/generateArticleId");
 const uploadArticlePage = require("../controllers/pages/uploadArticlePage");
 const getUserData = require("../controllers/getUserData");
-const verifyAccount = require("../controllers/account/verifyAccount");
+
 const convertFiles = require("../controllers/convertFiles");
 const combinedFilesPage = require("../controllers/pages/combineFilesPage");
 const downloadExternal = require("../controllers/fileUploads/downloadExternal");
 const allSubmissions = require("../controllers/editors/allSubmissions");
-const EditorLoggedIn = require("../controllers/editors/loggedIn");
-const editorsDashboard = require("../controllers/editors/pages/dashboard");
 const EditorLogin = require("../controllers/editors/login");
 const ArchivedSubmissions = require("../controllers/editors/allARchivedSubmissions");
 const countAcceptedInvitations = require("../controllers/editors/countAcceptedInvitations");
 const countrejecteEditorInvitations = require("../controllers/editors/rejectedEditorinvitations");
 const countEditorInvitations = require("../controllers/editors/countEditorInvitations");
-const authorsPage = require("../controllers/editors/pages/authorsPage");
 const getAllAuthors = require("../controllers/editors/authorsList");
 const getAuthorsProfileForSearch = require("../controllers/editors/authorsProfileForSearch");
 const getAuthorAccount = require("../controllers/editors/authorsProfile");
-const authorsProfilePage = require("../controllers/editors/pages/authorsProfilePage");
-const editorsMailPage = require("../controllers/editors/pages/mailPage");
-const editorInboxPage = require("../controllers/editors/pages/inboxPage");
-const editorInvitationsPage = require("../controllers/editors/pages/editorInvitaions");
-const archivedPapersPage = require("../controllers/editors/pages/archivedPapers");
-const acceptedPapersPage = require("../controllers/editors/pages/acceptedPapersPage");
+
 const countSubmissions = require("../controllers/editors/countSubmissions");
 const countAuthors = require("../controllers/editors/countAuthors");
 const countReviewed = require("../controllers/editors/countReviewed");
@@ -46,30 +38,20 @@ const getBCCEmail = require("../controllers/emails/getBCC");
 const getAttachments = require("../controllers/emails/getAttachments");
 const SetStatus = require("../controllers/emails/setStatus");
 const NewsLetterSubscribers = require("../controllers/emails/newsLetterSubscribers");
-const composeEmailPage = require("../controllers/editors/pages/composeEmailPage");
 const allAcceptedSubmissions = require("../controllers/editors/allAcceptedSubmissions");
-const viewSubmission = require("../controllers/editors/pages/viewSubmission");
 const getSubmisionKeywords = require("../controllers/submission/getKeywords");
 const getSubmissionData = require("../controllers/submission/getSubmissionData");
 const getSuggetstedReviewers = require("../controllers/submission/getSuggestedReviewers");
-const getREviews = require("../controllers/submission/getReviews");
+const getReviews = require("../controllers/submission/getReviews");
 const getSubmissionAuthors = require("../controllers/submission/getAuthors");
-const allPreviousSubmissions = require("../controllers/editors/allPreviousSubmissions");
 const mySubmissions = require("../controllers/editors/mySubmissions");
 const myPreviousSubmissions = require("../controllers/editors/myPreviousSubmissions");
 const getInvitations = require("../controllers/editors/articleInvitations");
 const viewReview = require("../controllers/editors/reviews/viewReview");
-const returnPaperPage = require("../controllers/editors/pages/returnPaperPage");
-const revisePaperPage = require("../controllers/editors/pages/revisePaperPage");
-const rejectPaperPage = require("../controllers/editors/pages/rejectPaper");
-const acceptPaperPage = require("../controllers/editors/pages/acceptPaperPage");
-const inviteReviewerPage = require("../controllers/editors/pages/inviteReviewerPage");
-const inviteEditorPage = require("../controllers/editors/pages/inviteEditorPage");
 const reviewerEmailTemplate = require("../controllers/editors/getReviewerEmailTemplate");
 const listOfAuthorsForSuggestions = require("../controllers/editors/lists/listofAuthorsForSuggestion");
 const listOfReviewerEmails = require("../controllers/editors/lists/listOfReviewerEmails");
 const listofEditorEmails = require("../controllers/editors/lists/listOfEditorEmails");
-const InvitationsPage = require("../controllers/editors/pages/invitationsPage");
 const inviteEditorEMail = require("../controllers/account/invitations/sendEditorInvite");
 const inviteReviewerEmail = require("../controllers/account/invitations/sendReviewerEmail");
 const AcceptPaper = require("../controllers/account/invitations/acceptPaper");
@@ -80,7 +62,6 @@ const { sendBulkEmail } = require("../controllers/account/invitations/sendBullEm
 const clearCookie = require("../controllers/utils/clearCookie");
 const countAllEditorInvites = require("../controllers/editors/countAllEditorInvites");
 const archiveSubmission = require("../controllers/editors/archiveSubmission");
-const viewReviewPage = require("../controllers/editors/pages/viewReviewPage");
 const VerifyAuthorAccount = require("../controllers/editors/verifyAuthorAccount");
 const DeleteAuthorAccount = require("../controllers/editors/deleteAuthorAccount");
 const MigrateAccount = require("../controllers/editors/migrateAuthorAccount");
@@ -88,13 +69,26 @@ const editorSignUp = require("../controllers/account/editorSignup");
 const remindReviewer = require("../controllers/account/invitations/remindReviewers");
 const reviewerSignup = require("../controllers/account/reviewerSignup");
 const manuscrsciptDataMiddleWare = require("../controllers/manuscriptData_middleware");
-const announcementsPage = require("../controllers/editors/pages/announcementsPage");
 const { config } = require("dotenv");
 const deleteAnnouncement = require("../controllers/editors/announcements/deleteAnnouncement");
-const updateAccount = require("../controllers/pages/updateAccountPage");
 const updateAccountData = require("../controllers/account/updateAccountData");
 const authorsProfileSearch = require("../controllers/getAuthorsProfile");
-const { getEditorById, getEditorsPage, getEditorsByField, getDisciplinesByField, getAllFields, addEditor, updateEditor, deleteEditor } = require("../controllers/editors/admin/getEditors");
+const { getEditorById, getEditorsByField, getDisciplinesByField, getAllFields, addEditor, updateEditor, deleteEditor } = require("../controllers/editors/admin/getEditors");
+const verifyToken = require("../controllers/auth/verifyToken");
+const logout = require("../controllers/auth/logout");
+const getDashboardStats = require("../controllers/editors/getDashboardStats");
+const countDecisioned = require("../controllers/editors/countDescisioned");
+const countArchived = require("../controllers/editors/countArchived");
+const getReviewerProfile = require("../controllers/editors/reviews/getReviewerProfile");
+const getEditorInvitations = require("../controllers/editors/invitations/getEditorinvitations");
+const acceptInvitation = require("../controllers/editors/invitations/acceptInvitation");
+const declineInvitation = require("../controllers/editors/invitations/declineInvitation");
+const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
+const AuthorsLogin = require("../controllers/auth/authors/login");
+const sendReviewReminder = require("../controllers/account/invitations/sendReviewerReminder");
+const exportReviewPDF = require("../controllers/editors/reviews/exportReviewPDF");
+const exportReviewExcel = require("../controllers/editors/reviews/exportReviewExcel");
+const getAllCompletedReviews = require("../controllers/editors/reviews/getAllCompletedReviews");
 
 
 
@@ -152,25 +146,15 @@ router.get("/doc", documentFileFormat)
 router.get("/uploadManuscript",getUserData, manuscrsciptDataMiddleWare, uploadArticlePage)
 
 router.post('/generateArticleId', generateArticleId)
-// SUBMISSION PROCESS MOVED TO submissionRoutes.js 
-// router.post("/submitArticleType", getUserData, manuscrsciptDataMiddleWare, submitArticleType)
-// router.post("/uploadSingleFile/:field", getUserData, manuscrsciptDataMiddleWare, uploadSingleFile)
-// router.post("/submitManuscriptTitle", getUserData, manuscrsciptDataMiddleWare, submitTitle)
-// router.post("/submitAbstract", getUserData, manuscrsciptDataMiddleWare, submitAbstract)
-// router.post("/submitKeyword", getUserData, manuscrsciptDataMiddleWare, submitKeyword)
 
 router.get("/authorProfileForSearch", getUserData, authorsProfileSearch)
-// router.post("/addAuthorToPaper", getUserData, manuscrsciptDataMiddleWare, AddAuthorToPaper)
-// router.post("/addReviewerToPaper", getUserData, manuscrsciptDataMiddleWare, AddReviewerToPaper )
-// router.post("/submitDisclosures", getUserData, manuscrsciptDataMiddleWare, SubmitDisclosures)
 
 
-router.get("/updateAccount", updateAccount)
-router.post("/updateAccountData", upload.none(), updateAccountData)
+router.post("/updateAccountData", upload.none(), AuthorLoggedIn,  updateAccountData)
 router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})
 })
-router.get("/verify", verifyAccount)
+
 router.get("/combine", (req,res) =>{
   res.render("loading")
 })
@@ -180,111 +164,123 @@ router.get("/manuscripts/:fileName", downloadExternal)
 
 
 router.get("/dashboard", async (req,res) =>{
-  res.redirect("https://asfirj.org/dashboard")
+  res.redirect(`${process.env.FRONTEND_URL}/dashboard`)
 })
 
 
 // For admin 
 router.get("/editors", (req,res) =>{
-  res.redirect("/editors/dashboard")
+  res.redirect(`${process.env.FRONTEND_URL}/editors/dashboard`)
 })
-router.get("/editors/dashboard", EditorLoggedIn, editorsDashboard)
-router.post("/editors/editorsLogin", EditorLogin)
-router.post("/editors/allsubmissions", EditorLoggedIn, allSubmissions)
-router.post("/editors/archivedSubmissions", EditorLoggedIn, ArchivedSubmissions)
-router.post("/editors/allPreviousSubmissions", EditorLoggedIn, allPreviousSubmissions)
-
-router.post("/editors/mySubmissions", EditorLoggedIn, mySubmissions)
-router.post("/editors/myPreviousSubmissions", EditorLoggedIn,myPreviousSubmissions)
 
 
+router.post("/editors/editorsLogin", AuthorsLogin)
+router.post("/auth/verify-token", verifyToken);
+router.post("/auth/logout", logout);
 
+router.get("/editors/all-submissions", AuthorLoggedIn, allSubmissions)
+router.get("/editors/archivedSubmissions", AuthorLoggedIn, ArchivedSubmissions)
+router.post("/editors/allPreviousSubmissions", AuthorLoggedIn, myPreviousSubmissions)
 
-router.get("/editors/countAcceptedEditorInvitations", EditorLoggedIn, countAcceptedInvitations)
-router.get("/editors/countRejectedEditorInvitations", EditorLoggedIn, countrejecteEditorInvitations)
-router.get("/editors/countTotalEditorInvitations", EditorLoggedIn, countEditorInvitations)
+router.get("/editors/my-submissions", AuthorLoggedIn, mySubmissions)
+router.post("/editors/myPreviousSubmissions", AuthorLoggedIn,myPreviousSubmissions)
 
 
 
 
-router.get("/editors/countAcceptedReviewerInvitations", EditorLoggedIn, countacceptedReviewerInvitaions)
-router.get("/editors/countRejectedReviewerInvitations", EditorLoggedIn, countRejectedReviewerInvitaions)
-router.get("/editors/countTotalReviewerInvitations", EditorLoggedIn, counttotalReviewerInvitaions)
+router.get("/editors/countAcceptedEditorInvitations", AuthorLoggedIn, countAcceptedInvitations)
+router.get("/editors/countRejectedEditorInvitations", AuthorLoggedIn, countrejecteEditorInvitations)
+router.get("/editors/countTotalEditorInvitations", AuthorLoggedIn, countEditorInvitations)
 
-router.get("/editors/Authors", EditorLoggedIn, authorsPage)
-router.get("/editors/authorsList", EditorLoggedIn, getAllAuthors)
+// New routes
+router.get("/editors/backend/editors/countDecisioned", AuthorLoggedIn, countDecisioned);
+router.get("/editors/backend/editors/countArchived", AuthorLoggedIn, countArchived);
+router.get("/editors/backend/editors/dashboard-stats", AuthorLoggedIn, getDashboardStats);
+
+
+router.get("/editors/countAcceptedReviewerInvitations", AuthorLoggedIn, countacceptedReviewerInvitaions)
+router.get("/editors/countRejectedReviewerInvitations", AuthorLoggedIn, countRejectedReviewerInvitaions)
+router.get("/editors/countTotalReviewerInvitations", AuthorLoggedIn, counttotalReviewerInvitaions)
+
+router.get("/editors/authorsList", AuthorLoggedIn, getAllAuthors)
             
-router.get("/editors/authorsProfileForSearch", EditorLoggedIn, getAuthorsProfileForSearch, getAuthorAccount)
-router.get("/editors/authorProfileDetails", EditorLoggedIn, getAuthorsProfileForSearch)
-router.get("/editors/Profile", EditorLoggedIn, authorsProfilePage)
-router.get("/editors/Mail", EditorLoggedIn, editorsMailPage)
-router.get("/editors/Inbox", EditorLoggedIn, editorInboxPage)
-router.get("/editors/EditorInvitations", EditorLoggedIn, editorInvitationsPage)
-router.get("/editors/ArchivedPapers", EditorLoggedIn, archivedPapersPage)
-router.get("/editors/AcceptedPapers", EditorLoggedIn, acceptedPapersPage)
-router.post("/editors/archiveSubmission", EditorLoggedIn, archiveSubmission)
+router.get("/editors/authorsProfileForSearch", AuthorLoggedIn, getAuthorsProfileForSearch, getAuthorAccount)
+router.get("/editors/authorProfileDetails", AuthorLoggedIn, getAuthorsProfileForSearch)
 
-router.get("/editors/backend/editors/countSubmissions", EditorLoggedIn, countSubmissions)
-router.get("/editors/backend/editors/countAuthors", EditorLoggedIn, countAuthors)
-router.get("/editors/backend/editors/countReviewed", EditorLoggedIn, countReviewed)
-router.get("/editors/backend/editors/countEditorInvites", EditorLoggedIn, countEditorInvitations)
-router.get("/editors/backend/editors/countAllEditorInvites", EditorLoggedIn, countAllEditorInvites)
+router.post("/editors/archiveSubmission", AuthorLoggedIn, archiveSubmission)
 
-router.post("/editors/allAcceptedSubmissions", EditorLoggedIn, allAcceptedSubmissions)
+router.get("/editors/backend/editors/countSubmissions", AuthorLoggedIn, countSubmissions)
+router.get("/editors/backend/editors/countAuthors", AuthorLoggedIn, countAuthors)
+router.get("/editors/backend/editors/countReviewed", AuthorLoggedIn, countReviewed)
+router.get("/editors/backend/editors/countEditorInvites", AuthorLoggedIn, countEditorInvitations)
+router.get("/editors/backend/editors/countAllEditorInvites", AuthorLoggedIn, countAllEditorInvites)
 
-router.get("/editors/view", EditorLoggedIn, viewSubmission)
+router.post("/editors/allAcceptedSubmissions", AuthorLoggedIn, allAcceptedSubmissions)
 
-router.post("/editors/getKeywords", EditorLoggedIn, getSubmisionKeywords)
-router.post("/editors/getSubmissionData", getSubmissionData)
-router.get("/editors/getSuggestedReviewers", getSuggetstedReviewers)
-router.get("/editors/getReviews", getREviews)
-router.get("/editors/getAuthors", getSubmissionAuthors)
-router.post("/editors/articleinvitations", EditorLoggedIn, getInvitations)
-router.post("/editors/viewReview",EditorLoggedIn, viewReview)
-router.post("/editors/accounts/verifyUser", EditorLoggedIn, VerifyAuthorAccount)
-router.post("/editors/accounts/deleteAuthor", EditorLoggedIn, DeleteAuthorAccount)
-router.post("/editors/accounts/migrateAuthor", EditorLoggedIn, MigrateAccount)
+
+router.post("/editors/getKeywords", AuthorLoggedIn, getSubmisionKeywords)
+router.post("/editors/getSubmissionData", AuthorLoggedIn, getSubmissionData)
+router.get("/editors/getSuggestedReviewers", AuthorLoggedIn, getSuggetstedReviewers)
+router.get("/editors/getReviews", AuthorLoggedIn, getReviews)
+router.get("/editors/reviewer-profile/:email", AuthorLoggedIn, getReviewerProfile)
+router.post("/editors/export-review-pdf", AuthorLoggedIn, exportReviewPDF);
+router.post("/editors/export-review-excel", AuthorLoggedIn, exportReviewExcel);
+
+router.get("/editors/getAuthors", AuthorLoggedIn,getSubmissionAuthors)
+router.post("/editors/articleinvitations", AuthorLoggedIn, getInvitations)
+router.post("/editors/viewReview",AuthorLoggedIn, viewReview)
+router.get("/editors/all-completed-reviews",AuthorLoggedIn, getAllCompletedReviews)
+
+router.post("/editors/accounts/verifyUser", AuthorLoggedIn, VerifyAuthorAccount)
+router.post("/editors/accounts/deleteAuthor", AuthorLoggedIn, DeleteAuthorAccount)
+router.post("/editors/accounts/migrateAuthor", AuthorLoggedIn, MigrateAccount)
+
+
+// Invitations Controls 
+// Get invitations
+router.get("/editors/invitations", AuthorLoggedIn, getEditorInvitations);
+
+// Accept invitation
+router.post("/editors/invitations/accept", AuthorLoggedIn, acceptInvitation);
+
+// Decline invitation
+router.post("/editors/invitations/decline", AuthorLoggedIn, declineInvitation);
+
+
 
 
 // for Emails 
-router.get("/editors/emailContent", EditorLoggedIn, emailContent)
-router.get("/editors/emailList", EditorLoggedIn, sentEmails)
-router.get("/editors/invitationEmailsList", EditorLoggedIn, invitationEmailList)
-router.get("/editors/email/getCCEmail", EditorLoggedIn, getCCEmail)
-router.get("/editors/email/getBCC", EditorLoggedIn, getBCCEmail)
-router.get("/editors/email/getAttachments", EditorLoggedIn, getAttachments)
-router.get("/editors/email/setStatus", EditorLoggedIn, SetStatus)
-router.get("/editors/email/getEmailSubscribers", EditorLoggedIn, NewsLetterSubscribers)
-router.get("/editors/ComposeEmail", EditorLoggedIn, composeEmailPage)
+router.get("/editors/emailContent", AuthorLoggedIn, emailContent)
+router.get("/editors/emailList", AuthorLoggedIn, sentEmails)
+router.get("/editors/invitationEmailsList", AuthorLoggedIn, invitationEmailList)
+router.get("/editors/email/getCCEmail", AuthorLoggedIn, getCCEmail)
+router.get("/editors/email/getBCC", AuthorLoggedIn, getBCCEmail)
+router.get("/editors/email/getAttachments", AuthorLoggedIn, getAttachments)
+router.get("/editors/email/setStatus", AuthorLoggedIn, SetStatus)
+router.get("/editors/email/getEmailSubscribers", AuthorLoggedIn, NewsLetterSubscribers)
 
-router.get("/editors/returnPaper", EditorLoggedIn, returnPaperPage)
-router.get("/editors/revisePaper", EditorLoggedIn, revisePaperPage)
-router.get("/editors/rejectPaper", EditorLoggedIn, rejectPaperPage)
-router.get("/editors/acceptPaper", EditorLoggedIn, acceptPaperPage)
-router.get("/editors/InviteReviewer", EditorLoggedIn, inviteReviewerPage)
-router.get("/editors/InviteEditor", EditorLoggedIn, inviteEditorPage)
-router.post("/editors/getReviewerEmailTemplate", EditorLoggedIn, reviewerEmailTemplate)
-router.get("/editors/listOfAuthorsForSuggestions", EditorLoggedIn, listOfAuthorsForSuggestions)
-router.post("/editors/listOfReviewerEmails", EditorLoggedIn, listOfReviewerEmails)
-router.post("/editors/listOfEditorEmails", EditorLoggedIn, listofEditorEmails)
-router.get("/papers/invitations", InvitationsPage)
-router.post("/editors/email/inviteEditor", EditorLoggedIn, inviteEditorEMail)
-router.post("/editors/email/InviteReviewer", EditorLoggedIn, inviteReviewerEmail)
-router.post("/editors/email/acceptPaper", EditorLoggedIn, AcceptPaper)
-router.post("/editors/email/returnPaper", EditorLoggedIn, ReturnPaper)
-router.post("/editors/email/revisePaper", EditorLoggedIn, RevisePaper)
-router.post("/editors/email/rejectPaper", EditorLoggedIn, RejectPaper)
-router.post("/editors/email/bulkEmail", EditorLoggedIn, sendBulkEmail)
-router.get("/editors/Reviews", EditorLoggedIn, viewReviewPage)
+router.post("/editors/getReviewerEmailTemplate", AuthorLoggedIn, reviewerEmailTemplate)
+router.get("/editors/listOfAuthorsForSuggestions", AuthorLoggedIn, listOfAuthorsForSuggestions)
+router.post("/editors/listOfReviewerEmails", AuthorLoggedIn, listOfReviewerEmails)
+router.post("/editors/listOfEditorEmails", AuthorLoggedIn, listofEditorEmails)
+
+router.post("/editors/email/inviteEditor", AuthorLoggedIn, inviteEditorEMail)
+router.post("/editors/email/InviteReviewer", AuthorLoggedIn, inviteReviewerEmail)
+// RESEND INVITATION
+router.post("/editors/send-review-reminder", AuthorLoggedIn, sendReviewReminder);
+
+router.post("/editors/email/acceptPaper", AuthorLoggedIn, AcceptPaper)
+router.post("/editors/email/returnPaper", AuthorLoggedIn, ReturnPaper)
+router.post("/editors/email/revisePaper", AuthorLoggedIn, RevisePaper)
+router.post("/editors/email/rejectPaper", AuthorLoggedIn, RejectPaper)
+router.post("/editors/email/bulkEmail", AuthorLoggedIn, sendBulkEmail)
 router.post("/editors/createAccount", editorSignUp)
-router.post("/editors/remindReviewer", EditorLoggedIn, remindReviewer)
-router.get("/editors/announcements", EditorLoggedIn, announcementsPage)
-router.get("/editors/getAnnouncements", EditorLoggedIn, require("../controllers/editors/announcements/getAnnouncements"))
-router.post("/editors/uploadAnnouncement", EditorLoggedIn, require("../controllers/editors/announcements/uploadAnnouncement"))
-router.post("/editors/editAnnouncement", EditorLoggedIn, require("../controllers/editors/announcements/editAnnouncement"))
-router.post("/getAnnouncementData", EditorLoggedIn, require("../controllers/editors/announcements/getAnnouncementData"))
-router.post("/editors/deleteAnnouncement", EditorLoggedIn, deleteAnnouncement)
-router.post("/editors/verifyCode", EditorLoggedIn, (req, res) => {
+router.post("/editors/remindReviewer", AuthorLoggedIn, remindReviewer)
+router.get("/editors/getAnnouncements", AuthorLoggedIn, require("../controllers/editors/announcements/getAnnouncements"))
+router.post("/editors/uploadAnnouncement", AuthorLoggedIn, require("../controllers/editors/announcements/uploadAnnouncement"))
+router.post("/editors/editAnnouncement", AuthorLoggedIn, require("../controllers/editors/announcements/editAnnouncement"))
+router.post("/editors/deleteAnnouncement", AuthorLoggedIn, deleteAnnouncement)
+router.post("/editors/verifyCode", AuthorLoggedIn, (req, res) => {
   
     const verifyCode = req.body.code;
     if (verifyCode === process.env.VERIFICATION_CODE) {
@@ -294,17 +290,10 @@ router.post("/editors/verifyCode", EditorLoggedIn, (req, res) => {
     }
 });
 
-router.post("/editors/isEditor", EditorLoggedIn, (req,res) =>{
+router.post("/editors/isEditor", AuthorLoggedIn, (req,res) =>{
   res.json({success:"Editor", account:req.user})
 })
-router.get("/editors/signup", (req,res)=>{
-  // if(req.cookies.asfirj_userRegistered){
-  //   res.redirect("/editors/dashboard")
-  // }else{
-  const article = req.query.a ? req.query.a : ""
-    res.render("editorRegister", {articleId:article})
-  // }
-})
+
 
 router.get("/editors/logout", (req,res) =>{
   clearCookie(req,res,'asfirj_userRegistered')
@@ -315,27 +304,26 @@ router.get("/editors/logout", (req,res) =>{
 
 // EDITOR MANAGMENENT 
 // Public routes
-router.get("/editors/manage", EditorLoggedIn, getEditorsPage);
 
 // API routes for AJAX requests
-router.get("/api/editors/by-field", EditorLoggedIn, getEditorsByField);
-router.get("/api/editors/:id", EditorLoggedIn, getEditorById);
-router.get("/api/disciplines/by-field", EditorLoggedIn, getDisciplinesByField);
-router.get("/api/fields", EditorLoggedIn, getAllFields);
+router.get("/api/editors/by-field", AuthorLoggedIn, getEditorsByField);
+router.get("/api/editors/:id", AuthorLoggedIn, getEditorById);
+router.get("/api/disciplines/by-field", AuthorLoggedIn, getDisciplinesByField);
+router.get("/api/fields", AuthorLoggedIn, getAllFields);
 
 // Protected routes (require authentication)
 router.post('/api/editors/add', 
-    EditorLoggedIn,
+    AuthorLoggedIn,
     addEditor
 );
 
 router.post('/api/editors/update', 
-    EditorLoggedIn, 
+    AuthorLoggedIn, 
     updateEditor
 );
 
 router.delete('/api/editors/delete/:id', 
-    EditorLoggedIn, 
+    AuthorLoggedIn, 
     deleteEditor
 );
 
@@ -353,7 +341,7 @@ router.post("/backend/reviewers/createReviewerAccount", reviewerSignup)
 
 
 router.get("/editors/*", async (req,res) =>{
-  res.redirect("/editors/dashboard")
+  res.redirect(`${process.env.FRONTEND_URL}/editors/dashboard`)
 }) 
 router.get("*", async (req,res) =>{
     res.redirect("https://asfirj.org")

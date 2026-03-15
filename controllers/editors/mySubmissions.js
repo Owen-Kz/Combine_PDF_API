@@ -1,203 +1,220 @@
+// backend/controllers/editors/mySubmissions.js
 const db = require("../../routes/db.config");
-const isAdminAccount = require("./isAdminAccount");
 
 const mySubmissions = async (req, res) => {
-    const adminId = req.user.email;
-    const page = req.query.page ? parseInt(req.query.page) : 1;
-    const pageSize = 5;
-    const offset = (page - 1) * pageSize;
-    const searchQuery = req.body.search || '';
-
-    if (!adminId) {
-        return res.status(400).json({ error: "Invalid Parameters" });
-    }
-
     try {
-        const isAdmin = await isAdminAccount(req.user.id);
+        const editorEmail = req.user.email;
+        const editorId = req.user.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const offset = (page - 1) * limit;
 
-        if (isAdmin) {
-            // Admin account: Query for submissions with search
-            let query = `
-                SELECT * FROM submissions 
-                WHERE status NOT IN ('saved_for_later', 'revision_saved', 'returned') 
-                AND title != '' AND title != 'Draft Submission'
-            `;
+        if (!editorEmail || !editorId) {
+            return res.status(400).json({ error: "Invalid Parameters" });
+        }
 
-            let countQuery = `SELECT COUNT(*) as total FROM submissions 
-                WHERE status NOT IN ('saved_for_later', 'revision_saved', 'returned') 
-                AND title != '' AND title != 'Draft Submission'`;
+        // First, get all article IDs this editor is assigned to
+        let assignedQuery = `
+            SELECT DISTINCT article_id 
+            FROM submitted_for_edit 
+            WHERE editor_email = ?
+        `;
+        
+        let assignedParams = [editorEmail];
+        let countParams = [editorEmail];
+
+        // If search exists, filter the assigned articles
+        if (search && search.length >= 2) {
+            assignedQuery += ` AND article_id IN (
+                SELECT DISTINCT s.article_id 
+                FROM submissions s
+                LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
+                WHERE s.title != '' AND s.title != 'Draft Submission' AND (
+                    s.title LIKE ? OR 
+                    s.article_id LIKE ? OR 
+                    s.revision_id LIKE ? OR
+                    s.status LIKE ? OR
+                    a.firstname LIKE ? OR
+                    a.lastname LIKE ?
+                )
+            )`;
             
-            let queryParams = [];
-            let countParams = [];
+            const searchPattern = `%${search}%`;
+            const searchParams = [
+                searchPattern, searchPattern, searchPattern, 
+                searchPattern, searchPattern, searchPattern
+            ];
+            assignedParams.push(...searchParams);
+            countParams.push(...searchParams);
+        }
 
-            // Add search conditions if search query exists
-            if (searchQuery && searchQuery.length >= 2) {
-                query += ` AND (
-                    title LIKE ? OR 
-                    revision_id = ? OR 
-                    article_id = ? OR
-                    status LIKE ?
-                )`;
-                countQuery += ` AND (
-                    title LIKE ? OR 
-                    revision_id = ? OR
-                    article_id = ? OR
-                    status LIKE ?
-                )`;
-                
-                const searchParam = `%${searchQuery}%`;
-                queryParams.push(searchParam, searchQuery, searchQuery, searchParam);
-                countParams.push(searchParam, searchQuery, searchQuery, searchParam);
-            }
+        // Get total count for pagination
+        const [countResult] = await db.promise().query(
+            `SELECT COUNT(*) as total FROM (${assignedQuery}) as temp`,
+            countParams
+        );
 
-            query += ` ORDER BY process_start_date DESC LIMIT ? OFFSET ?`;
-            queryParams.push(pageSize, offset);
+        // Add pagination to the assigned query
+        assignedQuery += ` LIMIT ? OFFSET ?`;
+        assignedParams.push(limit, offset);
 
-            // Execute both queries in parallel
-            Promise.all([
-                new Promise((resolve, reject) => {
-                    db.execute(query, queryParams, (err, results) => {
-                        if (err) reject(err);
-                        else resolve(results);
-                    });
-                }),
-                new Promise((resolve, reject) => {
-                    db.execute(countQuery, countParams, (err, results) => {
-                        if (err) reject(err);
-                        else resolve(results[0].total);
-                    });
-                })
-            ]).then(([submissions, total]) => {
-                return res.json({ 
-                    success: 'Admin Account', 
-                    submissions,
-                    total,
-                    totalPages: Math.ceil(total / pageSize),
-                    currentPage: page
-                });
-            }).catch(error => {
-                console.error(error);
-                return res.status(500).json({ error: error.message });
-            });
+        // Get paginated assigned article IDs
+        const [assignedArticles] = await db.promise().query(assignedQuery, assignedParams);
 
-        } else {
-            // Non-admin user: Check for submissions they were invited to with search
-            let baseInviteQuery = `
-                SELECT article_id FROM submitted_for_edit 
-                WHERE editor_email = ? 
-            `;
-
-            let inviteQueryParams = [adminId];
-
-            // Add search conditions if search query exists
-            if (searchQuery && searchQuery.length >= 2) {
-                baseInviteQuery += `
-                    AND article_id IN (
-                        SELECT revision_id FROM submissions 
-                        WHERE (
-                            title LIKE ? OR 
-                            revision_id = ? OR article_id = ?
-                            status LIKE ?
-                        )
-                    )
-                `;
-                inviteQueryParams.push(
-                    `%${searchQuery}%`,
-                    `${searchQuery}`,
-                    `${searchQuery}`,
-                    `%${searchQuery}%`
-                );
-            }
-
-            baseInviteQuery += ` ORDER BY id DESC LIMIT ? OFFSET ?`;
-            inviteQueryParams.push(pageSize, offset);
-
-            db.execute(baseInviteQuery, inviteQueryParams, async (err, results) => {
-                if (err) {
-                    console.log(err);
-                    return res.status(500).json({ error: err.message });
-                }
-
-                if (results.length > 0) {
-                    const submissionPromises = results.map(row => {
-                        return new Promise((resolve, reject) => {
-                            const querySubmissions = `
-                                SELECT * FROM submissions 
-                                WHERE status NOT IN ('saved_for_later', 'revision_saved') 
-                                AND (revision_id = ? OR article_id = ?)`;
-
-                            db.execute(querySubmissions, [row.article_id, row.article_id], (err, submissionResults) => {
-                                if (err) return reject(err);
-                                resolve(submissionResults.length > 0 ? submissionResults[0] : null);
-                            });
-                        });
-                    });
-
-                    try {
-                        const submissions = (await Promise.all(submissionPromises)).filter(sub => sub !== null);
-                        
-                        // Get total count for pagination
-                        let countQuery = `
-                            SELECT COUNT(*) as total FROM submitted_for_edit 
-                            WHERE editor_email = ?
-                        `;
-                        let countParams = [adminId];
-
-                        if (searchQuery && searchQuery.length >= 2) {
-                            countQuery += `
-                                AND article_id IN (
-                                    SELECT revision_id FROM submissions 
-                                    WHERE (
-                                        title LIKE ? OR 
-                                        revision_id = ? OR article_id = ?
-                                        status LIKE ?
-                                    )
-                                )
-                            `;
-                            countParams.push(
-                                `%${searchQuery}%`,
-                                `${searchQuery}`,
-                                `${searchQuery}`,
-                                `%${searchQuery}%`
-                            );
-                        }
-
-                        db.execute(countQuery, countParams, (countErr, countData) => {
-                            if (countErr) {
-                                console.error(countErr);
-                                return res.status(500).json({ error: "Error getting total count" });
-                            }
-
-                            const total = countData[0]?.total || 0;
-                            const totalPages = Math.ceil(total / pageSize);
-
-                            return res.json({ 
-                                success: 'User Account', 
-                                submissions,
-                                total,
-                                totalPages,
-                                currentPage: page
-                            });
-                        });
-                    } catch (error) {
-                        console.error(error);
-                        return res.status(500).json({ error: "Error retrieving submissions" });
-                    }
-                } else {
-                    return res.json({ 
-                        success: 'User Account', 
-                        submissions: [],
-                        total: 0,
-                        totalPages: 0,
-                        currentPage: page
-                    });
-                }
+        if (assignedArticles.length === 0) {
+            return res.json({
+                success: true,
+                submissions: [],
+                total: 0,
+                totalPages: 0,
+                currentPage: page,
+                limit: limit
             });
         }
-    } catch (err) {
-        console.error("Error checking admin status:", err);
-        return res.status(500).json({ error: "Internal server error" });
+
+        // Get the article IDs array
+        const articleIds = assignedArticles.map(row => row.article_id);
+
+        // Now get the submissions for these articles (latest revision only)
+        const submissionsQuery = `
+            WITH RankedSubmissions AS (
+                SELECT 
+                    s.id,
+                    s.article_id,
+                    s.revision_id,
+                    s.revisions_count,
+                    s.corrections_count,
+                    s.previous_manuscript_id,
+                    s.title,
+                    s.abstract,
+                    s.article_type,
+                    s.discipline,
+                    s.status,
+                    s.date_submitted,
+                    s.process_start_date,
+                    s.last_updated,
+                    s.is_women_in_contemporary_science as is_women_in_science,
+                    s.corresponding_authors_email as corresponding_email,
+                    s.manuscript_file,
+                    s.document_file,
+                    s.tracked_manuscript_file,
+                    s.cover_letter_file,
+                    s.tables,
+                    s.figures,
+                    s.graphic_abstract,
+                    s.supplementary_material,
+                    a.firstname,
+                    a.lastname,
+                    a.email as author_email,
+                    a.orcid_id,
+                    a.affiliations,
+                    a.prefix,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY s.article_id 
+                        ORDER BY s.revision_id DESC, s.process_start_date DESC
+                    ) AS row_num,
+                    -- Invitation counts
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND (invitation_status = 'accepted' OR invitation_status = 'review_invitation_accepted' OR invitation_status = 'review_submitted')) as accepted_reviewers,
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND invitation_status = 'declined') as declined_reviewers,
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND invitation_status = 'invite_sent') as pending_reviewers,
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND (invitation_status = 'accepted' OR invitation_status = 'edit_invitation_accepted' OR invitation_status = 'edit_submitted')) as accepted_editors,
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'declined') as declined_editors,
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'invite_sent') as pending_editors
+                FROM submissions s
+                LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
+                WHERE s.article_id IN (?)
+            )
+            SELECT *
+            FROM RankedSubmissions
+            WHERE row_num = 1
+            ORDER BY process_start_date DESC
+        `;
+
+        const [submissions] = await db.promise().query(submissionsQuery, [articleIds]);
+
+        // Format the results (same formatting as allSubmissions)
+        const formattedSubmissions = submissions.map(row => {
+            // Combine author name
+            let authorName = 'Unknown';
+            if (row.firstname && row.lastname) {
+                authorName = `${row.firstname} ${row.lastname}`;
+            } else if (row.firstname) {
+                authorName = row.firstname;
+            } else if (row.lastname) {
+                authorName = row.lastname;
+            }
+
+            // Add prefix if available
+            if (row.prefix && authorName !== 'Unknown') {
+                authorName = `${row.prefix} ${authorName}`;
+            }
+
+            // Collect files
+            const files = {};
+            if (row.manuscript_file) files.manuscript = row.manuscript_file;
+            if (row.document_file) files.document = row.document_file;
+            if (row.tracked_manuscript_file) files.tracked_manuscript = row.tracked_manuscript_file;
+            if (row.cover_letter_file) files.cover_letter = row.cover_letter_file;
+            if (row.tables) files.tables = row.tables;
+            if (row.figures) files.figures = row.figures;
+            if (row.graphic_abstract) files.graphic_abstract = row.graphic_abstract;
+            if (row.supplementary_material) files.supplementary = row.supplementary_material;
+
+            return {
+                id: row.article_id,
+                article_id: row.article_id,
+                revision_id: row.revision_id,
+                revisions_count: row.revisions_count,
+                corrections_count: row.corrections_count,
+                previous_manuscript_id: row.previous_manuscript_id,
+                title: row.title,
+                abstract: row.abstract,
+                type: row.article_type,
+                discipline: row.discipline,
+                status: row.status,
+                date: new Date(row.date_submitted).toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                }),
+                submittedDate: row.date_submitted,
+                updatedAt: row.last_updated,
+                isWomenInScience: row.is_women_in_science === 'yes',
+                authors: authorName,
+                correspondingAuthor: `${row.prefix} ${row.firstname} ${row.lastname}` ,
+
+                correspondingEmail: row.corresponding_email,
+                authorEmail: row.author_email,
+                orcidId: row.orcid_id,
+                affiliations: row.affiliations,
+                reviewerInvitations: {
+                    accepted: row.accepted_reviewers || 0,
+                    declined: row.declined_reviewers || 0,
+                    pending: row.pending_reviewers || 0
+                },
+                editorInvitations: {
+                    accepted: row.accepted_editors || 0,
+                    declined: row.declined_editors || 0,
+                    pending: row.pending_editors || 0
+                },
+                files: files
+            };
+        });
+
+        return res.json({
+            success: true,
+            submissions: formattedSubmissions,
+            total: countResult[0]?.total || 0,
+            totalPages: Math.ceil((countResult[0]?.total || 0) / limit),
+            currentPage: page,
+            limit: limit
+        });
+
+    } catch (error) {
+        console.error("Error in mySubmissions:", error);
+        return res.status(500).json({ error: "Server error", message: error.message });
     }
-}
+};
 
 module.exports = mySubmissions;

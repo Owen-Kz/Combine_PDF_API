@@ -2,9 +2,10 @@ const db = require("../../routes/db.config")
 
 const getSuggetstedReviewers = async (req, res) => {
     try{
-        const {article_id} = req.body
+        const {article_id} = req.query
+        console.log("Suggested reviewer request ", article_id)
 
-        db.query("SELECT * FROM `suggested_reviewers` WHERE `article_id` = ?", [article_id], (error, results) => {
+        db.query("SELECT * FROM `suggested_reviewers` WHERE `article_id` = ? ", [article_id], (error, results) => {
             if (error) {
                 return res.status(500).json({ error: error.message });
             }

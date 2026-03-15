@@ -1,4 +1,5 @@
 const db = require("../../routes/db.config")
+const dbPromise = require("../../routes/dbPromise.config")
 
 const isAdminAccount = async (id) =>{
     try{
@@ -11,6 +12,14 @@ const isAdminAccount = async (id) =>{
                 if(data[0]){
                     resolve(true)
                 }else{
+                    const [isAuthorFirst] = await dbPromise.query("SELECT email FROM authors_account WHERE id = ? LIMIT 1", [id])
+                    if(isAuthorFirst.length > 0){
+                        // Check editors table 
+                        const isAdminEditor = await dbPromise.query("SELECT * FROM editors WHERE email = ? AND (editorial_level = 'editor_in_chief' OR editorial_level = 'editorial_assistant')", [isAuthorFirst.email])
+                        if(isAdminEditor.length > 0){
+                            resolve(true)
+                        }
+                    }
                     resolve(false)
                 }
             })

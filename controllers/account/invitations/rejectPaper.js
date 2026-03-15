@@ -66,21 +66,50 @@ const RejectPaper = async (req, res) => {
     }
 
     // Collect file attachments
-    let attachments = [];
-    if (req.files) {
-      for (const file of req.files) {
-        try {
-          const cloudinaryUrl = await uploadToCloudinary(file.path, file.originalname);
-          attachments.push({
-            content: file.buffer.toString("base64"),
-            name: file.originalname,
-            url: cloudinaryUrl,
-          });
-        } catch (error) {
-          console.error("Error uploading to Cloudinary:", error);
-        }
-      }
+   let attachments = [];
+if (req.files && req.files.length > 0) {
+  console.log(`Processing ${req.files.length} file(s) for upload...`);
+  
+  for (const file of req.files) {
+    try {
+      // Use the enhanced upload function with retry logic
+      const cloudinaryUrl = await uploadToCloudinary(
+        file.path, // or file.buffer if using memory storage
+        file.originalname,
+        3, // max retries
+        1000 // initial delay
+      );
+      
+      attachments.push({
+        content: file.buffer ? file.buffer.toString("base64") : null,
+        name: file.originalname,
+        url: cloudinaryUrl,
+        size: file.size,
+        mimetype: file.mimetype
+      });
+      
+      console.log(`Successfully uploaded: ${file.originalname}`);
+      
+    } catch (error) {
+      console.error(`Failed to upload ${file.originalname} after retries:`, error.message);
+      
+      // Optionally, you can still proceed without this attachment
+      // or notify the user about the failure
+      attachments.push({
+        name: file.originalname,
+        error: error.message,
+        failed: true
+      });
     }
+  }
+  
+  // Check if any files failed to upload
+  const failedUploads = attachments.filter(att => att.failed);
+  if (failedUploads.length > 0) {
+    console.warn(`${failedUploads.length} file(s) failed to upload:`, 
+      failedUploads.map(f => f.name).join(', '));
+  }
+}
 
     // Convert comma-separated CC and BCC to arrays
     const ccEmails = ccEmail ? ccEmail.split(",") : [];

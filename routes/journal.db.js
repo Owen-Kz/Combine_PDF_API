@@ -5,7 +5,7 @@ const pool = mysql.createPool({
     host: process.env.D_HOST || "localhost",
     user: process.env.D_USER || "root",
     password: process.env.JOURNAL_DB_PASSWORD || "",
-    database: process.env.JOURNAL_DB_NAME || "wepeugsn_asfi_journal",
+    database: process.env.JOURNAL_DB_NAME || "asfi_journal",
     waitForConnections: true,
     connectionLimit: 20,               // Increased for higher concurrency
     queueLimit: 0,

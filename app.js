@@ -13,6 +13,14 @@ const path = require("path");
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 // CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -84,6 +92,8 @@ app.use("/fonts", express.static(path.join(__dirname, "public/css/fonts")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 app.use("/editorStatic/", express.static(path.join(__dirname, "public/editors")));
+app.use("/useruploads/", express.static(path.join(__dirname, "/useruploads/")));
+
 app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploads/editors")));
 
 // Socket.io setup
@@ -101,6 +111,14 @@ const io = new Server(server, {
 
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
+app.use("/publications", require("./routes/manageSupplements"))
+app.use("/inbox/api", require("./routes/inbox.routes"))
+app.use("/api/newsletter", require("./routes/newsletter.routes"))
+app.use("/api/semperfi", require("./routes/admin.invitations"))
+app.use("/api/personnel", require("./routes/invitationRoutes"))
+app.use("/api/authors", require("./routes/authorsRoutes"))
+app.use("/reviewer", require("./routes/reviewerRoutes"))
+
 
 app.use("/", require("./routes/pages"));
 
