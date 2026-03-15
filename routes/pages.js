@@ -344,6 +344,6 @@ router.get("/editors/*", async (req,res) =>{
   res.redirect(`${process.env.FRONTEND_URL}/editors/dashboard`)
 }) 
 router.get("*", async (req,res) =>{
-    res.redirect("https://asfirj.org")
+    res.redirect(`${process.env.FRONTEND_URL}`)
 }) 
 module.exports = router
