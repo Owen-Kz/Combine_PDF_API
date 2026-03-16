@@ -153,7 +153,7 @@ const myPreviousSubmissions = async (req, res) => {
                         month: 'short', 
                         year: 'numeric' 
                     }),
-                    submittedDate: row.date_submitted,
+                    submittedDate: row.process_start_date,
                     updatedAt: row.last_updated,
                     isWomenInScience: row.is_women_in_science === 'yes' || row.is_women_in_science === 1,
                     authors: authorName,
@@ -308,12 +308,12 @@ const myPreviousSubmissions = async (req, res) => {
                     type: row.article_type,
                     discipline: row.discipline,
                     status: row.status,
-                    date: new Date(row.date_submitted).toLocaleDateString('en-GB', { 
+                    date: new Date(row.process_start_date).toLocaleDateString('en-GB', { 
                         day: 'numeric', 
                         month: 'short', 
                         year: 'numeric' 
                     }),
-                    submittedDate: row.date_submitted,
+                    submittedDate: row.process_start_date,
                     updatedAt: row.last_updated,
                     isWomenInScience: row.is_women_in_science === 'yes' || row.is_women_in_science === 1,
                     authors: authorName,

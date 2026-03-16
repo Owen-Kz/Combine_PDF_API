@@ -26,6 +26,7 @@ const getDashboardStats = async (req, res) => {
              WHERE corresponding_authors_email = ?`,
             [userEmail]
         );
+        
 
         // Get count of co-authored manuscripts
         const [coAuthoredEntries] = await db.promise().query(

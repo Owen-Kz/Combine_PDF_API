@@ -3,6 +3,7 @@ const db = require("../../../routes/db.config");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("../../utils/sendEmail");
+const verifyRecaptcha = require("../../../utils/verifyRecaptcha");
 /**
  * Creates a new author account with email verification
  * @param {Object} req - Express request object
@@ -96,13 +97,13 @@ const AuthorSignup = async (req, res) => {
     }
 
     // Verify reCAPTCHA (implement if needed)
-    // const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
-    // if (!isRecaptchaValid) {
-    //   return res.status(400).json({ 
-    //     status: "error", 
-    //     message: "reCAPTCHA verification failed" 
-    //   });
-    // }
+    const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+    if (!isRecaptchaValid) {
+      return res.status(400).json({ 
+        status: "error", 
+        message: "reCAPTCHA verification failed" 
+      });
+    }
 
     // Establish database connection
     console.log("Establishing database connection...");

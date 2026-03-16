@@ -5,6 +5,7 @@ const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const mammoth = require('mammoth');
 const puppeteer = require('puppeteer');
+const dbPromise = require('../routes/dbPromise.config');
 
 // Cloudinary configuration
 cloudinary.config({
@@ -80,9 +81,14 @@ const CombinePDF = async (req, res) => {
 
     const { revisionId } = req.body;
 
+    
     try {
-      const { manuscript_file, tracked_manuscript, figures, supplementary_material, graphic_abstract, tables } = req.files;
+      let { manuscript_file, tracked_manuscript, figures, supplementary_material, graphic_abstract, tables } = "";
+// const [getManuscriptData] = await dbPromise.query("SELECT * FROM submissions WHERE revision_id = ?", [revisionId])
+//     if(getManuscriptData.length > 0){
+//       let { manuscript_file, tracked_manuscript, figures, supplementary_material, graphic_abstract, tables } = getManuscriptData[0];
 
+//     }
       const allFiles = [
         ...(manuscript_file || []),
         ...(tracked_manuscript || []),
