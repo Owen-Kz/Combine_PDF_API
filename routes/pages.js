@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const CombinePDF = require("../external/combinePDF");
+// const CombinePDF = require("../external/combinePDF");
 const CombineDOCX = require("../external/combineDOC");
 const downloadFile = require("../external/downloadFile");
 const openfile = require("../external/openFile");
@@ -89,6 +89,7 @@ const sendReviewReminder = require("../controllers/account/invitations/sendRevie
 const exportReviewPDF = require("../controllers/editors/reviews/exportReviewPDF");
 const exportReviewExcel = require("../controllers/editors/reviews/exportReviewExcel");
 const getAllCompletedReviews = require("../controllers/editors/reviews/getAllCompletedReviews");
+const CombineWordDocuments = require("../external/combinePDF");
 
 
 
@@ -135,7 +136,7 @@ const upload = multer({
     cb(null, true);
   }
 });
-router.post("/external/api/combinePDF", CombinePDF)
+router.post("/external/api/combinePDF", CombineWordDocuments)
 router.post("/external/api/combineDOC", CombineDOCX)
 router.get("/file", downloadFile)
 router.get("/item", openfile)

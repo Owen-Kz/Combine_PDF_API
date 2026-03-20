@@ -93,6 +93,8 @@ app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 app.use("/editorStatic/", express.static(path.join(__dirname, "public/editors")));
 app.use("/useruploads/", express.static(path.join(__dirname, "/useruploads/")));
+app.use("/uploads/", express.static(path.join(__dirname, "/uploads/")));
+
 
 app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploads/editors")));
 

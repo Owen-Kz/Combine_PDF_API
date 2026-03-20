@@ -2,18 +2,9 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto")
 
-// const { v4: uuidv4 } = require('uuid');
-// Change from:
-// const { v4: uuidv4 } = require('uuid');
-
-// To:
-import('uuid').then(({ v4: uuidv4 }) => {
-  // Use uuidv4 here
-  const id = uuidv4();
-}).catch(err => {
-  console.error('Failed to load uuid:', err);
-});
+const RandomString = crypto.randomBytes(10).toString('hex');
 const db = require("../../routes/db.config");
 
 // Configure multer for file uploads
@@ -28,7 +19,7 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const { manuscriptId } = req.body;
-        const uniqueSuffix = Date.now() + '-' + uuidv4();
+        const uniqueSuffix = Date.now() + '-' + RandomString;
         const fileExt = path.extname(file.originalname);
         const fileName = `Review_${manuscriptId}_${uniqueSuffix}${fileExt}`;
         cb(null, fileName);

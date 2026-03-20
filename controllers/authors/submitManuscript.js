@@ -2,19 +2,10 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto")
 
+const RandomString = crypto.randomBytes(10).toString('hex');
 
-// const { v4: uuidv4 } = require('uuid');
-// Change from:
-// const { v4: uuidv4 } = require('uuid');
-
-// To:
-import('uuid').then(({ v4: uuidv4 }) => {
-  // Use uuidv4 here
-  const id = uuidv4();
-}).catch(err => {
-  console.error('Failed to load uuid:', err);
-});
 const SendNewSubmissionEmail = require("../utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("../utils/SendHandlerEmail");
 const generateArticleId = require("../generateArticleId");
@@ -34,7 +25,7 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const { manuscriptId, action } = req.body;
-        const uniqueSuffix = Date.now() + '-' + uuidv4();
+        const uniqueSuffix = Date.now() + '-' + RandomString;
         const fileExt = path.extname(file.originalname);
         
         // Sanitize original filename

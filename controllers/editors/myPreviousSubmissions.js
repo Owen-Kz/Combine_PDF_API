@@ -29,7 +29,6 @@ const myPreviousSubmissions = async (req, res) => {
             "SELECT article_id FROM submissions WHERE revision_id = ? OR article_id = ? LIMIT 1",
             [revisionID, revisionID]
         );
-        console.log("PREVIOUS SUBMISSIONS", articleResult)
         if (articleResult.length === 0) {
             return res.json({ 
                 success: true, 

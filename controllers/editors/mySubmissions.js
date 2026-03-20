@@ -128,7 +128,7 @@ const mySubmissions = async (req, res) => {
             SELECT *
             FROM RankedSubmissions
             WHERE row_num = 1
-            ORDER BY process_start_date DESC
+            ORDER BY id DESC
         `;
 
         const [submissions] = await db.promise().query(submissionsQuery, [articleIds]);
