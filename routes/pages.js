@@ -148,7 +148,7 @@ router.get("/uploadManuscript",getUserData, manuscrsciptDataMiddleWare, uploadAr
 
 router.post('/generateArticleId', generateArticleId)
 
-router.get("/authorProfileForSearch", getUserData, authorsProfileSearch)
+router.get("/authorProfileForSearch", AuthorLoggedIn, authorsProfileSearch)
 
 
 router.post("/updateAccountData", upload.none(), AuthorLoggedIn,  updateAccountData)

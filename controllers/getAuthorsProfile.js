@@ -5,6 +5,7 @@ const authorsProfileSearch  = async (req,res) =>{
         const encrypted = req.query.encrypted
         db.query("SELECT * FROM `authors_account` WHERE `email`= ?", [encrypted], async (err, data) =>{
            if(err){
+            console.log(Error)
             return res.json({error:err})
            } else if(data[0]){
             return res.json({success:"Active account", status:"success", accountData:data[0]})

@@ -279,11 +279,11 @@ const submitManuscript = async (req, res) => {
                 finalManuscriptId,
                 author.fullName || `${author.prefix || ''} ${author.firstName || ''} ${author.lastName || ''}`.trim(),
                 author.email,
-                author.orcid || null,
-                author.asfiMembershipId || null,
-                author.affiliation || null,
-                author.country || null,
-                author.city || null
+                author.orcid || author.orcid_id || null,
+                author.asfiMembershipId || author.asfi_membership_id || null,
+                author.affiliation || author.affiliations || null,
+                author.country || author.affiliation_country || null,
+                author.city || author. affiliation_city || null
             ]);
 
             await connection.query(
