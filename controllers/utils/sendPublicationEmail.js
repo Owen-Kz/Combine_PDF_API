@@ -2,10 +2,12 @@
 require("dotenv").config();
 
 const Brevo = require("@getbrevo/brevo");
-const db = require("../../routes/db.config");
+// const dbPromise = require("../../journal.db");
 const { escapeHtml } = require("./security");
 const fs = require('fs');
 const path = require('path');
+const dbPromise = require("../../routes/journal.db");
+const db = require("../../routes/db.config");
 
 /**
  * Sends a publication confirmation email to authors after manuscript is published
@@ -133,7 +135,7 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
         }
         .button {
             background-color: #7b306c;
-            color: white;
+            color: #fff;
             padding: 10px 15px;
             text-decoration: none;
             border-radius: 4px;
@@ -179,7 +181,7 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
         <p>Manuscript ID: <span class="manuscript-id">${escapeHtml(manuscriptId)}</span></p>
         
         <p style="margin: 20px 0;">
-            <a href="${articleUrl}" class="button" target="_blank" rel="noopener noreferrer">View Your Published Paper</a>
+            <a href="${articleUrl}" class="button" target="_blank" style="color:#fff;" rel="noopener noreferrer">View Your Published Paper</a>
         </p>
         
         <p>We've attached a complimentary PDF copy for your records and to share with co-authors.</p>
@@ -229,7 +231,7 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
         
         // Log the email sending in database
         await new Promise((resolve, reject) => {
-            db.query(
+            dbPromise.query(
                 "INSERT INTO email_logs (recipient_email, manuscript_id, email_type, status, sent_at) VALUES (?, ?, 'publication', 'sent', NOW())",
                 [recipientEmail, manuscriptId],
                 (err, result) => {
@@ -260,7 +262,7 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
         // Log the failure in database
         try {
             await new Promise((resolve, reject) => {
-                db.query(
+                dbPromise.query(
                     "INSERT INTO email_logs (recipient_email, manuscript_id, email_type, status, error_message, sent_at) VALUES (?, ?, 'publication', 'failed', ?, NOW())",
                     [recipientEmail, manuscriptId, error.message || "Unknown error"],
                     (err, result) => {
