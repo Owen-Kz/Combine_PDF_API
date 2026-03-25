@@ -130,7 +130,7 @@ router.get("/article-data", async (req, res) => {
                 tables: article.manuscript_tables,
                 supplementaryMaterials: article.supplimentary_materials,
                 graphicAbstract: article.graphic_abstract,
-                manuscriptPhoto: article.manuscriptPhoto,
+                manuscriptPhoto: article.is_old_publication === "yes"? `https://asfirj.org/useruploads/article_images/${article.manuscriptPhoto}` : `${req.protocol}://${req.get('host')}/useruploads/article_images/${article.manuscriptPhoto}`,
                 
                 // Publication info
                 issueNumber: article.issues_number,
