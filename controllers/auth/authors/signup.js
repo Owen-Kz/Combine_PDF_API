@@ -188,7 +188,7 @@ const AuthorSignup = async (req, res) => {
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(to right, #250242, #550f4f); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { padding: 30px 20px; background: #f9f9f9; }
-          .button { display: inline-block; padding: 12px 30px; background: #8a1e78; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .button { display: inline-block; padding: 12px 30px; background: #8a1e78; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; color: #fff; }
           .button:hover { background: #6a175e; }
           .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee; }
         </style>
@@ -203,7 +203,7 @@ const AuthorSignup = async (req, res) => {
           <p>Thank you for registering with ASFI Research Journal. Please verify your email address by clicking the button below:</p>
           
           <div style="text-align: center;">
-            <a href="${verificationLink}" class="button">Verify Email Address</a>
+            <a href="${verificationLink}" class="button" style="color:#fff;">Verify Email Address</a>
           </div>
           
           <p>Or copy and paste this link into your browser:</p>
