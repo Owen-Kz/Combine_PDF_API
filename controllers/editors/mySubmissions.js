@@ -178,7 +178,7 @@ const mySubmissions = async (req, res) => {
                     month: 'short', 
                     year: 'numeric' 
                 }),
-                submittedDate: row.process_start_date,
+                submittedDate:row.date_submitted || row.process_start_date,
                 updatedAt: row.last_updated,
                 isWomenInScience: row.is_women_in_science === 'yes',
                 authors: authorName,

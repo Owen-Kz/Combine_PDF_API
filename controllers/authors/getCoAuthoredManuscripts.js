@@ -107,7 +107,7 @@ const getCoAuthoredManuscripts = async (req, res) => {
                 type: manuscript.article_type,
                 status: manuscript.status,
                 decision: manuscript.decision || null,
-                submittedDate: manuscript.process_start_date || manuscript.date_submitted,
+                submittedDate: manuscript.date_submitted || manuscript.process_start_date,
                 lastModified: manuscript.last_updated || manuscript.date_submitted,
                 correspondingAuthor: correspondingAuthor || manuscript.corresponding_author,
                 correspondingEmail: manuscript.corresponding_authors_email,

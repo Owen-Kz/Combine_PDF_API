@@ -106,7 +106,7 @@ const allSubmissions = async (req, res) => {
             SELECT *
             FROM RankedSubmissions
             WHERE row_num = 1
-            ORDER BY process_start_date DESC
+            ORDER BY date_submitted DESC
             LIMIT ? OFFSET ?
         `;
 
@@ -156,12 +156,12 @@ const allSubmissions = async (req, res) => {
                 type: row.article_type,
                 discipline: row.discipline,
                 status: row.status,
-                date: new Date(row.process_start_date).toLocaleDateString('en-GB', { 
+                date: new Date(row.date_submitted || row.process_start_date).toLocaleDateString('en-GB', { 
                     day: 'numeric', 
                     month: 'short', 
                     year: 'numeric' 
                 }),
-                submittedDate: row.process_start_date,
+                submittedDate: row.date_submitted || row.process_start_date,
                 updatedAt: row.last_updated,
                 isWomenInScience: row.is_women_in_science === 'yes',
                 authors: authorName,
