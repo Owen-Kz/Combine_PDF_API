@@ -144,7 +144,7 @@ const AuthorSignup = async (req, res) => {
       `INSERT INTO authors_account 
        (prefix, email, orcid_id, discipline, firstname, lastname, othername, 
         affiliations, affiliation_country, affiliation_city, is_available_for_review, 
-        is_reviewer, account_status, password, verification_token, token_expiry) 
+       account_status, password, verification_token, token_expiry) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         prefix || '',
@@ -157,7 +157,6 @@ const AuthorSignup = async (req, res) => {
         affiliation,
         affiliationCountry,
         affiliationCity,
-        reviewAvailability === 'yes' ? 'yes' : 'no',
         reviewAvailability === 'yes' ? 'yes' : 'no',
         'unverified', // account_status
         hashedPassword,
