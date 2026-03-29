@@ -145,7 +145,7 @@ const AuthorSignup = async (req, res) => {
        (prefix, email, orcid_id, discipline, firstname, lastname, othername, 
         affiliations, affiliation_country, affiliation_city, is_available_for_review, 
        account_status, password, verification_token, token_expiry) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         prefix || '',
         email,
