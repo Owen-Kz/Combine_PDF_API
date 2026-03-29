@@ -15,7 +15,6 @@ const AuthorSignup = async (req, res) => {
   try {
     // Log incoming request for debugging
     console.log("=== AUTHOR SIGNUP REQUEST ===");
-    console.log("Request body:", JSON.stringify(req.body, null, 2));
     
     // Extract fields from request body
     const {
@@ -145,8 +144,8 @@ const AuthorSignup = async (req, res) => {
       `INSERT INTO authors_account 
        (prefix, email, orcid_id, discipline, firstname, lastname, othername, 
         affiliations, affiliation_country, affiliation_city, is_available_for_review, 
-        is_reviewer, account_status, password, verification_token, token_expiry, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        is_reviewer, account_status, password, verification_token, token_expiry) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         prefix || '',
         email,
