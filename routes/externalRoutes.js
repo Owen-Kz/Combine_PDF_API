@@ -121,6 +121,7 @@ router.get("/article-data", async (req, res) => {
                     results: article.abstract_results,
                     discussion: article.abstract_discussion
                 },
+                fullText: article.abstract_discussion,
                 
                 // Files
                 manuscriptFile: article.manuscript_file,
