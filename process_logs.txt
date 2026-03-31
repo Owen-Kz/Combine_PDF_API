@@ -1,0 +1,2 @@
+[2026-03-31T17:28:42.074Z] [development] Environment:
+[2026-03-31T17:28:42.060Z] [31000] Server is running on 

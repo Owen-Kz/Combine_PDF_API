@@ -9,12 +9,13 @@ const MySQLStore = require('express-mysql-session')(session);
 const bodyParser = require("body-parser");
 const cors = require('cors');
 const path = require("path");
+const { LogAction } = require("./Logger");
 
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
-  console.log(`Incoming request: ${req.method} ${req.url}`);
+  LogAction(`Incoming request: ${req.method} ${req.url}`);
   res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -82,8 +83,8 @@ app.use(express.json());
 
 // Debug middleware (remove in production)
 app.use((req, res, next) => {
-  console.log('Session ID:', req.sessionID);
-  console.log('User in session:', req.session.user ? req.session.user.email : 'None');
+  LogAction('Session ID:', req.sessionID);
+  LogAction('User in session:', req.session.user ? req.session.user.email : 'None');
   next();
 });
 
@@ -119,6 +120,6 @@ app.use("/journal/public", require("./routes/externalRoutes"))
 app.use("/", require("./routes/pages"));
 
 server.listen(PORT, () => {
-  console.log("Server is running on ", PORT);
-  console.log("Environment:", process.env.NODE_ENV || 'development');
+  LogAction("Server is running on ", PORT);
+  LogAction("Environment:", process.env.NODE_ENV || 'development');
 });
