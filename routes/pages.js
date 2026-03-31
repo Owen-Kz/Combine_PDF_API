@@ -98,14 +98,7 @@ const CombineWordDocuments = require("../external/combinePDF");
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
 router.use(express.json())
-// Enable CORS for this router
-router.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    next();
-  });
+
   
   // Define the upload folder path and ensure it is writable
 const folderPath = path.join(__dirname, "../public");
