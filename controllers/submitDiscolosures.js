@@ -172,7 +172,7 @@ const SubmitDisclosures = async (req, res) => {
                     }
 
                     if (validationErrors.length > 0) {
-                        throw new Error(`Missing required fields: ${validationErrors.join(', ')}`);
+                        throw new Error(`Missing required fields on submission ${articleId}: ${validationErrors.join(', ')}`);
                     }
 
                     // Log file status for debugging

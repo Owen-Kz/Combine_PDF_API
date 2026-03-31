@@ -15,7 +15,7 @@ app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
   console.log(`Incoming request: ${req.method} ${req.url}`);
-  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -29,6 +29,7 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
+// handel preflight requests for CORS
 app.options('*', cors());
 
 // Session store configuration
@@ -58,14 +59,14 @@ sessionStore.on('error', (error) => {
 
 // Session middleware
 app.use(session({
-  name: 'asfi.sid',   // ✅ unique cookie name
-  secret: process.env.SESSION_SECRET || 'change_this_secret', // ✅ dedicated secret
+  name: 'asfi.sid',   // unique cookie name
+  secret: process.env.SESSION_SECRET , // dedicated secret
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',  // ✅ only secure in production
+    secure: process.env.NODE_ENV === 'production',  // only secure in production
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true
@@ -100,18 +101,7 @@ app.use("/uploads/", express.static(path.join(__dirname, "/uploads/")));
 
 app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploads/editors")));
 
-// Socket.io setup
-const { Server } = require('socket.io');
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-  transports: ["websocket"],
-});
 
-// Your socket.io event handlers...
 
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
