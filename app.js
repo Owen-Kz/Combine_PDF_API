@@ -14,24 +14,51 @@ const { LogAction } = require("./Logger");
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
-app.use((req, res, next) => {
-  LogAction(`Incoming request: ${req.method} ${req.url}`);
-  // res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
-  // res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  // res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  // res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
-// // CORS configuration
-// app.use(cors({
-//   origin: ['https://portal.asfirj.org', 'http://localhost:3000', 'https://asfirj.org', 'https://process.asfirj.org', 'https://*.asfirj.org', "*"], // specify allowed origins
+// In your server.js file, replace the CORS configuration with this:
+const cors = require('cors');
 
-//   // origin: process.env.FRONTEND_URL || '*', //temporarily disable cors for testing, change to specific frontend url in production
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-// }));
-// handel preflight requests for CORS
-// app.options('*', cors());
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://portal.asfirj.org',
+      'http://localhost:3000',
+      'https://asfirj.org',
+      'https://process.asfirj.org'
+    ];
+    
+    // Check if the origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Response-Time'],
+  maxAge: 86400 // 24 hours
+};
+
+// Apply CORS middleware BEFORE other middleware
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// app.use((req, res, next) => {
+//   LogAction(`Incoming request: ${req.method} ${req.url}`);
+//   // res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
+//   // res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+//   // res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+//   // res.setHeader('Access-Control-Allow-Credentials', 'true');
+//   next();
+// });
 
 // Session store configuration
 const sessionStore = new MySQLStore({
@@ -59,21 +86,37 @@ sessionStore.on('error', (error) => {
 });
 
 // Session middleware
+// app.use(session({
+//   name: 'asfi.sid',   // unique cookie name
+//   secret: process.env.SESSION_SECRET , // dedicated secret
+//   store: sessionStore,
+//   resave: false,
+//   saveUninitialized: false,
+//   proxy: true,
+//   cookie: {
+//     secure: process.env.NODE_ENV === 'production',  // only secure in production
+//     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+//     maxAge: 24 * 60 * 60 * 1000,
+//     httpOnly: true
+//   }
+// }));
+
+// In your server.js session configuration
 app.use(session({
-  name: 'asfi.sid',   // unique cookie name
-  secret: process.env.SESSION_SECRET , // dedicated secret
+  name: 'asfi.sid',
+  secret: process.env.SESSION_SECRET,
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',  // only secure in production
+    secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true
+    httpOnly: true,
+    domain: process.env.NODE_ENV === 'production' ? '.asfirj.org' : undefined // Add this for subdomain support
   }
 }));
-
 // Other middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
