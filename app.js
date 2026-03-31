@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 // }));
 // handel preflight requests for CORS
-app.options('*', cors());
+// app.options('*', cors());
 
 // Session store configuration
 const sessionStore = new MySQLStore({
