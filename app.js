@@ -154,7 +154,7 @@ app.use("/inbox/api", require("./routes/inbox.routes"))
 app.use("/api/newsletter", require("./routes/newsletter.routes"))
 app.use("/api/semperfi", require("./routes/admin.invitations"))
 app.use("/api/personnel", require("./routes/invitationRoutes"))
-// app.use("/api/authors", require("./routes/authorsRoutes"))
+app.use("/api/authors", require("./routes/authorsRoutes"))
 app.use("/authorsRoutes", require("./routes/authorsRoutes"))
 
 app.use("/reviewer", require("./routes/reviewerRoutes"))
