@@ -16,20 +16,20 @@ app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
   LogAction(`Incoming request: ${req.method} ${req.url}`);
-  res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
+  // res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  // res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // res.setHeader('Access-Control-Allow-Credentials', 'true');
   next();
 });
-// CORS configuration
-app.use(cors({
-  origin: ['https://portal.asfirj.org', 'http://localhost:3000', 'https://asfirj.org', 'https://process.asfirj.org', 'https://*.asfirj.org', "*"], // specify allowed origins
+// // CORS configuration
+// app.use(cors({
+//   origin: ['https://portal.asfirj.org', 'http://localhost:3000', 'https://asfirj.org', 'https://process.asfirj.org', 'https://*.asfirj.org', "*"], // specify allowed origins
 
-  // origin: process.env.FRONTEND_URL || '*', //temporarily disable cors for testing, change to specific frontend url in production
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}));
+//   // origin: process.env.FRONTEND_URL || '*', //temporarily disable cors for testing, change to specific frontend url in production
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+// }));
 // handel preflight requests for CORS
 app.options('*', cors());
 
