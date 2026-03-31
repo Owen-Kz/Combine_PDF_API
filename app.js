@@ -14,9 +14,6 @@ const { LogAction } = require("./Logger");
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
-// In your server.js file, replace the CORS configuration with this:
-const cors = require('cors');
-
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
