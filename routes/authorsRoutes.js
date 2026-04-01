@@ -21,6 +21,8 @@ const generateArticleId = require("../controllers/generateArticleId");
 const submitManuscript = require("../controllers/authors/submitManuscript");
 const getSubmissionForEdit = require("../controllers/authors/getSubmissionForEdit");
 const getDraft = require("../controllers/authors/getDraft");
+const submitCorrection = require("../controllers/authors/submitCorrection");
+const submitRevision = require("../controllers/authors/submitRevision");
 const router = express.Router();
 
 config();
@@ -56,6 +58,9 @@ router.post("/generate-id", generateArticleId);
 
 // Submit manuscript (new, correction, revision, draft)
 router.post("/submit-manuscript", submitManuscript);
+router.post("/submit-correction", submitCorrection);
+router.post("/submit-revision", submitRevision);
+
 
 // Get submission for editing
 router.get("/submission/:id", getSubmissionForEdit);

@@ -140,7 +140,7 @@ const AuthorsLogin = async (req, res) => {
                     prefix: user.prefix || null,
                     orcidId: user.orcid_id || null,
                     discipline: user.discipline || null,
-                    affiliations: user.affiliations || null,
+                    affiliations: user.affiliations || user.affiliation || null,
                     affiliationCountry: user.affiliation_country || null,
                     affiliationCity: user.affiliation_city || null,
                     asfiMembershipId: user.asfi_membership_id || null,

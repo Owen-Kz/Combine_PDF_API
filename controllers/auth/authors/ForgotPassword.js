@@ -93,9 +93,9 @@ const forgotPassword = async (req, res) => {
         <title>Reset Your Password - ASFI Research Journal</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(to right, #250242, #550f4f); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header { background: linear-gradient(to right, #250242, #550f4f); color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { padding: 30px 20px; background: #f9f9f9; }
-          .button { display: inline-block; padding: 12px 30px; background: #8a1e78; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .button { display: inline-block; padding: 12px 30px; background: #8a1e78; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
           .button:hover { background: #6a175e; }
           .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee; }
           .warning { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 5px; margin: 20px 0; }

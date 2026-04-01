@@ -42,6 +42,7 @@ const generateArticleId = async (req, res) => {
                 const isCorrection = req.query.correct === 'true' && req.query.a;
                 const isRevision = req.query.revise === 'true' && req.query.a;
                 const originalArticleId = req.query.a;
+                console.log(req.query)
 
                 if (isCorrection || isRevision) {
                     console.log(`Processing ${isCorrection ? 'correction' : 'revision'} for article:`, originalArticleId);

@@ -111,9 +111,9 @@ const sendReviewReminder = async (req, res) => {
           <title>${escapeHtml(subject)}</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(to right, #dc2626, #991b1b); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(to right, #dc2626, #991b1b); color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { padding: 30px 20px; background: #f9f9f9; }
-            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .button:hover { background: #6b21a8; }
             .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee; }
             .warning { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 15px; border-radius: 5px; margin: 20px 0; }
@@ -172,9 +172,9 @@ const sendReviewReminder = async (req, res) => {
           <title>${escapeHtml(subject)}</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(to right, #7e22ce, #6b21a8); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(to right, #7e22ce, #6b21a8); color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { padding: 30px 20px; background: #f9f9f9; }
-            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .button:hover { background: #6b21a8; }
             .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee; }
           </style>

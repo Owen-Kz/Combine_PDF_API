@@ -1,4 +1,4 @@
-// backend/controllers/author/submitManuscript.js
+// backend/controllers/author/submitCorrection.js
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -68,7 +68,7 @@ const upload = multer({
     }
 });
 
-const submitManuscript = async (req, res) => {
+const submitCorrection = async (req, res) => {
     let connection;
 
     try {
@@ -366,4 +366,4 @@ const submitManuscript = async (req, res) => {
     }
 };
 
-module.exports = submitManuscript;
+module.exports = submitCorrection;

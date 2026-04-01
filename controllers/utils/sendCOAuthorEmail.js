@@ -2,6 +2,7 @@ const Brevo = require('@getbrevo/brevo');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 const dbPromise = require('../../routes/dbPromise.config');
+const { LogAction } = require('../../Logger');
 
 // Load environment variables
 dotenv.config();
@@ -30,16 +31,27 @@ async function sendCoAuthorEmail(recipientEmail, password) {
             "SELECT firstname, prefix FROM `authors_account` WHERE `email` = ?",
             [recipientEmail]
         );
+        
 
         if (rows.length === 0) {
             return { status: 'error', message: 'User not found in our system' };
         }
+     const verificationToken = crypto.randomBytes(32).toString('hex');
+     const tokenExpiry = new Date();
+     tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token valid for 24 hours
  
+    //  Create the verificationToken 
+     await dbPromise.query(
+            "UPDATE `authors_account` SET verification_token = ?, token_expiry = ? WHERE `email` = ?", [verificationToken, tokenExpiry],
+            [recipientEmail])
+        LogAction(`Token Updated for Co-author: ${recipientEmail}`)
+
         const { firstname, prefix } = rows[0];
         const currentYear = new Date().getUTCFullYear();
         const encryptedButton = crypto.createHash('md5').update(recipientEmail).digest('hex');
-        const loginUrl = `https://process.asfirj.org/verify?e=${encodeURIComponent(encryptedButton)}`;
-        const updateUrl = `https://asfirj.org/portal/updateAccount?e=${encodeURIComponent(encryptedButton)}`;
+        
+        const loginUrl = `https://portal.asfirj.org/portal/verify-email?token=${verificationToken}&email=${encodeURIComponent(recipientEmail)}`;
+        const updateUrl = `https://portal.asfirj.org/settings`;
 
         // Configure Brevo API
         const apiInstance = new Brevo.TransactionalEmailsApi();

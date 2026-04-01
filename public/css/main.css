@@ -268,7 +268,7 @@ button{
     justify-content: center;
     background-color: transparent;
     backdrop-filter: blur(4px);
-    /* background-color: white;
+    /* background-color: #ffffff;
     opacity: 0.7; */
     top: 0;left: 0
 }
@@ -1033,7 +1033,7 @@ a,a:hover, img, .form-control,  .form-control:hover, button{
     box-shadow: 0px 15px 20px 0px rgba(209, 218, 235, 0.50);
 }
 .service-item h3:hover {
-    color: white;
+    color: #ffffff;
 }
 
 .service-item:hover .read-more,
