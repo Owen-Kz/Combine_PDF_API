@@ -123,7 +123,7 @@ const submitManuscript = async (req, res) => {
             if (reviewers) parsedReviewers = JSON.parse(reviewers);
             if (disclosures) parsedDisclosures = JSON.parse(disclosures);
         } catch (e) {
-            console.error("Error parsing JSON fields:", e);
+            LogAction("Error parsing JSON fields:", e);
         }
 
         if (!userEmail) {
@@ -138,7 +138,7 @@ const submitManuscript = async (req, res) => {
 
         // Generate or use provided manuscript ID
         let finalManuscriptId = manuscriptId;
-        console.log("Initial manuscript ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
+        LogAction("Initial manuscript ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
         if (!finalManuscriptId || action === 'new') {
             // Generate new ID using the generateArticleId function
             finalManuscriptId = await generateArticleId({
@@ -150,7 +150,7 @@ const submitManuscript = async (req, res) => {
                 }
             });
         }
-        console.log("Final manuscript ID to be used:", finalManuscriptId);
+        LogAction("Final manuscript ID to be used:", finalManuscriptId);
 
         // Process file uploads and generate URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -324,7 +324,7 @@ const submitManuscript = async (req, res) => {
         }
 
         await connection.commit();
-        console.log("ACTION", action)
+        LogAction("ACTION", action)
         // Send emails only if this is a final submission (not draft)
         if (action === 'submit' || action === 'correction_submitted' || action === 'revision_submitted') {
             try {
@@ -337,7 +337,7 @@ const submitManuscript = async (req, res) => {
 
                 LogAction('Email results:', emailResults);
             } catch (emailError) {
-                console.error('Error sending emails:', emailError);
+                LogAction('Error sending emails:', emailError);
                 // Don't fail the submission if emails fail
             }
         }
@@ -352,7 +352,7 @@ const submitManuscript = async (req, res) => {
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("Error submitting manuscript:", error);
+        LogAction("Error submitting manuscript:", error);
         return res.status(500).json({
             status: "error",
             message: "Internal server error",
