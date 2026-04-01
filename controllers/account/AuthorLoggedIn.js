@@ -1,6 +1,7 @@
 // backend/middleware/AuthorLoggedIn.js
 const jwt = require("jsonwebtoken");
 const db = require("../../routes/db.config");
+const dbPromise = require("../../routes/dbPromise.config");
 
 const AuthorLoggedIn = async (req, res, next) => {
   try {
@@ -22,12 +23,12 @@ const AuthorLoggedIn = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check both session tables
-    const [editorSession] = await db.promise().query(
+    const [editorSession] = await dbPromise.query(
       "SELECT * FROM editors_session WHERE editor_id = ? AND session_token = ? AND expires_at > NOW()",
       [decoded.email, token]
     );
 
-    const [authorSession] = await db.promise().query(
+    const [authorSession] = await dbPromise.query(
       "SELECT * FROM authors_session WHERE user_id = ? AND session_token = ? AND expires_at > NOW()",
       [decoded.authorId || decoded.id, token] // Use authorId if available, otherwise use id
     );
@@ -40,7 +41,7 @@ const AuthorLoggedIn = async (req, res, next) => {
       sessionType = 'editor';
       
       // Get editor details from editors table
-      const [editorResults] = await db.promise().query(
+      const [editorResults] = await dbPromise.query(
         `SELECT id, email, fullname, editorial_level, editorial_section
          FROM editors WHERE email = ?`,
         [decoded.email]
@@ -50,7 +51,7 @@ const AuthorLoggedIn = async (req, res, next) => {
         const editorData = editorResults[0];
         
         // Also fetch author data if exists (using the same email)
-        const [authorResults] = await db.promise().query(
+        const [authorResults] = await dbPromise.query(
           `SELECT id as author_id, prefix, firstname, lastname, othername, orcid_id, 
                   discipline, affiliations, affiliation_country, affiliation_city,
                   is_available_for_review, is_editor, is_reviewer, editor_invite_status,
@@ -129,7 +130,7 @@ const AuthorLoggedIn = async (req, res, next) => {
       sessionType = 'author';
       
       // Get author details from authors_account table
-      const [authorResults] = await db.promise().query(
+      const [authorResults] = await dbPromise.query(
         `SELECT id, email, prefix, firstname, lastname, othername, orcid_id, 
                 discipline, affiliations, affiliation_country, affiliation_city,
                 is_available_for_review, is_editor, is_reviewer, editor_invite_status,
@@ -193,12 +194,12 @@ const AuthorLoggedIn = async (req, res, next) => {
 
     // Update last activity in the appropriate session table
     if (sessionType === 'editor') {
-      await db.promise().query(
+      await dbPromise.query(
         "UPDATE editors_session SET last_activity = NOW() WHERE session_token = ?",
         [token]
       );
     } else {
-      await db.promise().query(
+      await dbPromise.query(
         "UPDATE authors_session SET last_activity = NOW() WHERE session_token = ?",
         [token]
       );

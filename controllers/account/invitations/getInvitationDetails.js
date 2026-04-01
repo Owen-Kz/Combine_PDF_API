@@ -1,5 +1,5 @@
 const db = require("../../../routes/db.config");
-
+const dbPromise = require("../../../routes/dbPromise.config");
 /**
  * Get invitation details for reviewers or editors including submission data
  * @param {Object} req - Express request object
@@ -33,7 +33,7 @@ const getInvitationDetails = async (req, res) => {
     // First, get the submission data
     console.log("Fetching submission data for ID:", articleId);
     
-    const [submissionResults] = await db.promise().query(
+    const [submissionResults] = await dbPromise.query(
       "SELECT * FROM `submissions` WHERE `revision_id` = ?",
       [articleId]
     );
@@ -52,7 +52,7 @@ const getInvitationDetails = async (req, res) => {
     // Get corresponding author details from authors_account
     console.log("Fetching author details for email:", submission.corresponding_authors_email);
     
-    const [authorResults] = await db.promise().query(
+    const [authorResults] = await dbPromise.query(
       `SELECT 
         aa.*,
         CONCAT_WS(' ', 
@@ -99,7 +99,7 @@ const getInvitationDetails = async (req, res) => {
     // Now check for invitation in invitations table for reviewers
     console.log("Checking for reviewer invitation...");
 
-    const [reviewerInvitations] = await db.promise().query(
+    const [reviewerInvitations] = await dbPromise.query(
       `SELECT 
         i.*,
         e.fullname as invited_by_fullname,
@@ -142,7 +142,7 @@ const getInvitationDetails = async (req, res) => {
     // Check in invitations table for editors
     console.log("No reviewer invitation found. Checking for editor invitation...");
 
-    const [editorInvitations] = await db.promise().query(
+    const [editorInvitations] = await dbPromise.query(
       `SELECT 
         i.*,
         e.fullname as invited_by_fullname,
@@ -186,7 +186,7 @@ const getInvitationDetails = async (req, res) => {
     // Check if invitation exists but is already processed
     console.log("No pending invitations found. Checking for processed invitations...");
 
-    const [processedInvitations] = await db.promise().query(
+    const [processedInvitations] = await dbPromise.query(
       `SELECT invitation_status, invited_for 
        FROM invitations 
        WHERE invitation_link = ? AND invited_user = ?`,

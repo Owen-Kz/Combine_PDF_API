@@ -4,8 +4,8 @@ const { escapeHtml } = require("../../utils/security");
 const convertQUILLTOHTML = require("./convertHTML");
 const dotenv = require("dotenv");
 const db = require("../../../routes/db.config");
+const dbPromise = require("../../../routes/dbPromise.config");
 dotenv.config();
-
 /**
  * Sends a reminder email to a reviewer
  * @param {Object} req - Express request object
@@ -48,7 +48,7 @@ const sendReviewReminder = async (req, res) => {
     }
 
     // Get editor details
-    const [editorResults] = await db.promise().query(
+    const [editorResults] = await dbPromise.query(
       `SELECT email, fullname FROM editors WHERE email = ?`,
       [req.user.email]
     );
@@ -64,7 +64,7 @@ const sendReviewReminder = async (req, res) => {
     const editorName = editorResults[0].fullname;
 
     // Get manuscript details
-    const [manuscriptResults] = await db.promise().query(
+    const [manuscriptResults] = await dbPromise.query(
       `SELECT title, revision_id FROM submissions WHERE revision_id = ?`,
       [articleId]
     );
@@ -79,7 +79,7 @@ const sendReviewReminder = async (req, res) => {
     const manuscriptTitle = manuscriptResults[0].title;
 
     // Get reminder count for this review
-    const [reminderResults] = await db.promise().query(
+    const [reminderResults] = await dbPromise.query(
       `SELECT COUNT(*) as count FROM review_reminders 
        WHERE review_id = ? AND article_id = ? AND reviewer_email = ?`,
       [reviewId, articleId, reviewerEmail]
@@ -240,7 +240,7 @@ const sendReviewReminder = async (req, res) => {
     await apiInstance.sendTransacEmail(emailData);
 
     // Insert reminder record into review_reminders table
-    await db.promise().query(
+    await dbPromise.query(
       `INSERT INTO review_reminders 
        (review_id, article_id, reviewer_email, reminder_type, reminder_number, 
         due_date, days_overdue, status, notes) 
