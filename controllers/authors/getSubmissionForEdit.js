@@ -6,6 +6,7 @@ const getSubmissionForEdit = async (req, res) => {
     try {
         const userEmail = req.user.email;
         const { id } = req.params;
+        console.log("Fetching submission for edit, ID:", id, "User:", userEmail);
 
         if (!id) {
             return res.status(400).json({ 
@@ -92,6 +93,7 @@ const getSubmissionForEdit = async (req, res) => {
             specialIssue: 'no', // Add to database if needed
             previousSubmission: submission.previous_manuscript_id ? 'yes' : 'no',
             previousId: submission.previous_manuscript_id || '',
+            status: submission.status || '',
             title: submission.title || '',
             abstract: submission.abstract || '',
             keywords: keywords.map(k => k.keyword).concat(Array(8 - keywords.length).fill('')),

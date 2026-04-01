@@ -139,17 +139,17 @@ const submitRevision = async (req, res) => {
         // Generate or use provided manuscript ID
         let finalManuscriptId = manuscriptId;
         console.log("Initial manuscript ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
-        if (!finalManuscriptId || action === 'new') {
-            // Generate new ID using the generateArticleId function
-            finalManuscriptId = await generateArticleId({
-                user: req.user,
-                query: {
-                    correct: action === 'correction_saved' || action === 'correction_submitted' || action === "correction" ? 'true' : undefined,
-                    revise: action === 'revision_saved' || action === 'revision_submitted' || action === 'revision' ? 'true' : undefined,
-                    a: previousId
-                }
-            });
-        }
+        // if (!finalManuscriptId || action === 'new') {
+        //     // Generate new ID using the generateArticleId function
+        //     finalManuscriptId = await generateArticleId({
+        //         user: req.user,
+        //         query: {
+        //             correct: action === 'correction_saved' || action === 'correction_submitted' || action === "correction" ? 'true' : undefined,
+        //             revise: action === 'revision_saved' || action === 'revision_submitted' || action === 'revision' ? 'true' : undefined,
+        //             a: previousId
+        //         }
+        //     });
+        // }
         console.log("Final manuscript ID to be used:", finalManuscriptId);
 
         // Process file uploads and generate URLs

@@ -138,18 +138,18 @@ const submitCorrection = async (req, res) => {
 
         // Generate or use provided manuscript ID
         let finalManuscriptId = manuscriptId;
-        console.log("Initial manuscript ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
-        if (!finalManuscriptId || action === 'new') {
-            // Generate new ID using the generateArticleId function
-            finalManuscriptId = await generateArticleId({
-                user: req.user,
-                query: {
-                    correct: action === 'correction_saved' || action === 'correction_submitted' || action === "correction" ? 'true' : undefined,
-                    revise: action === 'revision_saved' || action === 'revision_submitted' || action === 'revision' ? 'true' : undefined,
-                    a: previousId
-                }
-            });
-        }
+        console.log("Initial manuscript FOR CORRECTION ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
+        // if (!finalManuscriptId || action === 'new') {
+        //     // Generate new ID using the generateArticleId function
+        //     finalManuscriptId = await generateArticleId({
+        //         user: req.user,
+        //         query: {
+        //             correct: action === 'correction_saved' || action === 'correction_submitted' || action === "correction" ? 'true' : undefined,
+        //             revise: action === 'revision_saved' || action === 'revision_submitted' || action === 'revision' ? 'true' : undefined,
+        //             a: previousId
+        //         }
+        //     });
+        // }
         console.log("Final manuscript ID to be used:", finalManuscriptId);
 
         // Process file uploads and generate URLs
@@ -235,7 +235,7 @@ const submitCorrection = async (req, res) => {
                 `UPDATE submissions SET ? WHERE revision_id = ?`,
                 [submissionData, finalManuscriptId]
             );
-            if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correcion_submitted" || action === "correction" || action === "correction_saved") {
+            if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correction_submitted" || action === "correction" || action === "correction_saved") {
                 await connection.query(
                     `UPDATE submissions SET status = ? WHERE article_id = ? OR previous_manuscript_id = ?`,
                     [action, submissionData.previous_manuscript_id, submissionData.previous_manuscript_id]

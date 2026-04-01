@@ -37,7 +37,21 @@ router.post("/resend-verification", resendVerification);
 router.post("/forgot-password", forgotPassword);
 router.get("/validate-reset-token", validateResetToken);
 router.post("/reset-password", resetPassword);
-
+// router.get("/generate-submission-id", async(req,res) =>{
+//     try{
+//         const user = {
+//             email: "bensonmichaeowen@gmail.com",
+//             id: 1
+//         }
+//         req.user = user
+//         const Id = await generateArticleId(req,res)
+        
+//         return res.json({success:"generatedId", id:Id})
+//     }catch(error){
+//         console.log(error)
+//         return res.json({error:error?.message || error})
+//     }
+// })
 // Protected routes (require authentication)
 router.use(AuthorLoggedIn); // Middleware to check if user is logged in
 
@@ -55,6 +69,18 @@ router.get("/manuscripts/:articleId/decision-letter", getDecisionLetter);
 
 // Generate article ID
 router.post("/generate-id", generateArticleId);
+
+router.get("/generate-submission-id", async(req,res) =>{
+    try{
+                const Id = await generateArticleId(req,res)
+
+        
+        return res.json({success:"generatedId", id:Id})
+    }catch(error){
+        console.log(error)
+        return res.json({error:error?.message || error})
+    }
+})
 
 // Submit manuscript (new, correction, revision, draft)
 router.post("/submit-manuscript", submitManuscript);
