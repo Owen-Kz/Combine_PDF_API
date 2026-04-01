@@ -509,7 +509,7 @@
                 document.getElementById('loadingOverlay').style.display = 'none';
                 
                 const formData = new FormData(document.getElementById("registerForm"))
-                fetch(`/updateAccountData?e=<%= userId %>`, {
+                fetch(`/updateCoAuthorAccountData?e=<%= userId %>`, {
                     method:"POST", 
                     body: formData
                 }).then(res => res.json())

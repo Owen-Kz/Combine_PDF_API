@@ -51,7 +51,8 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         const encryptedButton = crypto.createHash('md5').update(recipientEmail).digest('hex');
         
         const loginUrl = `https://portal.asfirj.org/portal/verify-email?token=${verificationToken}&email=${encodeURIComponent(recipientEmail)}`;
-        const updateUrl = `https://portal.asfirj.org/settings`;
+        const updateUrl = `https://process.asfirj.org/updateAccount?e=${encryptedButton}`;
+        
 
         // Configure Brevo API
         const apiInstance = new Brevo.TransactionalEmailsApi();

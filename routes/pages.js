@@ -90,6 +90,7 @@ const exportReviewPDF = require("../controllers/editors/reviews/exportReviewPDF"
 const exportReviewExcel = require("../controllers/editors/reviews/exportReviewExcel");
 const getAllCompletedReviews = require("../controllers/editors/reviews/getAllCompletedReviews");
 const CombineWordDocuments = require("../external/combinePDF");
+const updateAccount = require("../controllers/pages/updateAccountPage");
 
 
 
@@ -134,7 +135,7 @@ router.post("/external/api/combineDOC", CombineDOCX)
 router.get("/file", downloadFile)
 router.get("/item", openfile)
 router.get("/doc", documentFileFormat)
-
+router.get("/updateAccount", updateAccount)
 
 // ArticleSubmission 
 router.get("/uploadManuscript",getUserData, manuscrsciptDataMiddleWare, uploadArticlePage)
@@ -143,7 +144,7 @@ router.post('/generateArticleId', generateArticleId)
 
 router.get("/authorProfileForSearch", AuthorLoggedIn, authorsProfileSearch)
 
-
+router.post("/updateCoAuthorAccountData", upload.none(),  updateAccountData)
 router.post("/updateAccountData", upload.none(), AuthorLoggedIn,  updateAccountData)
 router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})

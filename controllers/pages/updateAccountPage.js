@@ -4,7 +4,7 @@ const updateAccount = async (req,res) =>{
     try{
         // check if the user exists 
         const queryParam = req.query.e
-        const userExists = await dbPromise.query("SELECT * FROM authors_account WHERE md5(email) = ? ", [queryParam])
+        const userExists = await dbPromise.query("SELECT * FROM authors_account WHERE md5(email) = ? OR email = ? ", [queryParam, queryParam])
         if(userExists[0].length >0){
             if(userExists[0][0].account_status === 'verified'){
               return  res.render("success", {status:"success", tag:"Account Verified", message:"Account already verified, please login"})
