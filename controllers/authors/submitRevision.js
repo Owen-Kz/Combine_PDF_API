@@ -72,7 +72,7 @@ const submitRevision = async (req, res) => {
     let connection;
 
     try {
-        LogAction("Received submission data:", req.body);
+        LogAction("Received submission REvision data:",  JSON.stringify(req.body));
         LogAction("Received files:", req.files);
 
         // Handle file uploads

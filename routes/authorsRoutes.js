@@ -24,8 +24,38 @@ const getDraft = require("../controllers/authors/getDraft");
 const submitCorrection = require("../controllers/authors/submitCorrection");
 const submitRevision = require("../controllers/authors/submitRevision");
 const router = express.Router();
-
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
 config();
+const folderPath = path.join(__dirname, "../public");
+fs.access(folderPath, fs.constants.W_OK, (err) => {
+  if (err) {
+    console.log(`The folder '${folderPath}' is not writable:`, err);
+  } else {
+    console.log(`The folder '${folderPath}' is writable`);
+  }
+});
+
+// Configure multer storage settings and file size limit
+const storage = multer.diskStorage({
+  destination: folderPath,
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "_" + Math.round(Math.random() * 1E9);
+    const fileExtension = path.extname(file.originalname);
+    const profileFile = uniqueSuffix + fileExtension;
+    cb(null, profileFile);
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Optional: You can filter file types here if needed
+    cb(null, true);
+  }
+});
 
 // Auth routes
 router.post("/login", AuthorsLogin);

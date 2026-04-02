@@ -2,7 +2,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto")
+const crypto = require("crypto");
 
 const RandomString = crypto.randomBytes(10).toString('hex');
 
@@ -12,7 +12,6 @@ const generateArticleId = require("../generateArticleId");
 const CoAuthors = require("../CoAuthors");
 const dbPromise = require("../../routes/dbPromise.config");
 const { LogAction } = require("../../Logger");
-
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -29,11 +28,6 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + RandomString;
         const fileExt = path.extname(file.originalname);
 
-        // Sanitize original filename
-        const sanitizedName = file.originalname
-            .replace(/[^a-zA-Z0-9.]/g, '_')
-            .replace(/\.[^/.]+$/, ''); // Remove extension
-
         // Determine file prefix based on action
         let prefix = '';
         if (action === 'correction' || action === "correction_saved" || action === "correction_submitted") prefix = 'CORR_';
@@ -41,7 +35,7 @@ const storage = multer.diskStorage({
         else prefix = 'NEW_';
 
         // Include original filename in the saved file name for reference
-        const fileName = `${prefix}${manuscriptId || 'draft'}_${sanitizedName}_${uniqueSuffix}${fileExt}`;
+        const fileName = `${prefix}${manuscriptId || 'draft'}_${uniqueSuffix}${fileExt}`;
         cb(null, fileName);
     }
 });
@@ -68,28 +62,35 @@ const upload = multer({
     }
 });
 
+// Create a middleware that handles both files and form fields
+const handleUpload = upload.fields([
+    { name: 'manuscript_file', maxCount: 1 },
+    { name: 'coverLetter_file', maxCount: 1 },
+    { name: 'tables_file', maxCount: 1 },
+    { name: 'figures_file', maxCount: 1 },
+    { name: 'supplementary_file', maxCount: 1 },
+    { name: 'graphicAbstract_file', maxCount: 1 },
+    { name: 'trackedManuscript_file', maxCount: 1 }
+]);
+
 const submitManuscript = async (req, res) => {
     let connection;
 
     try {
-        LogAction("Received submission data:", req.body);
-        LogAction("Received files:", req.files);
-
-        // Handle file uploads
+        // First, handle file uploads
         await new Promise((resolve, reject) => {
-            upload.fields([
-                { name: 'manuscript_file', maxCount: 1 },
-                { name: 'coverLetter_file', maxCount: 1 },
-                { name: 'tables_file', maxCount: 1 },
-                { name: 'figures_file', maxCount: 1 },
-                { name: 'supplementary_file', maxCount: 1 },
-                { name: 'graphicAbstract_file', maxCount: 1 },
-                { name: 'trackedManuscript_file', maxCount: 1 }
-            ])(req, res, (err) => {
-                if (err) reject(err);
-                else resolve();
+            handleUpload(req, res, (err) => {
+                if (err) {
+                    LogAction("File upload error:", err);
+                    reject(err);
+                } else {
+                    resolve();
+                }
             });
         });
+
+        LogAction("Received submission data:", JSON.stringify(req.body));
+        LogAction("Received files:", req.files ? Object.keys(req.files) : "No files");
 
         const userEmail = req.user.email;
         const userFullname = req.user.fullname || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim();
@@ -139,13 +140,14 @@ const submitManuscript = async (req, res) => {
         // Generate or use provided manuscript ID
         let finalManuscriptId = manuscriptId;
         LogAction("Initial manuscript ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
+        
         if (!finalManuscriptId || action === 'new') {
             // Generate new ID using the generateArticleId function
             finalManuscriptId = await generateArticleId({
                 user: req.user,
                 query: {
                     correct: action === 'correction_saved' || action === 'correction_submitted' || action === "correction" ? 'true' : undefined,
-                    revise: action === 'revision_saved' || action === 'revision_submitted' || action === 'revision' ? 'true' : undefined,
+                    revise: action === 'revision_saved' || action === 'revision_submitted' || action === "revision" ? 'true' : undefined,
                     a: previousId
                 }
             });
@@ -235,12 +237,15 @@ const submitManuscript = async (req, res) => {
                 `UPDATE submissions SET ? WHERE revision_id = ?`,
                 [submissionData, finalManuscriptId]
             );
-            if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correcion_submitted" || action === "correction" || action === "correction_saved") {
+            
+            if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correction_submitted" || action === "correction" || action === "correction_saved") {
                 await connection.query(
                     `UPDATE submissions SET status = ? WHERE article_id = ? OR previous_manuscript_id = ?`,
-                    [action, submissionData.previous_manuscript_id, submissionData.previous_manuscript_id]
+                    [action === 'revision_submitted' ? 'revision_submitted' : 'correction_submitted', 
+                     submissionData.previous_manuscript_id, 
+                     submissionData.previous_manuscript_id]
                 );
-                LogAction(`${action} updated for ${submissionData.previous_manuscript_id}. ${submissionData}`)
+                LogAction(`${action} updated for ${submissionData.previous_manuscript_id}.`);
             }
 
             // Delete existing keywords
@@ -286,13 +291,13 @@ const submitManuscript = async (req, res) => {
         if (parsedAuthors && parsedAuthors.length > 0) {
             const authorValues = parsedAuthors.map(author => [
                 finalManuscriptId,
-                author.fullName || `${author.prefix || ''} ${author.firstName || ''} ${author.lastName || ''}`.trim(),
+                author.fullName || `${author.prefix || ''} ${author.firstname || author.firstName || ''} ${author.lastname || author.lastName || ''}`.trim(),
                 author.email,
-                author.orcid || author.orcid_id || null,
-                author.asfiMembershipId || author.asfi_membership_id || null,
-                author.affiliation || author.affiliations || null,
-                author.country || author.affiliation_country || null,
-                author.city || author.affiliation_city || null
+                author.orcid_id || author.orcid || null,
+                author.asfi_membership_id || null,
+                author.affiliations || author.affiliation || null,
+                author.affiliation_country || author.country || null,
+                author.affiliation_city || author.city || null
             ]);
 
             await connection.query(
@@ -324,11 +329,12 @@ const submitManuscript = async (req, res) => {
         }
 
         await connection.commit();
-        LogAction("ACTION", action)
+        LogAction("ACTION", action);
+        
         // Send emails only if this is a final submission (not draft)
         if (action === 'submit' || action === 'correction_submitted' || action === 'revision_submitted') {
             try {
-               const actionMessage = action === "submit" ? "" : action === "revision_submitted" ? "revision for" : action === "correction_submitted" ? "correction for" : ""
+                const actionMessage = action === "submit" ? "" : action === "revision_submitted" ? "revision for" : action === "correction_submitted" ? "correction for" : "";
                 const emailResults = await Promise.allSettled([
                     SendNewSubmissionEmail(userEmail, title, finalManuscriptId, actionMessage),
                     sendEmailToHandler("submissions@asfirj.org", title, finalManuscriptId, userFullname),
@@ -341,7 +347,11 @@ const submitManuscript = async (req, res) => {
                 // Don't fail the submission if emails fail
             }
         }
-        const responseMessage = action === "submit" ? "Manuscript" : action === "correction_submitted" || action === "correction_saved" || action === "correction" ? "Manuscript Correction" : action === "revision_saved" || action === "revision_submitted" || action === "revision" ? "Manuscript Revision" : ""
+        
+        const responseMessage = action === "submit" ? "Manuscript" : 
+                               action === "correction_submitted" || action === "correction_saved" || action === "correction" ? "Manuscript Correction" : 
+                               action === "revision_saved" || action === "revision_submitted" || action === "revision" ? "Manuscript Revision" : "";
+        
         return res.json({
             status: "success",
             message: action === 'submit' || action === "revision_submitted" || action === "correction_submitted"
@@ -355,7 +365,7 @@ const submitManuscript = async (req, res) => {
         LogAction("Error submitting manuscript:", error);
         return res.status(500).json({
             status: "error",
-            message: "Internal server error",
+            message: error.message || "Internal server error",
             ...(process.env.NODE_ENV === "development" && {
                 error: error.message,
                 stack: error.stack

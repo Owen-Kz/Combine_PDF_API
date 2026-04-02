@@ -1,3 +1,4 @@
+const { LogAction } = require("../Logger");
 const { getClientIp } = require("../utils/getClientIp");
 const db = require("./journal.db");
 const express = require("express");
@@ -157,11 +158,11 @@ router.get("/article-data", async (req, res) => {
             const clientIp = getClientIp(req);
         
         // Log the IP for debugging
-        console.log(`Request from IP: ${clientIp}`);
+        LogAction(`Request from IP: ${clientIp}`);
         
         // Optional: Log full request details
-        console.log('Request Headers:', req.headers);
-        console.log('Request Socket:', {
+        LogAction('Request Headers:', req.headers);
+        LogAction('Request Socket:', {
             remoteAddress: req.socket?.remoteAddress,
             remotePort: req.socket?.remotePort,
             localAddress: req.socket?.localAddress
@@ -173,9 +174,9 @@ router.get("/article-data", async (req, res) => {
         // Create New View entry 
         await db.query("UPDATE journals SET `views_count` = views_count + 1  WHERE buffer = ?", [article.buffer])
         await db.query("INSERT INTO view_download_count SET ?", [{user_ip:clientIp, article_id:article.buffer, type:"viewed"}])
-        console.log("Created new view entry")
+        LogAction("Created new view entry")
         }else{
-        console.log("Already Viewed this item")
+        LogAction("Already Viewed this item")
         }
 
         // Return successful response
@@ -222,16 +223,16 @@ const buffer = req.query.buffer
         // Create New View entry 
         await db.query("UPDATE journals SET `downloads_count` = downloads_count + 1  WHERE buffer = ?", [buffer])
         await db.query("INSERT INTO view_download_count SET ?", [{user_ip:clientIp, article_id:buffer, type:"downloaded"}])
-        console.log("Created new download entry")
+        LogAction("Created new download entry")
         return res.json({success:"Download updated"})
 
         }else{
-        console.log("Already downloaded this item")
+        LogAction("Already downloaded this item")
         return res.json({success:"Download Completed"})
         }
 
 }catch(error){
-console.log(error)
+LogAction(error)
     return res.status(500).json({ 
             success: false, 
             error: error.message || "An unexpected error occurred while downloading data" 
