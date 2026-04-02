@@ -30,6 +30,9 @@ router.get("/article-data", async (req, res) => {
                 graphic_abstract, 
                 manuscript_full_title, 
                 manuscript_running_title, 
+                abstract_fr, 
+                abstract_ptg,
+                abstract_ar,
                 abstract_background, 
                 abstract_objectives, 
                 abstract_method, 
@@ -107,6 +110,9 @@ router.get("/article-data", async (req, res) => {
                 runningTitle: article.manuscript_running_title,
                 articleType: article.article_type,
                 status: article.status,
+                abstract_fr: article.abstract_fr || null,
+                abstract_ptg: article.abstract_ptg || null,
+                abstract_ar: article.abstract_ar || null,
                 
                 // Authors
                 authorsList: authorsList,
