@@ -16,7 +16,7 @@ const { LogAction } = require("../../Logger");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../../../useruploads/manuscripts');
+        const uploadDir = path.join(__dirname, '../../useruploads/manuscripts');
         // Create directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
