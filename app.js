@@ -135,8 +135,10 @@ app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/fonts", express.static(path.join(__dirname, "public/css/fonts")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
-app.use("/editorStatic/", express.static(path.join(__dirname, "public/editors")));
+app.use("/editorStatic", express.static(path.join(__dirname, "public/editors")));
 app.use("/useruploads/", express.static(path.join(__dirname, "/useruploads/")));
+app.use("/useruploads/manuscripts", express.static(path.join(__dirname, "/useruploads/manuscripts")));
+
 app.use("/uploads/", express.static(path.join(__dirname, "/uploads/")));
 
 
