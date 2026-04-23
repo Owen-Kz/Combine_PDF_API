@@ -115,11 +115,11 @@ app.use(session({
   }
 }));
 // Other middleware
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '1000mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.urlencoded({ extended: true, limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1000mb' }));
 app.use(cookie());
-app.use(express.json({ limit: '500mb' }));
+app.use(express.json({ limit: '1000mb' }));
 
 // Debug middleware (remove in production)
 app.use((req, res, next) => {

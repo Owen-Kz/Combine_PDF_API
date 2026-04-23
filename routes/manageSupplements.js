@@ -43,7 +43,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    limits: { fileSize: 1000 * 1024 * 1024 }, // 500MB limit
     fileFilter: function (req, file, cb) {
         // Accept images and documents
         const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
@@ -58,10 +58,10 @@ const upload = multer({
     }
 });
 
-router.use(express.urlencoded({ extended: true, limit: '500mb' }));
-router.use((express.json({ limit: '500mb' })));
+router.use(express.urlencoded({ extended: true, limit: '1000mb' }));
+router.use((express.json({ limit: '1000mb' })));
 
-
+  
 // Helper function to generate file URL based on is_old_publication
 const getFileUrl = (filename, type, isOldPublication) => {
     if (!filename) return null;
