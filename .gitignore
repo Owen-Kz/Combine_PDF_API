@@ -7,3 +7,5 @@ public/userUpload/
 secretKeys.js
 recorderTest.ejs
 uploads/
+useruploads/
+process_logs.txt

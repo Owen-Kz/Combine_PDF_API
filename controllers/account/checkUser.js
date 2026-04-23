@@ -1,5 +1,5 @@
 const db = require("../../routes/db.config");
-
+const dbPromise = require("../../routes/dbPromise.config");
 // controllers/invitations/checkUser.js
 const checkUser = async (req, res) => {
   try {
@@ -11,7 +11,7 @@ const checkUser = async (req, res) => {
 
     if (type === 'reviewer') {
       // Check in authors_account
-      const [user] = await db.promise().query(
+      const [user] = await dbPromise.query(
         "SELECT email, is_reviewer FROM authors_account WHERE email = ?",
         [email]
       );
@@ -24,7 +24,7 @@ const checkUser = async (req, res) => {
       
     } else if (type === 'editor') {
       // Check in editors table
-      const [user] = await db.promise().query(
+      const [user] = await dbPromise.query(
         "SELECT email FROM editors WHERE email = ?",
         [email]
       );

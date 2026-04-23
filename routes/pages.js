@@ -90,6 +90,7 @@ const exportReviewPDF = require("../controllers/editors/reviews/exportReviewPDF"
 const exportReviewExcel = require("../controllers/editors/reviews/exportReviewExcel");
 const getAllCompletedReviews = require("../controllers/editors/reviews/getAllCompletedReviews");
 const CombineWordDocuments = require("../external/combinePDF");
+const updateAccount = require("../controllers/pages/updateAccountPage");
 
 
 
@@ -98,14 +99,7 @@ const CombineWordDocuments = require("../external/combinePDF");
 const router = express.Router()
 router.use(express.urlencoded({ extended: true }));
 router.use(express.json())
-// Enable CORS for this router
-router.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    next();
-  });
+
   
   // Define the upload folder path and ensure it is writable
 const folderPath = path.join(__dirname, "../public");
@@ -141,7 +135,7 @@ router.post("/external/api/combineDOC", CombineDOCX)
 router.get("/file", downloadFile)
 router.get("/item", openfile)
 router.get("/doc", documentFileFormat)
-
+router.get("/updateAccount", updateAccount)
 
 // ArticleSubmission 
 router.get("/uploadManuscript",getUserData, manuscrsciptDataMiddleWare, uploadArticlePage)
@@ -150,7 +144,7 @@ router.post('/generateArticleId', generateArticleId)
 
 router.get("/authorProfileForSearch", AuthorLoggedIn, authorsProfileSearch)
 
-
+router.post("/updateCoAuthorAccountData", upload.none(),  updateAccountData)
 router.post("/updateAccountData", upload.none(), AuthorLoggedIn,  updateAccountData)
 router.get("/getUserInfo", getUserData, (req,res) =>{
   res.json({success:"user", user:req.user})

@@ -16,7 +16,7 @@ const router = express.Router();
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         let uploadPath = path.join(__dirname, "../useruploads/");
-        
+
         // Determine subfolder based on file type
         if (file.fieldname === 'manuscriptCover') {
             uploadPath = path.join(uploadPath, "article_images/");
@@ -25,12 +25,12 @@ const storage = multer.diskStorage({
         } else {
             uploadPath = path.join(uploadPath, "misc/");
         }
-        
+
         // Create directory if it doesn't exist
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
-        
+
         cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
@@ -41,7 +41,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
     fileFilter: function (req, file, cb) {
@@ -49,7 +49,7 @@ const upload = multer({
         const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        
+
         if (mimetype && extname) {
             return cb(null, true);
         } else {
@@ -61,19 +61,11 @@ const upload = multer({
 router.use(express.urlencoded({ extended: true, limit: '500mb' }));
 router.use((express.json({ limit: '500mb' })));
 
-// Enable CORS for this router
-router.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    next();
-});
 
 // Helper function to generate file URL based on is_old_publication
 const getFileUrl = (filename, type, isOldPublication) => {
     if (!filename) return null;
-    
+
     if (isOldPublication === 'yes') {
         // Old publications use the full asfirj.org URL
         if (type === 'image') {
@@ -89,7 +81,7 @@ const getFileUrl = (filename, type, isOldPublication) => {
             return `${process.env.CURRENT_DOMAIN}/useruploads/manuscripts/${filename}`;
         }
     }
-    
+
     return null;
 };
 
@@ -107,7 +99,7 @@ const getDefaultCoverImage = (isOldPublication) => {
 router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        
+
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.status(403).json({ error: "Not authorized" });
@@ -159,10 +151,10 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
                 j.issues_number LIKE ? OR
                 j.doi_number LIKE ?
             )`;
-            
+
             baseQuery += searchCondition;
             countQuery += searchCondition;
-            
+
             const searchPattern = `%${searchQuery}%`;
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
             countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
@@ -200,7 +192,6 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
 
             // Determine if this is an old publication
             const isOldPublication = issue.is_old_publication || 'no';
-
             return {
                 id: issue.buffer || issue.id,
                 title: issue.manuscript_full_title,
@@ -209,10 +200,10 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
                 issue: issue.issues_number,
                 date: issue.date_published ? formatDate(issue.date_published) : null,
                 articles: authors.length,
-                coverImage: issue.manuscriptPhoto 
+                coverImage: issue.manuscriptPhoto
                     ? getFileUrl(issue.manuscriptPhoto, 'image', isOldPublication)
                     : getDefaultCoverImage(isOldPublication),
-                pdfUrl: issue.manuscript_file 
+                pdfUrl: issue.manuscript_file
                     ? getFileUrl(issue.manuscript_file, 'manuscript', isOldPublication)
                     : null,
                 description: issue.unstructured_abstract,
@@ -229,6 +220,9 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
                 open_access: issue.is_open_access === 'yes',
                 editor_choice: issue.is_editors_choice === 'yes',
                 Hyperlink: issue.hyperlink_to_others,
+                 abstract_fr: issue.abstract_fr || null,
+                abstract_ar: issue.abstract_ar || null,
+                abstract_ptg: issue.abstract_ptg || null,
                 authors: authors,
                 views_count: issue.views_count || 0,
                 downloads_count: issue.downloads_count || 0,
@@ -245,9 +239,9 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching issues:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -258,7 +252,7 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
 router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        
+
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.status(403).json({ error: "Not authorized" });
@@ -311,10 +305,10 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
                 fullname LIKE ? OR
                 corresponding_authors_email LIKE ?
             )`;
-            
+
             baseQuery += searchCondition;
             countQuery += searchCondition;
-            
+
             const searchPattern = `%${searchQuery}%`;
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
             countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
@@ -366,10 +360,10 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
                 views: supplement.views_count || 0,
                 downloads: supplement.downloads_count || 0,
                 category: 'supplement',
-                coverImage: supplement.manuscriptPhoto 
+                coverImage: supplement.manuscriptPhoto
                     ? getFileUrl(supplement.manuscriptPhoto, 'image', isOldPublication)
                     : getDefaultCoverImage(isOldPublication),
-                pdfUrl: supplement.manuscript_file 
+                pdfUrl: supplement.manuscript_file
                     ? getFileUrl(supplement.manuscript_file, 'manuscript', isOldPublication)
                     : null,
                 abstract: supplement.unstructured_abstract || null,
@@ -389,6 +383,9 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
                 open_access: supplement.is_open_access === 'yes',
                 Hyperlink: supplement.hyperlink_to_others,
                 manuscript_contents: supplement.abstract_discussion,
+                abstract_fr: supplement.abstract_fr,
+                abstract_ar: supplement.abstract_ar,
+                abstract_ptg: supplement.abstract_ptg,
                 authorsArray: authors,
                 is_old_publication: isOldPublication
             };
@@ -403,9 +400,9 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching supplements:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -417,7 +414,7 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
         const itemId = req.params.id;
-        
+
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.status(403).json({ error: "Not authorized" });
@@ -472,10 +469,10 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
             firstPublished: item.date_published,
             views: item.views_count || 0,
             downloads: item.downloads_count || 0,
-            coverImage: item.manuscriptPhoto 
+            coverImage: item.manuscriptPhoto
                 ? getFileUrl(item.manuscriptPhoto, 'image', isOldPublication)
                 : getDefaultCoverImage(isOldPublication),
-            pdfUrl: item.manuscript_file 
+            pdfUrl: item.manuscript_file
                 ? getFileUrl(item.manuscript_file, 'manuscript', isOldPublication)
                 : null,
             abstract: item.unstructured_abstract || item.abstract_discussion,
@@ -495,6 +492,9 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
             Hyperlink: item.hyperlink_to_others,
             is_publication: item.is_publication === 'yes',
             authorsArray: authors,
+            abstract_fr: item.abstract_fr || null,
+            abstract_ar: item.abstract_ar || null,
+            abstract_ptg: item.abstract_ptg || null,
             is_old_publication: isOldPublication
         };
 
@@ -505,9 +505,9 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching item:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -522,7 +522,7 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
     try {
         const userId = req.user.id;
         const itemId = req.params.id;
-        
+
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.status(403).json({ error: "Not authorized" });
@@ -534,6 +534,9 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
             authorsArray,
             corresponding_author,
             abstract,
+            abstract_fr,
+            abstract_ar,
+            abstract_ptg,
             manuscript_contents,
             Hyperlink,
             issue_number,
@@ -574,6 +577,9 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
                     manuscript_full_title = ?,
                     unstructured_abstract = ?,
                     abstract_discussion = ?,
+                    abstract_fr = ?,
+                    abstract_ar = ?,
+                    abstract_ptg = ?,
                     corresponding_authors_email = ?,
                     hyperlink_to_others = ?,
                     issues_number = ?,
@@ -592,6 +598,9 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
                 title || currentItem.manuscript_full_title,
                 abstract || currentItem.unstructured_abstract,
                 manuscript_contents || currentItem.abstract_discussion,
+                abstract_fr || currentItem.abstract_fr || null,
+                abstract_ar || currentItem.abstract_ar || null,
+                abstract_ptg || currentItem.abstract_ptg || null,
                 corresponding_author || currentItem.corresponding_authors_email,
                 Hyperlink || currentItem.hyperlink_to_others,
                 issue_number || currentItem.issues_number,
@@ -687,9 +696,9 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
 
     } catch (error) {
         console.error("Error updating item:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -701,7 +710,7 @@ router.delete("/delete/:id", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
         const itemId = req.params.id;
-        
+
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.status(403).json({ error: "Not authorized" });
@@ -761,9 +770,9 @@ router.delete("/delete/:id", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error deleting item:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -777,7 +786,7 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 ]), async (req, res) => {
     try {
         const userId = req.user.id;
-        
+
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.status(403).json({ error: "Not authorized" });
@@ -789,6 +798,9 @@ router.post("/create", AuthorLoggedIn, upload.fields([
             authorsArray,
             corresponding_author,
             abstract,
+            abstract_fr,
+            abstract_ar,
+            abstract_ptg,
             manuscript_contents,
             Hyperlink,
             issue_number,
@@ -822,53 +834,59 @@ router.post("/create", AuthorLoggedIn, upload.fields([
         try {
             // Insert into journals table
             const insertQuery = `
-                INSERT INTO journals (
-                    article_type,
-                    manuscript_full_title,
-                    unstructured_abstract,
-                    abstract_discussion,
-                    corresponding_authors_email,
-                    hyperlink_to_others,
-                    issues_number,
-                    page_number,
-                    doi_number,
-                    date_submitted,
-                    date_reviewed,
-                    date_accepted,
-                    date_published,
-                    is_editors_choice,
-                    is_open_access,
-                    is_publication,
-                    is_old_publication,
-                    manuscriptPhoto,
-                    manuscript_file,
-                    buffer,
-                    date_uploaded,
-                    status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'published')
-            `;
+    INSERT INTO journals (
+        article_type,
+        manuscript_full_title,
+        unstructured_abstract,
+        abstract_discussion,
+        abstract_fr,
+        abstract_ar,
+        abstract_ptg,
+        corresponding_authors_email,
+        hyperlink_to_others,
+        issues_number,
+        page_number,
+        doi_number,
+        date_submitted,
+        date_reviewed,
+        date_accepted,
+        date_published,
+        is_editors_choice,
+        is_open_access,
+        is_publication,
+        is_old_publication,
+        manuscriptPhoto,
+        manuscript_file,
+        buffer,
+        date_uploaded,
+        status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'published')
+`;
 
             const insertParams = [
-                article_type || 'Original Article',
-                title,
-                abstract || null,
-                manuscript_contents || null,
-                corresponding_author || null,
-                Hyperlink || null,
-                issue_number || null,
-                page_number || null,
-                doi_number || null,
-                date_submitted || null,
-                date_reviewed || null,
-                date_accepted || null,
-                date_published || null,
-                editor_choice === 'true' ? 'yes' : 'no',
-                open_access === 'true' ? 'yes' : 'no',
-                is_publication === 'true' ? 'yes' : 'no',
-                is_old_publication === 'true' ? 'yes' : 'no',
-                req.files && req.files['manuscriptCover'] ? req.files['manuscriptCover'][0].filename : null,
-                req.files && req.files['manuscript_file'] ? req.files['manuscript_file'][0].filename : null,
-                buffer
+                article_type || 'Original Article',           // 1
+                title,                                         // 2
+                abstract || null,                              // 3
+                manuscript_contents || null,                   // 4
+                abstract_fr || null,                           // 5
+                abstract_ar || null,                           // 6
+                abstract_ptg || null,                          // 7
+                corresponding_author || null,                  // 8
+                Hyperlink || null,                             // 9
+                issue_number || null,                          // 10
+                page_number || null,                           // 11
+                doi_number || null,                            // 12
+                date_submitted || null,                        // 13
+                date_reviewed || null,                         // 14
+                date_accepted || null,                         // 15
+                date_published || null,                        // 16
+                editor_choice === 'true' ? 'yes' : 'no',       // 17
+                open_access === 'true' ? 'yes' : 'no',         // 18
+                is_publication === 'true' ? 'yes' : 'no',      // 19
+                is_old_publication === 'true' ? 'yes' : 'no',  // 20
+                req.files && req.files['manuscriptCover'] ? req.files['manuscriptCover'][0].filename : null,  // 21
+                req.files && req.files['manuscript_file'] ? req.files['manuscript_file'][0].filename : null,  // 22
+                buffer                                         // 23
             ];
 
             const [result] = await connection.query(insertQuery, insertParams);
@@ -891,7 +909,7 @@ router.post("/create", AuthorLoggedIn, upload.fields([
             if (req.files && req.files['manuscript_file'] && req.files['manuscript_file'][0]) {
                 const fileName = req.files['manuscript_file'][0].filename;
                 const issueNum = issue_number || '1'; // Default to issue 1 if not provided
-                
+
                 // Send email asynchronously - don't wait for it to complete
                 // This prevents email sending delays from affecting the response
                 SendPublicationEmail(corresponding_author, title, buffer, issueNum, fileName)
@@ -925,9 +943,9 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 
     } catch (error) {
         console.error("Error creating item:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -937,7 +955,7 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 router.post("/views/:id", async (req, res) => {
     try {
         const itemId = req.params.id;
-        
+
         await dbPromise.query(
             "UPDATE journals SET views_count = views_count + 1 WHERE buffer = ?",
             [itemId]
@@ -950,9 +968,9 @@ router.post("/views/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Error updating views:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });
@@ -963,7 +981,7 @@ router.post("/views/:id", async (req, res) => {
 router.post("/downloads/:id", async (req, res) => {
     try {
         const itemId = req.params.id;
-        
+
         await dbPromise.query(
             "UPDATE journals SET downloads_count = downloads_count + 1 WHERE buffer = ?",
             [itemId]
@@ -976,9 +994,9 @@ router.post("/downloads/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Error updating downloads:", error);
-        return res.status(500).json({ 
-            status: "internalError", 
-            message: error.message 
+        return res.status(500).json({
+            status: "internalError",
+            message: error.message
         });
     }
 });

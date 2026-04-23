@@ -8,7 +8,7 @@ const NodeCache = require('node-cache');  // npm install node-cache
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 
 // Configure multer for file uploads (optimized)
-const uploadDir = path.join(__dirname, '../../../useruploads/editors');
+const uploadDir = path.join(__dirname, '../../useruploads/editors');
 // Ensure directory exists at startup (not per request)
 fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
 

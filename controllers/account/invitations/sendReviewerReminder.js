@@ -4,8 +4,8 @@ const { escapeHtml } = require("../../utils/security");
 const convertQUILLTOHTML = require("./convertHTML");
 const dotenv = require("dotenv");
 const db = require("../../../routes/db.config");
+const dbPromise = require("../../../routes/dbPromise.config");
 dotenv.config();
-
 /**
  * Sends a reminder email to a reviewer
  * @param {Object} req - Express request object
@@ -48,7 +48,7 @@ const sendReviewReminder = async (req, res) => {
     }
 
     // Get editor details
-    const [editorResults] = await db.promise().query(
+    const [editorResults] = await dbPromise.query(
       `SELECT email, fullname FROM editors WHERE email = ?`,
       [req.user.email]
     );
@@ -64,7 +64,7 @@ const sendReviewReminder = async (req, res) => {
     const editorName = editorResults[0].fullname;
 
     // Get manuscript details
-    const [manuscriptResults] = await db.promise().query(
+    const [manuscriptResults] = await dbPromise.query(
       `SELECT title, revision_id FROM submissions WHERE revision_id = ?`,
       [articleId]
     );
@@ -79,7 +79,7 @@ const sendReviewReminder = async (req, res) => {
     const manuscriptTitle = manuscriptResults[0].title;
 
     // Get reminder count for this review
-    const [reminderResults] = await db.promise().query(
+    const [reminderResults] = await dbPromise.query(
       `SELECT COUNT(*) as count FROM review_reminders 
        WHERE review_id = ? AND article_id = ? AND reviewer_email = ?`,
       [reviewId, articleId, reviewerEmail]
@@ -111,9 +111,9 @@ const sendReviewReminder = async (req, res) => {
           <title>${escapeHtml(subject)}</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(to right, #dc2626, #991b1b); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(to right, #dc2626, #991b1b); color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { padding: 30px 20px; background: #f9f9f9; }
-            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .button:hover { background: #6b21a8; }
             .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee; }
             .warning { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 15px; border-radius: 5px; margin: 20px 0; }
@@ -172,9 +172,9 @@ const sendReviewReminder = async (req, res) => {
           <title>${escapeHtml(subject)}</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(to right, #7e22ce, #6b21a8); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(to right, #7e22ce, #6b21a8); color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { padding: 30px 20px; background: #f9f9f9; }
-            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #7e22ce; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .button:hover { background: #6b21a8; }
             .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee; }
           </style>
@@ -240,7 +240,7 @@ const sendReviewReminder = async (req, res) => {
     await apiInstance.sendTransacEmail(emailData);
 
     // Insert reminder record into review_reminders table
-    await db.promise().query(
+    await dbPromise.query(
       `INSERT INTO review_reminders 
        (review_id, article_id, reviewer_email, reminder_type, reminder_number, 
         due_date, days_overdue, status, notes) 

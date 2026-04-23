@@ -9,25 +9,53 @@ const MySQLStore = require('express-mysql-session')(session);
 const bodyParser = require("body-parser");
 const cors = require('cors');
 const path = require("path");
+const { LogAction } = require("./Logger");
 
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
-app.use((req, res, next) => {
-  console.log(`Incoming request: ${req.method} ${req.url}`);
-  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://portal.asfirj.org',
+      'http://localhost:3000',
+      'https://asfirj.org',
+      'https://process.asfirj.org'
+    ];
+    
+    // Check if the origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}));
-app.options('*', cors());
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Response-Time'],
+  maxAge: 86400 // 24 hours
+};
+
+// Apply CORS middleware BEFORE other middleware
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// app.use((req, res, next) => {
+//   LogAction(`Incoming request: ${req.method} ${req.url}`);
+//   // res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
+//   // res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+//   // res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+//   // res.setHeader('Access-Control-Allow-Credentials', 'true');
+//   next();
+// });
 
 // Session store configuration
 const sessionStore = new MySQLStore({
@@ -55,21 +83,37 @@ sessionStore.on('error', (error) => {
 });
 
 // Session middleware
+// app.use(session({
+//   name: 'asfi.sid',   // unique cookie name
+//   secret: process.env.SESSION_SECRET , // dedicated secret
+//   store: sessionStore,
+//   resave: false,
+//   saveUninitialized: false,
+//   proxy: true,
+//   cookie: {
+//     secure: process.env.NODE_ENV === 'production',  // only secure in production
+//     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+//     maxAge: 24 * 60 * 60 * 1000,
+//     httpOnly: true
+//   }
+// }));
+
+// In your server.js session configuration
 app.use(session({
-  name: 'asfi.sid',   // ✅ unique cookie name
-  secret: process.env.SESSION_SECRET || 'change_this_secret', // ✅ dedicated secret
+  name: 'asfi.sid',
+  secret: process.env.SESSION_SECRET,
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',  // ✅ only secure in production
+    secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true
+    httpOnly: true,
+    domain: process.env.NODE_ENV === 'production' ? '.asfirj.org' : undefined // Add this for subdomain support
   }
 }));
-
 // Other middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -79,8 +123,8 @@ app.use(express.json({ limit: '500mb' }));
 
 // Debug middleware (remove in production)
 app.use((req, res, next) => {
-  console.log('Session ID:', req.sessionID);
-  console.log('User in session:', req.session.user ? req.session.user.email : 'None');
+  LogAction('Session ID:', req.sessionID);
+  LogAction('User in session:', req.session.user ? req.session.user.email : 'None');
   next();
 });
 
@@ -91,25 +135,16 @@ app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/fonts", express.static(path.join(__dirname, "public/css/fonts")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
-app.use("/editorStatic/", express.static(path.join(__dirname, "public/editors")));
+app.use("/editorStatic", express.static(path.join(__dirname, "public/editors")));
 app.use("/useruploads/", express.static(path.join(__dirname, "/useruploads/")));
+app.use("/useruploads/manuscripts", express.static(path.join(__dirname, "/useruploads/manuscripts")));
+
 app.use("/uploads/", express.static(path.join(__dirname, "/uploads/")));
 
 
 app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploads/editors")));
 
-// Socket.io setup
-const { Server } = require('socket.io');
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-  transports: ["websocket"],
-});
 
-// Your socket.io event handlers...
 
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
@@ -119,6 +154,8 @@ app.use("/api/newsletter", require("./routes/newsletter.routes"))
 app.use("/api/semperfi", require("./routes/admin.invitations"))
 app.use("/api/personnel", require("./routes/invitationRoutes"))
 app.use("/api/authors", require("./routes/authorsRoutes"))
+app.use("/authorsRoutes", require("./routes/authorsRoutes"))
+
 app.use("/reviewer", require("./routes/reviewerRoutes"))
 app.use("/journal/public", require("./routes/externalRoutes"))
 
@@ -127,6 +164,6 @@ app.use("/journal/public", require("./routes/externalRoutes"))
 app.use("/", require("./routes/pages"));
 
 server.listen(PORT, () => {
-  console.log("Server is running on ", PORT);
-  console.log("Environment:", process.env.NODE_ENV || 'development');
+  LogAction("Server is running on ", PORT);
+  LogAction("Environment:", process.env.NODE_ENV || 'development');
 });

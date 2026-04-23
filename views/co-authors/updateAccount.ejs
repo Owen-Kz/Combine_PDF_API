@@ -60,13 +60,13 @@
         
         .top-navbar {
             background-color: rgb(49 3 87 / var(--tw-bg-opacity, 1));
-            color: white;
+            color: #ffffff;
             padding: 0.5rem 0;
         }
         
         .journal-banner {
             background-color: rgb(49 3 87 / var(--tw-bg-opacity, 1));
-            color: white;
+            color: #ffffff;
             padding: 1rem 0;
         }
         
@@ -77,7 +77,7 @@
         
         .submit-nav a.active li {
             background-color: rgb(49 3 87 / var(--tw-bg-opacity, 1));
-            color: white;
+            color: #ffffff;
         }
         
         .form-control:read-only {
@@ -509,7 +509,7 @@
                 document.getElementById('loadingOverlay').style.display = 'none';
                 
                 const formData = new FormData(document.getElementById("registerForm"))
-                fetch(`/updateAccountData?e=<%= userId %>`, {
+                fetch(`/updateCoAuthorAccountData?e=<%= userId %>`, {
                     method:"POST", 
                     body: formData
                 }).then(res => res.json())

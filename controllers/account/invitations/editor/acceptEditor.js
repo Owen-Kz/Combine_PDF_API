@@ -1,7 +1,7 @@
 // controllers/invitations/acceptEditor.js
 const db = require("../../../../routes/db.config");
+const dbPromise = require("../../../../routes/dbPromise.config");
 const sendConfirmationEmail = require("../reviewer/sendConfirmationEmail");
-
 const acceptEditor = async (req, res) => {
   let connection;
   try {
@@ -14,7 +14,7 @@ const acceptEditor = async (req, res) => {
       });
     }
 
-    connection = await db.promise();
+    connection = await dbPromise;
     await connection.beginTransaction();
 
     // First check if invitation exists and get its status from invitations table

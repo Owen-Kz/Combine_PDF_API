@@ -11,7 +11,7 @@ const { escapeHtml } = require("./security");
  * @param {string} manuscriptId - Unique manuscript ID
  * @returns {Promise<Object>} - Status object with success/error information
  */
-const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscriptId) => {
+const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscriptId, action = "") => {
     // Input validation
     if (!RecipientEmail || typeof RecipientEmail !== "string") {
         console.error("Invalid recipient email");
@@ -103,7 +103,7 @@ const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscrip
         }
         .button {
             background-color: #ae05b4ff;
-            color: white;
+            color: #fff;
             padding: 10px 15px;
             text-decoration: none;
             border-radius: 4px;
@@ -128,13 +128,13 @@ const SendNewSubmissionEmail = async (RecipientEmail, manuscriptTitle, manuscrip
     <p>Dear ${escapeHtml(prefix)} ${escapeHtml(RecipientName)},</p>
     
     <div class="highlight">
-        <p>Your manuscript <strong>${escapeHtml(manuscriptTitle)}</strong> has been successfully submitted to ASFI Research Journal and is now under review.</p>
+        <p>Your manuscript ${action} <strong>${escapeHtml(manuscriptTitle)}</strong> has been successfully submitted to ASFI Research Journal and is now under review.</p>
         <p>Manuscript ID: <span class="manuscript-id">${escapeHtml(manuscriptId)}</span></p>
     </div>
     
     <p>You can track your submission status through our author portal:</p>
     
-    <a href="https://asfirj.org/portal/login/" class="button">Access Author Portal</a>
+    <a href="https://portal.asfirj.org/dashboard" class="button" style="color:#fff;">Access Author Portal</a>
     
     <p>We will notify you by email when there are updates to your submission status.</p>
     

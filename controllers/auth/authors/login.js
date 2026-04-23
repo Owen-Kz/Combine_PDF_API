@@ -92,7 +92,7 @@ const AuthorsLogin = async (req, res) => {
 
     try {
         // Query the database for the user
-        const [results] = await db.promise().query(query, [email]);
+        const [results] = await dbPromise.query(query, [email]);
 
         if (results.length === 0) {
             console.log("User not found for email:", email);
@@ -140,7 +140,7 @@ const AuthorsLogin = async (req, res) => {
                     prefix: user.prefix || null,
                     orcidId: user.orcid_id || null,
                     discipline: user.discipline || null,
-                    affiliations: user.affiliations || null,
+                    affiliations: user.affiliations || user.affiliation || null,
                     affiliationCountry: user.affiliation_country || null,
                     affiliationCity: user.affiliation_city || null,
                     asfiMembershipId: user.asfi_membership_id || null,
@@ -182,7 +182,7 @@ const AuthorsLogin = async (req, res) => {
                         (editor_id, session_token, ip_address, user_agent, created_at, expires_at) 
                         VALUES ((SELECT id FROM editors WHERE email = ?), ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))
                     `;
-                    await db.promise().query(EditorSessionQuery, [
+                    await dbPromise.query(EditorSessionQuery, [
                         user.email,
                         token, 
                         ip_add, 
@@ -198,7 +198,7 @@ const AuthorsLogin = async (req, res) => {
                 VALUES ((SELECT id FROM authors_account WHERE email = ?), ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))
             `;
             
-            await db.promise().query(AuthorSessionQuery, [
+            await dbPromise.query(AuthorSessionQuery, [
                 user.email,
                 token, 
                 ip_add, 

@@ -10,7 +10,7 @@ const db = require("../../routes/db.config");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../../../useruploads/review-files');
+        const uploadDir = path.join(__dirname, '../../useruploads/review-files');
         // Create directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });

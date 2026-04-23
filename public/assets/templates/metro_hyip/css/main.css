@@ -4621,7 +4621,7 @@ select option {
 .dashboard-fluid .sidebar-menu {
     padding-bottom: 10px;
     height: 100vh;
-    background-color: white;
+    background-color: #ffffff;
     overflow-y: auto;
     z-index: 999;
     transition: 0.2s linear;

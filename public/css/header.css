@@ -534,7 +534,7 @@
 
 #username {
     font-size: 22px;
-    color: white;
+    color: #ffffff;
 }
 #amount {
     color: coral;
@@ -560,7 +560,7 @@
 }
 
 .popup-content h2 {
-    color: white;
+    color: #ffffff;
     font-size: 15px;
     margin-right: 6px;
 }
