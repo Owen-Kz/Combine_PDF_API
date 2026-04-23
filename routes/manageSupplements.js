@@ -58,8 +58,8 @@ const upload = multer({
     }
 });
 
-router.use(express.urlencoded({ extended: true }));
-router.use(express.json());
+router.use(express.urlencoded({ extended: true, limit: '500mb' }));
+router.use((express.json({ limit: '500mb' })));
 
 // Enable CORS for this router
 router.use((req, res, next) => {
