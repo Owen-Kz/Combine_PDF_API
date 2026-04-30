@@ -137,7 +137,24 @@ app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 app.use("/editorStatic", express.static(path.join(__dirname, "public/editors")));
 app.use("/useruploads/", express.static(path.join(__dirname, "/useruploads/")));
-app.use("/useruploads/manuscripts", express.static(path.join(__dirname, "/useruploads/manuscripts")));
+// app.use("/useruploads/manuscripts", express.static(path.join(__dirname, "/useruploads/manuscripts")));
+// Serve user uploaded files statically
+const uploadDirectories = [
+    '',  // root useruploads folder
+    'manuscripts',
+    'coverletters',
+    'tables',
+    'figures',
+    'supplementary',
+    'graphicabstracts',
+    'trackedmanuscripts'
+];
+
+uploadDirectories.forEach(dir => {
+    const routePath = dir ? `/useruploads/${dir}` : '/useruploads/';
+    const staticPath = dir ? path.join(__dirname, `/useruploads/${dir}`) : path.join(__dirname, '/useruploads/');
+    app.use(routePath, express.static(staticPath));
+});
 
 app.use("/uploads/", express.static(path.join(__dirname, "/uploads/")));
 

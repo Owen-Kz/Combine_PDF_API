@@ -13,15 +13,48 @@ const CoAuthors = require("../CoAuthors");
 const dbPromise = require("../../routes/dbPromise.config");
 const { LogAction } = require("../../Logger");
 
+// Helper function to determine file type and destination
+function getFileDestination(fileFieldName) {
+    const destinations = {
+        'manuscript_file': 'manuscripts',
+        'coverLetter_file': 'coverletters',
+        'tables_file': 'tables',
+        'figures_file': 'figures',
+        'supplementary_file': 'supplementary',
+        'graphicAbstract_file': 'graphicabstracts',
+        'trackedManuscript_file': 'trackedmanuscripts'
+    };
+    return destinations[fileFieldName] || 'manuscripts';
+}
 
-// Configure multer for file uploads
+// Helper function to get file suffix
+function getFileSuffix(fileFieldName) {
+    const suffixes = {
+        'manuscript_file': '',
+        'coverLetter_file': '_cover_letter',
+        'tables_file': '_tables',
+        'figures_file': '_figures',
+        'supplementary_file': '_supplementary',
+        'graphicAbstract_file': '_graphic_abstract',
+        'trackedManuscript_file': '_tracked'
+    };
+    return suffixes[fileFieldName] || '';
+}
+
+// Configure multer for file uploads with dynamic destinations
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../../useruploads/manuscripts');
+        // Get the field name to determine destination
+        let fieldName = file.fieldname;
+        
+        const folderType = getFileDestination(fieldName);
+        const uploadDir = path.join(__dirname, `../../useruploads/${folderType}`);
+        
         // Create directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
+        
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
@@ -29,19 +62,17 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + RandomString;
         const fileExt = path.extname(file.originalname);
 
-        // Sanitize original filename
-        const sanitizedName = file.originalname
-            .replace(/[^a-zA-Z0-9.]/g, '_')
-            .replace(/\.[^/.]+$/, ''); // Remove extension
-
         // Determine file prefix based on action
         let prefix = '';
         if (action === 'correction' || action === "correction_saved" || action === "correction_submitted") prefix = 'CORR_';
         else if (action === 'revision' || action === "revision_saved" || action === "revision_submitted") prefix = 'REV_';
         else prefix = 'NEW_';
 
-        // Include original filename in the saved file name for reference
-        const fileName = `${prefix}${manuscriptId || 'draft'}_${sanitizedName}_${uniqueSuffix}${fileExt}`;
+        // Get the suffix based on file type
+        const suffix = getFileSuffix(file.fieldname);
+        
+        // Create filename with suffix
+        const fileName = `${prefix}${manuscriptId || 'draft'}${suffix}_${uniqueSuffix}${fileExt}`;
         cb(null, fileName);
     }
 });
@@ -72,7 +103,7 @@ const submitCorrection = async (req, res) => {
     let connection;
 
     try {
-        LogAction("Received submission Correction data:",  JSON.stringify(req.body));
+        LogAction("Received submission Correction data:", JSON.stringify(req.body));
         LogAction("Received files:", req.files);
 
         // Handle file uploads
@@ -139,52 +170,44 @@ const submitCorrection = async (req, res) => {
         // Generate or use provided manuscript ID
         let finalManuscriptId = manuscriptId;
         LogAction("Initial manuscript FOR CORRECTION ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
-        // if (!finalManuscriptId || action === 'new') {
-        //     // Generate new ID using the generateArticleId function
-        //     finalManuscriptId = await generateArticleId({
-        //         user: req.user,
-        //         query: {
-        //             correct: action === 'correction_saved' || action === 'correction_submitted' || action === "correction" ? 'true' : undefined,
-        //             revise: action === 'revision_saved' || action === 'revision_submitted' || action === 'revision' ? 'true' : undefined,
-        //             a: previousId
-        //         }
-        //     });
-        // }
+        
         LogAction("Final manuscript ID to be used:", finalManuscriptId);
 
-        // Process file uploads and generate URLs
+        // Helper function to get file URL based on its type
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-        const getFileUrl = (file) => {
-            return file ? `${baseUrl}/useruploads/manuscripts/${file.filename}` : null;
+        
+        const getFileUrl = (file, fieldName) => {
+            if (!file) return null;
+            const folderType = getFileDestination(fieldName);
+            return `${baseUrl}/useruploads/${folderType}/${file.filename}`;
         };
 
         const manuscriptFile = req.files?.manuscript_file?.[0]
-            ? getFileUrl(req.files.manuscript_file[0])
+            ? getFileUrl(req.files.manuscript_file[0], 'manuscript_file')
             : null;
 
         const coverLetterFile = req.files?.coverLetter_file?.[0]
-            ? getFileUrl(req.files.coverLetter_file[0])
+            ? getFileUrl(req.files.coverLetter_file[0], 'coverLetter_file')
             : null;
 
         const tablesFile = req.files?.tables_file?.[0]
-            ? getFileUrl(req.files.tables_file[0])
+            ? getFileUrl(req.files.tables_file[0], 'tables_file')
             : null;
 
         const figuresFile = req.files?.figures_file?.[0]
-            ? getFileUrl(req.files.figures_file[0])
+            ? getFileUrl(req.files.figures_file[0], 'figures_file')
             : null;
 
         const supplementaryFile = req.files?.supplementary_file?.[0]
-            ? getFileUrl(req.files.supplementary_file[0])
+            ? getFileUrl(req.files.supplementary_file[0], 'supplementary_file')
             : null;
 
         const graphicAbstractFile = req.files?.graphicAbstract_file?.[0]
-            ? getFileUrl(req.files.graphicAbstract_file[0])
+            ? getFileUrl(req.files.graphicAbstract_file[0], 'graphicAbstract_file')
             : null;
 
         const trackedManuscriptFile = req.files?.trackedManuscript_file?.[0]
-            ? getFileUrl(req.files.trackedManuscript_file[0])
+            ? getFileUrl(req.files.trackedManuscript_file[0], 'trackedManuscript_file')
             : null;
 
         // Check if submission already exists
@@ -238,9 +261,11 @@ const submitCorrection = async (req, res) => {
             if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correction_submitted" || action === "correction" || action === "correction_saved") {
                 await connection.query(
                     `UPDATE submissions SET status = ? WHERE article_id = ? OR previous_manuscript_id = ?`,
-                    [action, submissionData.previous_manuscript_id, submissionData.previous_manuscript_id]
+                    [action === 'revision_submitted' ? 'revision_submitted' : 'correction_submitted', 
+                     submissionData.previous_manuscript_id, 
+                     submissionData.previous_manuscript_id]
                 );
-                LogAction(`${action} updated for ${submissionData.previous_manuscript_id}. ${submissionData}`)
+                LogAction(`${action} updated for ${submissionData.previous_manuscript_id}.`);
             }
 
             // Delete existing keywords
@@ -324,11 +349,16 @@ const submitCorrection = async (req, res) => {
         }
 
         await connection.commit();
-        LogAction("ACTION", action)
+        LogAction("ACTION", action);
+        
         // Send emails only if this is a final submission (not draft)
         if (action === 'submit' || action === 'correction_submitted' || action === 'revision_submitted') {
             try {
-               const actionMessage = action === "submit" ? "" : action === "revision_submitted" ? "revision for" : action === "correction_submitted" ? "correction for" : ""
+                      await connection.query(
+                    `UPDATE submissions SET date_submitted = ? WHERE article_id = ?`,
+                    [new Date(), finalManuscriptId]
+                );
+                const actionMessage = action === "submit" ? "" : action === "revision_submitted" ? "revision for" : action === "correction_submitted" ? "correction for" : "";
                 const emailResults = await Promise.allSettled([
                     SendNewSubmissionEmail(userEmail, title, finalManuscriptId, actionMessage),
                     sendEmailToHandler("submissions@asfirj.org", title, finalManuscriptId, userFullname),
@@ -341,7 +371,11 @@ const submitCorrection = async (req, res) => {
                 // Don't fail the submission if emails fail
             }
         }
-        const responseMessage = action === "submit" ? "Manuscript" : action === "correction_submitted" || action === "correction_saved" || action === "correction" ? "Manuscript Correction" : action === "revision_saved" || action === "revision_submitted" || action === "revision" ? "Manuscript Revision" : ""
+        
+        const responseMessage = action === "submit" ? "Manuscript" : 
+                               action === "correction_submitted" || action === "correction_saved" || action === "correction" ? "Manuscript Correction" : 
+                               action === "revision_saved" || action === "revision_submitted" || action === "revision" ? "Manuscript Revision" : "";
+        
         return res.json({
             status: "success",
             message: action === 'submit' || action === "revision_submitted" || action === "correction_submitted"
@@ -355,7 +389,7 @@ const submitCorrection = async (req, res) => {
         LogAction("Error submitting manuscript:", error);
         return res.status(500).json({
             status: "error",
-            message: "Internal server error",
+            message: error.message || "Internal server error",
             ...(process.env.NODE_ENV === "development" && {
                 error: error.message,
                 stack: error.stack
