@@ -177,8 +177,12 @@ const getCompletedReviews = async (req, res) => {
                     letterToEditor: review.letter_to_editor,
                     wasOnTime,
                     manuscriptStatus: review.manuscript_status,
-                    isWomenInScience: review.is_women_in_contemporary_science === 1
+                    isWomenInScience: review.is_women_in_contemporary_science === 1 || review.is_women_in_contemporary_science === 'yes',
+                    isBelispointAcademic: review.is_belispoint_academic === 1 || review.is_belispoint_academic === 'yes',
+                    isKidnappingForRansom: review.is_kidnapping_for_ransom === 1 || review.is_kidnapping_for_ransom === 'yes'
                 };
+
+            
             })
         );
 

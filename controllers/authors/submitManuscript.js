@@ -164,7 +164,9 @@ const submitManuscript = async (req, res) => {
             disclosures,
             manuscriptId,
             action,
-            isWomenInScience
+            isWomenInScience,
+            isBelispointAcademic,
+            isKidnappingForRansom,
         } = req.body;
 
         // Parse JSON strings
@@ -284,7 +286,9 @@ const submitManuscript = async (req, res) => {
             revision_id: finalManuscriptId,
             previous_manuscript_id: previousId || null,
             status: action === 'submit' || action === "revision_submitted" || action === "correction_submitted" ? 'submitted' : 'draft',
-            is_women_in_contemporary_science: isWomenInScience === 'yes' ? 1 : 0,
+            is_women_in_contemporary_science: isWomenInScience === 'yes' ? 1 : 0, 
+            is_belispoint_academic: isBelispointAcademic === 'yes' ? 1 : 0,
+            is_kidnapping_for_ransom: isKidnappingForRansom === 'yes' ? 1 : 0,
             last_updated: new Date()
         };
 

@@ -163,7 +163,9 @@ const ArchivedSubmissions = async (req, res) => {
                 }),
                 submittedDate: row.date_submitted,
                 updatedAt: row.last_updated,
-                isWomenInScience: row.is_women_in_science === 'yes',
+                isWomenInScience: row.is_women_in_science === 'yes' || row.is_women_in_science === 1,
+                isBelispointAcademic: row.is_belispoint_academic === 'yes' || row.is_belispoint_academic === 1,
+                isKidnappingForRansom: row.is_kidnapping_for_ransom === 'yes' || row.is_kidnapping_for_ransom === 1,
                 authors: authorName,
                 correspondingAuthor: `${row.prefix} ${row.firstname} ${row.lastname}` ,
 

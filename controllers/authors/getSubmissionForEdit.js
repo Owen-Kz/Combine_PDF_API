@@ -90,7 +90,6 @@ const getSubmissionForEdit = async (req, res) => {
         const response = {
             articleType: submission.article_type || '',
             discipline: submission.discipline || '',
-            specialIssue: 'no', // Add to database if needed
             previousSubmission: submission.previous_manuscript_id ? 'yes' : 'no',
             previousId: submission.previous_manuscript_id || '',
             status: submission.status || '',
@@ -101,7 +100,9 @@ const getSubmissionForEdit = async (req, res) => {
             reviewers: formattedReviewers,
             disclosures,
             manuscriptId: submission.revision_id,
-            isWomenInScience: submission.is_women_in_contemporary_science ? 'yes' : 'no',
+            isWomenInScience: submission.is_women_in_contemporary_science === 1 || submission.is_women_in_contemporary_science === 'yes' ? 'yes' : 'no',
+            isBelispointAcademic: submission.is_belispoint_academic === 1 || submission.is_belispoint_academic === 'yes' ? 'yes' : 'no',
+            isKidnappingForRansom: submission.is_kidnapping_for_ransom === 1 || submission.is_kidnapping_for_ransom === 'yes' ? 'yes' : 'no',
             files: {
                 manuscript: submission.manuscript_file,
                 coverLetter: submission.cover_letter_file,

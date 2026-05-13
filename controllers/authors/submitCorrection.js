@@ -128,7 +128,6 @@ const submitCorrection = async (req, res) => {
         const {
             articleType,
             discipline,
-            specialIssue,
             previousSubmission,
             previousId,
             title,
@@ -139,7 +138,9 @@ const submitCorrection = async (req, res) => {
             disclosures,
             manuscriptId,
             action,
-            isWomenInScience
+            isWomenInScience,
+            isBelispointAcademic,
+            isKidnappingForRansom
         } = req.body;
 
         // Parse JSON strings
@@ -248,6 +249,8 @@ const submitCorrection = async (req, res) => {
             previous_manuscript_id: previousId || null,
             status: action === 'submit' || action === "revision_submitted" || action === "correction_submitted" ? 'submitted' : 'draft',
             is_women_in_contemporary_science: isWomenInScience === 'yes' ? 1 : 0,
+                  is_belispoint_academic: isBelispointAcademic === 'yes' ? 1 : 0,
+            is_kidnapping_for_ransom: isKidnappingForRansom === 'yes' ? 1 : 0,
             last_updated: new Date()
         };
 

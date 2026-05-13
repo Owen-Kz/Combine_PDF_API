@@ -142,7 +142,9 @@ const getOverdueReviews = async (req, res) => {
                     lastReminder: review.last_reminder ? new Date(review.last_reminder).toISOString().split('T')[0] : null,
                     files,
                     manuscriptStatus: review.manuscript_status,
-                    isWomenInScience: review.is_women_in_contemporary_science === 1
+                    isWomenInScience: review.is_women_in_contemporary_science === 1 || review.is_women_in_contemporary_science === 'yes',
+                    isBelispointAcademic: review.is_belispoint_academic === 1 || review.is_belispoint_academic === 'yes',
+                    isKidnappingForRansom: review.is_kidnapping_for_ransom === 1 || review.is_kidnapping_for_ransom === 'yes'
                 };
             })
         );
