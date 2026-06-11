@@ -111,7 +111,7 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
-            return res.status(403).json({ error: "Not authorized" });
+            return res.json({ error: "Not authorized" });
         }
 
         const page = parseInt(req.query.page) || 1;
@@ -264,7 +264,7 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
-            return res.status(403).json({ error: "Not authorized" });
+            return res.json({ error: "Not authorized" });
         }
 
         const page = parseInt(req.query.page) || 1;
@@ -426,7 +426,7 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
-            return res.status(403).json({ error: "Not authorized" });
+            return res.json({ error: "Not authorized" });
         }
 
         const [items] = await dbPromise.query(`
@@ -534,7 +534,7 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
-            return res.status(403).json({ error: "Not authorized" });
+            return res.json({ error: "Not authorized" });
         }
 
         const {
@@ -722,7 +722,7 @@ router.delete("/delete/:id", AuthorLoggedIn, async (req, res) => {
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
-            return res.status(403).json({ error: "Not authorized" });
+            return res.json({ error: "Not authorized" });
         }
 
         // Get item to delete associated files
@@ -798,7 +798,7 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
-            return res.status(403).json({ error: "Not authorized" });
+            return res.json({ error: "Not authorized" });
         }
 
         const {
