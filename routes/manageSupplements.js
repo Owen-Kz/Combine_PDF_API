@@ -8,6 +8,7 @@ const dbPromise = require("./journal.db");
 const isAdminAccount = require("../controllers/editors/isAdminAccount");
 const SendPublicationEmail = require("../controllers/utils/sendPublicationEmail");
 const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
+const { LogAction } = require("../Logger");
 
 config();
 const router = express.Router();
@@ -43,7 +44,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 1000 * 1024 * 1024 }, // 500MB limit
+    // limits: { 
+    //     fileSize: 1000 * 1024 * 1024, // Now actually 1000MB (1GB) - increased from 500MB
+    //     fieldSize: 50 * 1024 * 1024  // Add this to fix "Field value too long" error (50MB for form fields)
+    // },
+    limits: { 
+    fileSize: 2000 * 1024 * 1024, // 1GB
+    fieldSize: Infinity,  // No limit on field size (use carefully!)
+    // fields: 10,  // Max number of non-file fields
+    // files: 5    // Max number of files
+},
     fileFilter: function (req, file, cb) {
         // Accept images and documents
         const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
@@ -57,7 +67,6 @@ const upload = multer({
         }
     }
 });
-
 router.use(express.urlencoded({ extended: true, limit: '1000mb' }));
 router.use((express.json({ limit: '1000mb' })));
 
