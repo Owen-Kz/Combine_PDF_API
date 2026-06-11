@@ -57,6 +57,48 @@ app.options('*', cors(corsOptions));
 //   next();
 // });
 
+// Server-side - Make sure error handling is proper
+const upload = multer({
+    storage: storage,
+    limits: { 
+        fileSize: 1000 * 1024 * 1024, // 1GB
+        fieldSize: 50 * 1024 * 1024   // 50MB for form fields
+    },
+    fileFilter: function (req, file, cb) {
+        const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Only image and document files are allowed'));
+        }
+    }
+});
+
+// Add proper error handling middleware for multer
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ 
+                status: 'error', 
+                message: 'File too large. Maximum size is 1GB' 
+            });
+        }
+        if (error.code === 'LIMIT_FIELD_SIZE') {
+            return res.status(400).json({ 
+                status: 'error', 
+                message: 'Field data too large' 
+            });
+        }
+        return res.status(400).json({ 
+            status: 'error', 
+            message: error.message 
+        });
+    }
+    next(error);
+});
 // Session store configuration
 const sessionStore = new MySQLStore({
   host: process.env.D_HOST,
