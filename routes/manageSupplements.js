@@ -239,7 +239,7 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching issues:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -400,7 +400,7 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching supplements:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -505,7 +505,7 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching item:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -696,7 +696,7 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
 
     } catch (error) {
         console.error("Error updating item:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -770,7 +770,7 @@ router.delete("/delete/:id", AuthorLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error("Error deleting item:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -943,7 +943,7 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 
     } catch (error) {
         console.error("Error creating item:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -968,7 +968,7 @@ router.post("/views/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Error updating views:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
@@ -994,7 +994,7 @@ router.post("/downloads/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Error updating downloads:", error);
-        return res.status(500).json({
+        return res.json({
             status: "internalError",
             message: error.message
         });
