@@ -795,6 +795,7 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 ]), async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log("Create request body:", req.body);
 
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {

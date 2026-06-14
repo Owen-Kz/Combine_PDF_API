@@ -10,13 +10,13 @@ const AuthorLoggedIn = async (req, res, next) => {
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log("No token in Authorization header");
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.json({ error: "Not authenticated" });
     }
 
     const token = authHeader.split(' ')[1]; // Extract token from "Bearer <token>"
     
     if (!token) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.json({ error: "Not authenticated" });
     }
  
     // Verify JWT token
@@ -189,7 +189,7 @@ const AuthorLoggedIn = async (req, res, next) => {
     // If no valid session found
     if (!userData) {
       console.log("No valid session found for token");
-      return res.status(401).json({ error: "Session expired or invalid" });
+      return res.json({ error: "Session expired or invalid" });
     }
 
     // Update last activity in the appropriate session table
@@ -214,11 +214,11 @@ const AuthorLoggedIn = async (req, res, next) => {
     console.error("AuthorLoggedIn error:", error);
     
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: "Invalid token" });
+      return res.json({ error: "Invalid token" });
     }
     
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: "Token expired" });
+      return res.json({ error: "Token expired" });
     }
     
     return res.status(500).json({ error: "Authentication error" });
