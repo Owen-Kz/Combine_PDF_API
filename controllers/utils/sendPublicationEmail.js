@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const dbPromise = require("../../routes/journal.db");
 const db = require("../../routes/db.config");
+const { LogAction } = require("../../Logger");
 
 /**
  * Sends a publication confirmation email to authors after manuscript is published
@@ -23,11 +24,13 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
     // Input validation
     if (!recipientEmail || typeof recipientEmail !== "string") {
         console.error("Invalid recipient email");
+        LogAction("Failed to send publication email: Invalid recipient email", { recipientEmail });
         return { status: "error", message: "Invalid recipient email" };
     }
 
     if (!manuscriptTitle || typeof manuscriptTitle !== "string") {
         console.error("Invalid manuscript title");
+        LogAction("Failed to send publication email: Invalid manuscript title",{ manuscriptTitle });
         return { status: "error", message: "Invalid manuscript title" };
     }
 

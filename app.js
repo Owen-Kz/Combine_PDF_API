@@ -15,37 +15,50 @@ const multer = require("multer")
 app.set('trust proxy', 1);
 
 // CORS configuration
+// CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // List of allowed origins
+    // List of allowed origins (including subdomains)
     const allowedOrigins = [
       'https://portal.asfirj.org',
       'http://localhost:3000',
       'https://asfirj.org',
-      'https://process.asfirj.org'
+      'https://process.asfirj.org',
+      'https://admin.asfirj.org', // Add other subdomains as needed
+      'https://api.asfirj.org'
     ];
     
-    // Check if the origin is allowed
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    // Check if the origin is allowed (exact match)
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
-    } else {
+    } 
+    // Also check for any *.asfirj.org subdomain
+    else if (origin.match(/^https:\/\/.*\.asfirj\.org$/)) {
+      callback(null, true);
+    }
+    else if (process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    }
+    else {
+      console.error('CORS blocked origin:', origin);
+      LogAction(`CORS BLOCKEd ${origin}`)
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-CSRF-Token'],
   exposedHeaders: ['Content-Length', 'X-Response-Time'],
   maxAge: 86400 // 24 hours
 };
 
-// Apply CORS middleware BEFORE other middleware
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle preflight requests
+// Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 // app.use((req, res, next) => {
