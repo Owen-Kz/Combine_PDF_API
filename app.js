@@ -14,53 +14,52 @@ const multer = require("multer")
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
-// CORS configuration
-// CORS configuration
+// CORS configuration - REPLACE your existing corsOptions with this
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // List of allowed origins (including subdomains)
-    const allowedOrigins = [
-      'https://portal.asfirj.org',
-      'http://localhost:3000',
-      'https://asfirj.org',
-      'https://process.asfirj.org',
-      'https://admin.asfirj.org', // Add other subdomains as needed
-      'https://api.asfirj.org'
-    ];
+    // Allow all asfirj.org subdomains dynamically
+    const isAllowed = 
+      origin === 'https://portal.asfirj.org' ||
+      origin === 'https://asfirj.org' ||
+      origin === 'https://process.asfirj.org' ||
+      origin.match(/^https:\/\/.*\.asfirj\.org$/) || // Any subdomain
+      (process.env.NODE_ENV === 'development' && origin === 'http://localhost:3000');
     
-    // Check if the origin is allowed (exact match)
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (isAllowed) {
       callback(null, true);
-    } 
-    // Also check for any *.asfirj.org subdomain
-    else if (origin.match(/^https:\/\/.*\.asfirj\.org$/)) {
-      callback(null, true);
-    }
-    else if (process.env.NODE_ENV === 'development') {
-      callback(null, true);
-    }
-    else {
+    } else {
       console.error('CORS blocked origin:', origin);
-      LogAction(`CORS BLOCKEd ${origin}`)
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-CSRF-Token'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept',
+    'Origin'
+  ],
   exposedHeaders: ['Content-Length', 'X-Response-Time'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
-// Apply CORS middleware
+// Apply CORS middleware BEFORE any routes
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly
+// Handle preflight requests explicitly for all routes
 app.options('*', cors(corsOptions));
 
+// Add a test endpoint to verify CORS is working
+app.get('/cors-test', (req, res) => {
+  res.json({ message: 'CORS is working!', origin: req.headers.origin });
+});
 // app.use((req, res, next) => {
 //   LogAction(`Incoming request: ${req.method} ${req.url}`);
 //   // res.setHeader('Access-Control-Allow-Origin', '*'); //temporarily allow all origins for testing, change to specific frontend url in production
