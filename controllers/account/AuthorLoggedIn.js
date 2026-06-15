@@ -8,19 +8,37 @@ const AuthorLoggedIn = async (req, res, next) => {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
     
+    console.log("Auth Header received:", authHeader ? "Present" : "Missing");
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log("No token in Authorization header");
-      return res.json({ error: "Not authenticated" });
+      console.log("No valid Authorization header format");
+      return res.status(401).json({ error: "Not authenticated - No token provided" });
     }
 
     const token = authHeader.split(' ')[1]; // Extract token from "Bearer <token>"
     
     if (!token) {
-      return res.json({ error: "Not authenticated" });
+      console.log("Token is empty after Bearer prefix");
+      return res.status(401).json({ error: "Not authenticated - Empty token" });
     }
- 
+    
+    console.log("Token extracted, verifying...");
+    
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("Token verified successfully for user:", decoded.email || decoded.id);
+    } catch (jwtError) {
+      console.error("JWT Verification failed:", jwtError.message);
+      if (jwtError.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+      if (jwtError.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: "Token expired" });
+      }
+      return res.status(401).json({ error: "Token verification failed" });
+    }
     
     // Check both session tables
     const [editorSession] = await dbPromise.query(
@@ -30,7 +48,7 @@ const AuthorLoggedIn = async (req, res, next) => {
 
     const [authorSession] = await dbPromise.query(
       "SELECT * FROM authors_session WHERE user_id = ? AND session_token = ? AND expires_at > NOW()",
-      [decoded.authorId || decoded.id, token] // Use authorId if available, otherwise use id
+      [decoded.authorId || decoded.id, token]
     );
 
     let userData = null;
@@ -39,6 +57,7 @@ const AuthorLoggedIn = async (req, res, next) => {
     // Check if editor session exists (editor logged in)
     if (editorSession.length > 0) {
       sessionType = 'editor';
+      console.log("Editor session found");
       
       // Get editor details from editors table
       const [editorResults] = await dbPromise.query(
@@ -105,7 +124,6 @@ const AuthorLoggedIn = async (req, res, next) => {
             accountStatus: authorResults[0].account_status,
             asfiMembershipId: authorResults[0].asfi_membership_id,
             dateJoined: authorResults[0].date_joined,
-            editorialLevel: editorData.editorial_level,
           
             // Permissions based on author data
             canAccessReviewer: authorResults[0].is_reviewer === 'yes' || authorResults[0].is_reviewer === 1,
@@ -128,6 +146,7 @@ const AuthorLoggedIn = async (req, res, next) => {
     // Check if author session exists (author logged in directly)
     else if (authorSession.length > 0) {
       sessionType = 'author';
+      console.log("Author session found");
       
       // Get author details from authors_account table
       const [authorResults] = await dbPromise.query(
@@ -189,7 +208,7 @@ const AuthorLoggedIn = async (req, res, next) => {
     // If no valid session found
     if (!userData) {
       console.log("No valid session found for token");
-      return res.json({ error: "Session expired or invalid" });
+      return res.status(401).json({ error: "Session expired or invalid" });
     }
 
     // Update last activity in the appropriate session table
@@ -198,7 +217,7 @@ const AuthorLoggedIn = async (req, res, next) => {
         "UPDATE editors_session SET last_activity = NOW() WHERE session_token = ?",
         [token]
       );
-    } else {
+    } else if (sessionType === 'author') {
       await dbPromise.query(
         "UPDATE authors_session SET last_activity = NOW() WHERE session_token = ?",
         [token]
@@ -212,16 +231,7 @@ const AuthorLoggedIn = async (req, res, next) => {
 
   } catch (error) {
     console.error("AuthorLoggedIn error:", error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.json({ error: "Invalid token" });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.json({ error: "Token expired" });
-    }
-    
-    return res.status(500).json({ error: "Authentication error" });
+    return res.status(500).json({ error: "Authentication error", details: error.message });
   }
 };
 

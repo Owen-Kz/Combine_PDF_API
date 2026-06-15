@@ -10,7 +10,7 @@ const bodyParser = require("body-parser");
 const cors = require('cors');
 const path = require("path");
 const { LogAction } = require("./Logger");
-
+const multer = require("multer")
 // Trust proxy (important for shared/proxy hosting)
 app.set('trust proxy', 1);
 
@@ -58,47 +58,74 @@ app.options('*', cors(corsOptions));
 // });
 
 // Server-side - Make sure error handling is proper
-// const upload = multer({
-//     storage: storage,
-//     limits: { 
-//         fileSize: 1000 * 1024 * 1024, // 1GB
-//         fieldSize: 50 * 1024 * 1024   // 50MB for form fields
-//     },
-//     fileFilter: function (req, file, cb) {
-//         const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
-//         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-//         const mimetype = allowedTypes.test(file.mimetype);
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        let uploadPath = path.join(__dirname, "../useruploads/");
 
-//         if (mimetype && extname) {
-//             return cb(null, true);
-//         } else {
-//             cb(new Error('Only image and document files are allowed'));
-//         }
-//     }
-// });
+        // Determine subfolder based on file type
+        if (file.fieldname === 'manuscriptCover') {
+            uploadPath = path.join(uploadPath, "article_images/");
+        } else if (file.fieldname === 'manuscript_file') {
+            uploadPath = path.join(uploadPath, "manuscripts/");
+        } else {
+            uploadPath = path.join(uploadPath, "misc/");
+        }
 
-// // Add proper error handling middleware for multer
-// app.use((error, req, res, next) => {
-//     if (error instanceof multer.MulterError) {
-//         if (error.code === 'LIMIT_FILE_SIZE') {
-//             return res.status(400).json({ 
-//                 status: 'error', 
-//                 message: 'File too large. Maximum size is 1GB' 
-//             });
-//         }
-//         if (error.code === 'LIMIT_FIELD_SIZE') {
-//             return res.status(400).json({ 
-//                 status: 'error', 
-//                 message: 'Field data too large' 
-//             });
-//         }
-//         return res.status(400).json({ 
-//             status: 'error', 
-//             message: error.message 
-//         });
-//     }
-//     next(error);
-// });
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        // Create unique filename with timestamp
+        const uniqueSuffix = Date.now() + '_' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, file.fieldname + '_' + uniqueSuffix + ext);
+    }
+});
+const upload = multer({
+    storage: storage,
+    limits: { 
+        fileSize: 1000 * 1024 * 1024, // 1GB
+        fieldSize: 50 * 1024 * 1024   // 50MB for form fields
+    },
+    fileFilter: function (req, file, cb) {
+        const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Only image and document files are allowed'));
+        }
+    }
+});
+
+// Add proper error handling middleware for multer
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ 
+                status: 'error', 
+                message: 'File too large. Maximum size is 1GB' 
+            });
+        }
+        if (error.code === 'LIMIT_FIELD_SIZE') {
+            return res.status(400).json({ 
+                status: 'error', 
+                message: 'Field data too large' 
+            });
+        }
+        return res.status(400).json({ 
+            status: 'error', 
+            message: error.message 
+        });
+    }
+    next(error);
+});
 // Session store configuration
 const sessionStore = new MySQLStore({
   host: process.env.D_HOST,

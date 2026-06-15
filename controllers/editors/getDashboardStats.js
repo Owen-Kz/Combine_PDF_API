@@ -28,7 +28,7 @@ const getDashboardStats = async (req, res) => {
                 const query = isAdmin 
                     ? `SELECT COUNT(*) AS count FROM submissions WHERE 1`
                     : `SELECT COUNT(*) AS count FROM submitted_for_edit WHERE editor_email = ? AND status = 'edit_invitation_accepted'`;
-                console.log(query)
+             
                 db.query(query, isAdmin ? [] : [req.user.email], (err, results) => {
                     if (err) resolve(0);
                     else resolve(results[0]?.count || 0);
