@@ -118,6 +118,7 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
         const itemsPerPage = parseInt(req.query.limit) || 6;
         const offset = (page - 1) * itemsPerPage;
         const searchQuery = req.query.search || '';
+        const specialIssueFilter = req.query.special_issue || '';
 
         let baseQuery = `
             SELECT 
@@ -152,19 +153,28 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
         let queryParams = [];
         let countParams = [];
 
+        // Add special issue filter
+        if (specialIssueFilter === 'yes') {
+            baseQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
+            countQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
+        } else if (specialIssueFilter === 'no') {
+            baseQuery += ` AND j.is_special_issue = 'no'`;
+            countQuery += ` AND j.is_special_issue = 'no'`;
+        }
+
         // Add search conditions
         if (searchQuery && searchQuery.length >= 2) {
             const searchCondition = ` AND (
-                j.manuscript_full_title LIKE ? OR 
-                j.manuscript_running_title LIKE ? OR
-                j.issues_number LIKE ? OR
-                j.doi_number LIKE ?
+                LOWER(j.manuscript_full_title) LIKE ? OR 
+                LOWER(j.manuscript_running_title) LIKE ? OR
+                LOWER(j.issues_number) LIKE ? OR
+                LOWER(j.doi_number) LIKE ?
             )`;
 
             baseQuery += searchCondition;
             countQuery += searchCondition;
 
-            const searchPattern = `%${searchQuery}%`;
+            const searchPattern = `%${searchQuery.toLowerCase()}%`;
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
             countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
@@ -176,6 +186,9 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
         // Execute queries
         const [issues] = await dbPromise.query(baseQuery, queryParams);
         const [countResult] = await dbPromise.query(countQuery, countParams);
+        const [totalCountResult] = await dbPromise.query(
+            "SELECT COUNT(DISTINCT j.id) as total FROM journals j WHERE j.is_publication = 'yes'"
+        );
 
         // Parse authors JSON for each issue
         const formattedIssues = issues.map(issue => {
@@ -228,6 +241,7 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
                 date_published: issue.date_published,
                 open_access: issue.is_open_access === 'yes',
                 editor_choice: issue.is_editors_choice === 'yes',
+                is_special_issue: issue.is_special_issue === 'yes',
                 Hyperlink: issue.hyperlink_to_others,
                  abstract_fr: issue.abstract_fr || null,
                 abstract_ar: issue.abstract_ar || null,
@@ -243,7 +257,8 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
             status: "success",
             articlesList: formattedIssues,
             totalPages: Math.ceil((countResult[0]?.total || 0) / itemsPerPage),
-            currentPage: page
+            currentPage: page,
+            totalCount: totalCountResult[0]?.total || 0
         });
 
     } catch (error) {
@@ -271,6 +286,7 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
         const itemsPerPage = parseInt(req.query.limit) || 6;
         const offset = (page - 1) * itemsPerPage;
         const searchQuery = req.query.search || '';
+        const specialIssueFilter = req.query.special_issue || '';
 
         let baseQuery = `
             SELECT 
@@ -300,25 +316,35 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
         let countQuery = `
             SELECT COUNT(DISTINCT j.id) as total
             FROM journals j
+            LEFT JOIN authors a 
+                ON j.buffer = a.article_id 
+                AND a.authors_fullname IS NOT NULL 
+                AND a.authors_fullname != ''
             WHERE j.is_publication = 'no' OR j.is_publication IS NULL
         `;
 
         let queryParams = [];
         let countParams = [];
 
+        // Add special issue filter
+        if (specialIssueFilter === 'yes') {
+            baseQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
+            countQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
+        } else if (specialIssueFilter === 'no') {
+            baseQuery += ` AND j.is_special_issue = 'no'`;
+            countQuery += ` AND j.is_special_issue = 'no'`;
+        }
+
         // Add search conditions
         if (searchQuery && searchQuery.length >= 2) {
             const searchCondition = ` AND (
-                j.manuscript_full_title LIKE ? OR 
-                j.manuscript_running_title LIKE ? OR
-                fullname LIKE ? OR
-                corresponding_authors_email LIKE ?
+                LOWER(j.manuscript_full_title) LIKE ? OR 
+                LOWER(j.manuscript_running_title) LIKE ? OR
+                LOWER(a.authors_fullname) LIKE ? OR
+                LOWER(j.corresponding_authors_email) LIKE ?
             )`;
 
-            baseQuery += searchCondition;
-            countQuery += searchCondition;
-
-            const searchPattern = `%${searchQuery}%`;
+            const searchPattern = `%${searchQuery.toLowerCase()}%`;
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
             countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
@@ -330,6 +356,9 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
         // Execute queries
         const [supplements] = await dbPromise.query(baseQuery, queryParams);
         const [countResult] = await dbPromise.query(countQuery, countParams);
+        const [totalCountResult] = await dbPromise.query(
+            "SELECT COUNT(DISTINCT j.id) as total FROM journals j WHERE j.is_publication = 'no' OR j.is_publication IS NULL"
+        );
 
         // Parse authors JSON for each supplement
         const formattedSupplements = supplements.map(supplement => {
@@ -390,6 +419,7 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
                 date_published: supplement.date_published,
                 editor_choice: supplement.is_editors_choice === 'yes',
                 open_access: supplement.is_open_access === 'yes',
+                is_special_issue: supplement.is_special_issue === 'yes',
                 Hyperlink: supplement.hyperlink_to_others,
                 manuscript_contents: supplement.abstract_discussion,
                 abstract_fr: supplement.abstract_fr,
@@ -404,7 +434,8 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
             status: "success",
             articlesList: formattedSupplements,
             totalPages: Math.ceil((countResult[0]?.total || 0) / itemsPerPage),
-            currentPage: page
+            currentPage: page,
+            totalCount: totalCountResult[0]?.total || 0
         });
 
     } catch (error) {
@@ -498,6 +529,7 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
             date_published: item.date_published,
             editor_choice: item.is_editors_choice === 'yes',
             open_access: item.is_open_access === 'yes',
+            is_special_issue: item.is_special_issue === 'yes',
             Hyperlink: item.hyperlink_to_others,
             is_publication: item.is_publication === 'yes',
             authorsArray: authors,
@@ -557,6 +589,7 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
             date_published,
             editor_choice,
             open_access,
+            is_special_issue,
             // keywords,
             remove_cover,
             remove_manuscript
@@ -599,7 +632,8 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
                     date_accepted = ?,
                     date_published = ?,
                     is_editors_choice = ?,
-                    is_open_access = ?
+                    is_open_access = ?,
+                    is_special_issue = ?
             `;
 
             const updateParams = [
@@ -620,7 +654,8 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
                 date_accepted || currentItem.date_accepted,
                 date_published || currentItem.date_published,
                 editor_choice === 'true' ? 'yes' : 'no',
-                open_access === 'true' ? 'yes' : 'no'
+                open_access === 'true' ? 'yes' : 'no',
+                is_special_issue === 'true' ? 'yes' : 'no'
             ];
 
             // Handle cover image upload
@@ -823,7 +858,8 @@ router.post("/create", AuthorLoggedIn, upload.fields([
             editor_choice,
             open_access,
             is_publication,
-            is_old_publication
+            is_old_publication,
+            is_special_issue
         } = req.body;
 
         // Validate required fields
@@ -865,12 +901,13 @@ router.post("/create", AuthorLoggedIn, upload.fields([
         is_open_access,
         is_publication,
         is_old_publication,
+        is_special_issue,
         manuscriptPhoto,
         manuscript_file,
         buffer,
         date_uploaded,
         status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'published')
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'published')
 `;
 
             const insertParams = [
@@ -894,9 +931,10 @@ router.post("/create", AuthorLoggedIn, upload.fields([
                 open_access === 'true' ? 'yes' : 'no',         // 18
                 is_publication === 'true' ? 'yes' : 'no',      // 19
                 is_old_publication === 'true' ? 'yes' : 'no',  // 20
-                req.files && req.files['manuscriptCover'] ? req.files['manuscriptCover'][0].filename : null,  // 21
-                req.files && req.files['manuscript_file'] ? req.files['manuscript_file'][0].filename : null,  // 22
-                buffer                                         // 23
+                is_special_issue === 'true' ? 'yes' : 'no',    // 21
+                req.files && req.files['manuscriptCover'] ? req.files['manuscriptCover'][0].filename : null,  // 22
+                req.files && req.files['manuscript_file'] ? req.files['manuscript_file'][0].filename : null,  // 23
+                buffer                                         // 24
             ];
 
             const [result] = await connection.query(insertQuery, insertParams);

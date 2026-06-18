@@ -244,6 +244,16 @@ app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploa
 
 
 
+// Migrate: add is_special_issue column to journals if missing
+const journalDb = require("./routes/journal.db");
+(async () => {
+    try {
+        await journalDb.query(
+            "ALTER TABLE journals ADD COLUMN is_special_issue VARCHAR(3) DEFAULT 'no'"
+        );
+    } catch (_) { /* column may already exist */ }
+})();
+
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
 app.use("/publications", require("./routes/manageSupplements"))
