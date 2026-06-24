@@ -155,11 +155,11 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
 
         // Add special issue filter
         if (specialIssueFilter === 'yes') {
-            baseQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
-            countQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
+            baseQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue' OR j.special_issue_id IS NOT NULL)`;
+            countQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue' OR j.special_issue_id IS NOT NULL)`;
         } else if (specialIssueFilter === 'no') {
-            baseQuery += ` AND j.is_special_issue = 'no'`;
-            countQuery += ` AND j.is_special_issue = 'no'`;
+            baseQuery += ` AND j.is_special_issue = 'no' AND j.special_issue_id IS NULL`;
+            countQuery += ` AND j.is_special_issue = 'no' AND j.special_issue_id IS NULL`;
         }
 
         // Add search conditions
@@ -329,11 +329,11 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
 
         // Add special issue filter
         if (specialIssueFilter === 'yes') {
-            baseQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
-            countQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue')`;
+            baseQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue' OR j.special_issue_id IS NOT NULL)`;
+            countQuery += ` AND (j.is_special_issue = 'yes' OR LOWER(j.article_type) = 'special issue' OR j.special_issue_id IS NOT NULL)`;
         } else if (specialIssueFilter === 'no') {
-            baseQuery += ` AND j.is_special_issue = 'no'`;
-            countQuery += ` AND j.is_special_issue = 'no'`;
+            baseQuery += ` AND j.is_special_issue = 'no' AND j.special_issue_id IS NULL`;
+            countQuery += ` AND j.is_special_issue = 'no' AND j.special_issue_id IS NULL`;
         }
 
         // Add search conditions
