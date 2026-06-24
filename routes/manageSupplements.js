@@ -1130,6 +1130,16 @@ router.get("/special-issues/:id/journals", AuthorLoggedIn, async (req, res) => {
 });
 
 // ============================================
+// Helper: generate a URL-friendly slug from a string
+function generateSlug(str) {
+    return str
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
 // GET ALL SPECIAL ISSUES
 // ============================================
 router.get("/special-issues/all", AuthorLoggedIn, async (req, res) => {
@@ -1174,12 +1184,13 @@ router.post("/special-issues/create", AuthorLoggedIn, async (req, res) => {
             return res.status(400).json({ error: "Special issue name is required" });
         }
 
-        // Generate unique ID
+        // Generate unique ID and slug
         const special_issue_id = 'SI_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const slug = generateSlug(special_issue_name);
 
         await dbPromise.query(
-            "INSERT INTO special_issues (special_issue_id, special_issue_name) VALUES (?, ?)",
-            [special_issue_id, special_issue_name]
+            "INSERT INTO special_issues (special_issue_id, special_issue_name, slug) VALUES (?, ?, ?)",
+            [special_issue_id, special_issue_name, slug]
         );
 
         return res.json({
@@ -1208,10 +1219,11 @@ router.put("/special-issues/update/:id", AuthorLoggedIn, async (req, res) => {
 
         const { special_issue_name } = req.body;
         const { id } = req.params;
+        const slug = generateSlug(special_issue_name);
 
         await dbPromise.query(
-            "UPDATE special_issues SET special_issue_name = ? WHERE special_issue_id = ?",
-            [special_issue_name, id]
+            "UPDATE special_issues SET special_issue_name = ?, slug = ? WHERE special_issue_id = ?",
+            [special_issue_name, slug, id]
         );
 
         return res.json({
@@ -1257,6 +1269,162 @@ router.delete("/special-issues/delete/:id", AuthorLoggedIn, async (req, res) => 
         });
     } catch (error) {
         console.error("Error deleting special issue:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// GET AVAILABLE JOURNALS (paginated, searchable)
+// ============================================
+router.get("/special-issues/available-journals", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+        const excludeIds = req.query.exclude ? (Array.isArray(req.query.exclude) ? req.query.exclude : [req.query.exclude]) : [];
+
+        let whereClauses = ["1=1"];
+        let params = [];
+        let types = "";
+
+        if (search) {
+            whereClauses.push("(LOWER(j.manuscript_full_title) LIKE CONCAT('%', LOWER(?), '%') OR LOWER(a.authors_fullname) LIKE CONCAT('%', LOWER(?), '%'))");
+            params.push(search, search);
+            types += "ss";
+        }
+
+        if (excludeIds.length > 0) {
+            const placeholders = excludeIds.map(() => '?').join(',');
+            whereClauses.push(`j.buffer NOT IN (${placeholders})`);
+            params.push(...excludeIds);
+            types += "s".repeat(excludeIds.length);
+        }
+
+        const countSQL = `SELECT COUNT(DISTINCT j.id) AS total 
+                         FROM journals j 
+                         LEFT JOIN authors a ON j.buffer = a.article_id 
+                         WHERE ${whereClauses.join(" AND ")}`;
+
+        const dataSQL = `SELECT DISTINCT j.buffer, j.manuscript_full_title, j.date_published, j.date_uploaded, j.views_count, j.downloads_count
+                        FROM journals j 
+                        LEFT JOIN authors a ON j.buffer = a.article_id 
+                        WHERE ${whereClauses.join(" AND ")}
+                        ORDER BY j.date_uploaded DESC 
+                        LIMIT ? OFFSET ?`;
+
+        let countResult, dataResult;
+
+        if (params.length > 0) {
+            const countParams = [...params];
+            const countTypes = types;
+            const [rows] = await dbPromise.query({ sql: countSQL, values: countParams });
+            countResult = rows;
+
+            const dataParams = [...params, limit, offset];
+            const dataTypes = types + "ii";
+            const [rows2] = await dbPromise.query({ sql: dataSQL, values: dataParams });
+            dataResult = rows2;
+        } else {
+            const [rows] = await dbPromise.query({ sql: countSQL });
+            countResult = rows;
+            const [rows2] = await dbPromise.query({ sql: dataSQL, values: [limit, offset] });
+            dataResult = rows2;
+        }
+
+        const total = countResult[0]?.total || 0;
+
+        // Fetch authors for each journal
+        const buffers = dataResult.map(r => r.buffer);
+        const authorsMap = {};
+        if (buffers.length > 0) {
+            const placeholders = buffers.map(() => '?').join(',');
+            const [authorRows] = await dbPromise.query(
+                `SELECT article_id, authors_fullname FROM authors WHERE article_id IN (${placeholders}) ORDER BY id ASC`,
+                buffers
+            );
+            for (const a of authorRows) {
+                if (!authorsMap[a.article_id]) authorsMap[a.article_id] = [];
+                authorsMap[a.article_id].push(a.authors_fullname);
+            }
+        }
+
+        const journals = dataResult.map(j => ({
+            buffer: j.buffer,
+            title: j.manuscript_full_title,
+            date_published: j.date_published,
+            views_count: j.views_count,
+            downloads_count: j.downloads_count,
+            authors: authorsMap[j.buffer] || []
+        }));
+
+        return res.json({
+            status: "success",
+            journals,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching available journals:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// BULK ASSIGN JOURNALS TO SPECIAL ISSUE
+// ============================================
+router.put("/special-issues/:id/assign-bulk", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const { id } = req.params;
+        const { journalIds } = req.body;
+
+        if (!Array.isArray(journalIds) || journalIds.length === 0) {
+            return res.status(400).json({ error: "journalIds must be a non-empty array" });
+        }
+
+        // Verify special issue exists
+        const [siRows] = await dbPromise.query(
+            "SELECT special_issue_id FROM special_issues WHERE special_issue_id = ?",
+            [id]
+        );
+        if (siRows.length === 0) {
+            return res.status(404).json({ error: "Special issue not found" });
+        }
+
+        // Update all journals in bulk
+        const placeholders = journalIds.map(() => '?').join(',');
+        await dbPromise.query(
+            `UPDATE journals SET special_issue_id = ? WHERE buffer IN (${placeholders})`,
+            [id, ...journalIds]
+        );
+
+        return res.json({
+            status: "success",
+            message: `${journalIds.length} publication(s) assigned to special issue`,
+            assignedCount: journalIds.length
+        });
+    } catch (error) {
+        console.error("Error bulk assigning journals:", error);
         return res.json({
             status: "internalError",
             message: error.message

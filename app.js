@@ -277,6 +277,31 @@ const journalDb = require("./routes/journal.db");
     } catch (_) { /* column may already exist */ }
 })();
 
+// Migrate: add slug column to special_issues table
+(async () => {
+    try {
+        await journalDb.query(
+            "ALTER TABLE special_issues ADD COLUMN slug VARCHAR(255) DEFAULT NULL"
+        );
+        // Backfill slugs for existing rows
+        const [existing] = await journalDb.query(
+            "SELECT special_issue_id, special_issue_name FROM special_issues WHERE slug IS NULL"
+        );
+        for (const row of existing) {
+            const slug = row.special_issue_name
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+            await journalDb.query(
+                "UPDATE special_issues SET slug = ? WHERE special_issue_id = ?",
+                [slug, row.special_issue_id]
+            );
+        }
+    } catch (_) { /* column may already exist */ }
+})();
+
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
 app.use("/publications", require("./routes/manageSupplements"))
