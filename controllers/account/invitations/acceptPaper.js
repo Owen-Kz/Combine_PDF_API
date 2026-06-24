@@ -60,11 +60,11 @@ const AcceptPaper = async (req, res) => {
       [articleId, editor_email, subject]
     );
 
-    if (existingEmails.length > 0 && existingEmails[0].status === "Delivered") {
-      res.json({ status: "warning", message: "Email already sent" });
-      responseSent = true;
-      return;
-    }
+    // if (existingEmails.length > 0 && existingEmails[0].status === "Delivered") {
+    //   res.json({ status: "warning", message: "Email already sent" });
+    //   responseSent = true;
+    //   return;
+    // }
 
     // Collect file attachments
    let attachments = [];

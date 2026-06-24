@@ -254,6 +254,29 @@ const journalDb = require("./routes/journal.db");
     } catch (_) { /* column may already exist */ }
 })();
 
+// Migrate: create special_issues table if not exists
+(async () => {
+    try {
+        await journalDb.query(`
+            CREATE TABLE IF NOT EXISTS special_issues (
+                special_issue_id VARCHAR(36) PRIMARY KEY,
+                special_issue_name VARCHAR(255) NOT NULL,
+                date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+    } catch (_) { /* table may already exist */ }
+})();
+
+// Migrate: add special_issue_id column to journals table if missing
+(async () => {
+    try {
+        await journalDb.query(
+            "ALTER TABLE journals ADD COLUMN special_issue_id VARCHAR(36) DEFAULT NULL"
+        );
+    } catch (_) { /* column may already exist */ }
+})();
+
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
 app.use("/publications", require("./routes/manageSupplements"))

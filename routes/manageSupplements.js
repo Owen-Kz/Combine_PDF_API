@@ -249,7 +249,8 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
                 authors: authors,
                 views_count: issue.views_count || 0,
                 downloads_count: issue.downloads_count || 0,
-                is_old_publication: isOldPublication
+                is_old_publication: isOldPublication,
+                special_issue_id: issue.special_issue_id || null
             };
         });
 
@@ -426,7 +427,8 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
                 abstract_ar: supplement.abstract_ar,
                 abstract_ptg: supplement.abstract_ptg,
                 authorsArray: authors,
-                is_old_publication: isOldPublication
+                is_old_publication: isOldPublication,
+                special_issue_id: supplement.special_issue_id || null
             };
         });
 
@@ -536,7 +538,8 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
             abstract_fr: item.abstract_fr || null,
             abstract_ar: item.abstract_ar || null,
             abstract_ptg: item.abstract_ptg || null,
-            is_old_publication: isOldPublication
+            is_old_publication: isOldPublication,
+            special_issue_id: item.special_issue_id || null
         };
 
         return res.json({
@@ -590,6 +593,8 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
             editor_choice,
             open_access,
             is_special_issue,
+            custom_special_issue,
+            special_issue_id,
             // keywords,
             remove_cover,
             remove_manuscript
@@ -606,6 +611,17 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
         }
 
         const currentItem = currentItems[0];
+
+        // Handle custom special issue creation
+        let finalSpecialIssueId = special_issue_id || null;
+        if (is_special_issue === 'true' && custom_special_issue && !special_issue_id) {
+            const newId = 'SI_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await dbPromise.query(
+                "INSERT INTO special_issues (special_issue_id, special_issue_name) VALUES (?, ?)",
+                [newId, custom_special_issue]
+            );
+            finalSpecialIssueId = newId;
+        }
 
         // Begin transaction
         const connection = await dbPromise.getConnection();
@@ -633,7 +649,8 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
                     date_published = ?,
                     is_editors_choice = ?,
                     is_open_access = ?,
-                    is_special_issue = ?
+                    is_special_issue = ?,
+                    special_issue_id = ?
             `;
 
             const updateParams = [
@@ -655,7 +672,8 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
                 date_published || currentItem.date_published,
                 editor_choice === 'true' ? 'yes' : 'no',
                 open_access === 'true' ? 'yes' : 'no',
-                is_special_issue === 'true' ? 'yes' : 'no'
+                is_special_issue === 'true' ? 'yes' : 'no',
+                finalSpecialIssueId
             ];
 
             // Handle cover image upload
@@ -859,7 +877,9 @@ router.post("/create", AuthorLoggedIn, upload.fields([
             open_access,
             is_publication,
             is_old_publication,
-            is_special_issue
+            is_special_issue,
+            custom_special_issue,
+            special_issue_id
         } = req.body;
 
         // Validate required fields
@@ -872,6 +892,17 @@ router.post("/create", AuthorLoggedIn, upload.fields([
 
         // Generate unique buffer ID
         const buffer = 'ASFIRJNL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+        // Handle custom special issue creation
+        let finalSpecialIssueId = special_issue_id || null;
+        if (is_special_issue === 'true' && custom_special_issue && !special_issue_id) {
+            const newId = 'SI_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await dbPromise.query(
+                "INSERT INTO special_issues (special_issue_id, special_issue_name) VALUES (?, ?)",
+                [newId, custom_special_issue]
+            );
+            finalSpecialIssueId = newId;
+        }
 
         // Begin transaction
         const connection = await dbPromise.getConnection();
@@ -902,12 +933,13 @@ router.post("/create", AuthorLoggedIn, upload.fields([
         is_publication,
         is_old_publication,
         is_special_issue,
+        special_issue_id,
         manuscriptPhoto,
         manuscript_file,
         buffer,
         date_uploaded,
         status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'published')
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'published')
 `;
 
             const insertParams = [
@@ -932,9 +964,10 @@ router.post("/create", AuthorLoggedIn, upload.fields([
                 is_publication === 'true' ? 'yes' : 'no',      // 19
                 is_old_publication === 'true' ? 'yes' : 'no',  // 20
                 is_special_issue === 'true' ? 'yes' : 'no',    // 21
-                req.files && req.files['manuscriptCover'] ? req.files['manuscriptCover'][0].filename : null,  // 22
-                req.files && req.files['manuscript_file'] ? req.files['manuscript_file'][0].filename : null,  // 23
-                buffer                                         // 24
+                finalSpecialIssueId,                           // 22
+                req.files && req.files['manuscriptCover'] ? req.files['manuscriptCover'][0].filename : null,  // 23
+                req.files && req.files['manuscript_file'] ? req.files['manuscript_file'][0].filename : null,  // 24
+                buffer                                         // 25
             ];
 
             const [result] = await connection.query(insertQuery, insertParams);
@@ -1042,6 +1075,188 @@ router.post("/downloads/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Error updating downloads:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// GET JOURNALS BY SPECIAL ISSUE ID
+// ============================================
+router.get("/special-issues/:id/journals", AuthorLoggedIn, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!(await isAdminAccount(userId))) {
+      return res.json({ error: "Not authorized" });
+    }
+
+    const { id } = req.params;
+
+    const [journals] = await dbPromise.query(
+      `SELECT buffer, manuscript_full_title, date_published, views_count, downloads_count
+       FROM journals WHERE special_issue_id = ? ORDER BY date_published DESC`,
+      [id]
+    );
+
+    // Fetch authors for each journal
+    const journalsWithAuthors = await Promise.all(journals.map(async (j) => {
+      const [authors] = await dbPromise.query(
+        "SELECT authors_fullname FROM authors WHERE article_id = ?",
+        [j.buffer]
+      );
+      return {
+        id: j.buffer,
+        title: j.manuscript_full_title,
+        date_published: j.date_published,
+        views_count: j.views_count,
+        downloads_count: j.downloads_count,
+        authors: authors.map(a => a.authors_fullname)
+      };
+    }));
+
+    return res.json({
+      status: "success",
+      journals: journalsWithAuthors
+    });
+  } catch (error) {
+    console.error("Error fetching journals by special issue:", error);
+    return res.json({
+      status: "internalError",
+      message: error.message
+    });
+  }
+});
+
+// ============================================
+// GET ALL SPECIAL ISSUES
+// ============================================
+router.get("/special-issues/all", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const [specialIssues] = await dbPromise.query(
+            `SELECT si.*,
+                    (SELECT COUNT(*) FROM journals j WHERE j.special_issue_id = si.special_issue_id) AS publication_count
+             FROM special_issues si
+             ORDER BY si.date_created DESC`
+        );
+
+        return res.json({
+            status: "success",
+            specialIssues
+        });
+    } catch (error) {
+        console.error("Error fetching special issues:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// CREATE SPECIAL ISSUE
+// ============================================
+router.post("/special-issues/create", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const { special_issue_name } = req.body;
+        if (!special_issue_name) {
+            return res.status(400).json({ error: "Special issue name is required" });
+        }
+
+        // Generate unique ID
+        const special_issue_id = 'SI_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+        await dbPromise.query(
+            "INSERT INTO special_issues (special_issue_id, special_issue_name) VALUES (?, ?)",
+            [special_issue_id, special_issue_name]
+        );
+
+        return res.json({
+            status: "success",
+            message: "Special issue created successfully",
+            special_issue_id
+        });
+    } catch (error) {
+        console.error("Error creating special issue:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// UPDATE SPECIAL ISSUE
+// ============================================
+router.put("/special-issues/update/:id", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const { special_issue_name } = req.body;
+        const { id } = req.params;
+
+        await dbPromise.query(
+            "UPDATE special_issues SET special_issue_name = ? WHERE special_issue_id = ?",
+            [special_issue_name, id]
+        );
+
+        return res.json({
+            status: "success",
+            message: "Special issue updated successfully"
+        });
+    } catch (error) {
+        console.error("Error updating special issue:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
+// ============================================
+// DELETE SPECIAL ISSUE
+// ============================================
+router.delete("/special-issues/delete/:id", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const { id } = req.params;
+
+        // Remove references from journals
+        await dbPromise.query(
+            "UPDATE journals SET special_issue_id = NULL WHERE special_issue_id = ?",
+            [id]
+        );
+
+        // Delete the special issue
+        await dbPromise.query(
+            "DELETE FROM special_issues WHERE special_issue_id = ?",
+            [id]
+        );
+
+        return res.json({
+            status: "success",
+            message: "Special issue deleted successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting special issue:", error);
         return res.json({
             status: "internalError",
             message: error.message
