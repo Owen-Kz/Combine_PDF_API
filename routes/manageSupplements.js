@@ -1432,4 +1432,40 @@ router.put("/special-issues/:id/assign-bulk", AuthorLoggedIn, async (req, res) =
     }
 });
 
+// ============================================
+// BULK REMOVE JOURNALS FROM SPECIAL ISSUE
+// ============================================
+router.put("/special-issues/:id/remove-bulk", AuthorLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        if (!(await isAdminAccount(userId))) {
+            return res.json({ error: "Not authorized" });
+        }
+
+        const { journalIds } = req.body;
+
+        if (!Array.isArray(journalIds) || journalIds.length === 0) {
+            return res.status(400).json({ error: "journalIds must be a non-empty array" });
+        }
+
+        const placeholders = journalIds.map(() => '?').join(',');
+        await dbPromise.query(
+            `UPDATE journals SET special_issue_id = NULL WHERE buffer IN (${placeholders})`,
+            journalIds
+        );
+
+        return res.json({
+            status: "success",
+            message: `${journalIds.length} publication(s) removed from special issue`,
+            removedCount: journalIds.length
+        });
+    } catch (error) {
+        console.error("Error bulk removing journals:", error);
+        return res.json({
+            status: "internalError",
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;
