@@ -42,7 +42,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         const apiKey = process.env.BREVO_API_KEY;
         if (!apiKey) throw new Error('BREVO_API_KEY is not configured');
         
-        const senderEmail = process.env.BREVO_EMAIL;
+        const senderEmail = "no-reply@asfirj.org";
         if (!senderEmail) throw new Error('BREVO_EMAIL is not configured');
 
         const currentYear = new Date().getUTCFullYear();
