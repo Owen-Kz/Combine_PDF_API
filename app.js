@@ -277,6 +277,15 @@ const journalDb = require("./routes/journal.db");
     } catch (_) { /* column may already exist */ }
 })();
 
+// Migrate: add email column to editors_list table
+(async () => {
+    try {
+        await journalDb.query(
+            "ALTER TABLE editors_list ADD COLUMN email VARCHAR(255) DEFAULT NULL"
+        );
+    } catch (_) { /* column may already exist */ }
+})();
+
 // Migrate: add slug column to special_issues table
 (async () => {
     try {

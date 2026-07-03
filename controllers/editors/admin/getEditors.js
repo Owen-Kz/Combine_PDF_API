@@ -64,7 +64,7 @@ async function getFirstEditorsForFields(fields, limit = 6) {
         let editors = cache.get(cacheKey);
         if (!editors) {
             const query = `
-                SELECT id, prefix, fullname, discipline, photo, bio, field, country
+                SELECT id, prefix, fullname, email, discipline, photo, bio, field, country, is_old_editor
                 FROM editors_list
                 WHERE field = ?
                 ORDER BY id ASC
@@ -121,7 +121,7 @@ const getEditorsByField = async (req, res) => {
         let cached = cache.get(cacheKey);
         if (cached) return res.json(cached);
 
-        const query = "SELECT id, prefix, fullname, discipline, photo, bio, field, country FROM editors_list WHERE field = ? ORDER BY id ASC LIMIT ? OFFSET ?";
+        const query = "SELECT id, prefix, fullname, email, discipline, photo, bio, field, country, is_old_editor FROM editors_list WHERE field = ? ORDER BY id ASC LIMIT ? OFFSET ?";
         const [editors] = await dbPromise.query(query, [field, limit, offset]);
 
         const countQuery = "SELECT COUNT(*) as total FROM editors_list WHERE field = ?";
@@ -160,7 +160,7 @@ const getEditorsByFields = async (req, res) => {
             const cacheKey = `field:${field}:offset${offset}:limit${limit}`;
             let data = cache.get(cacheKey);
             if (!data) {
-                const query = "SELECT id, prefix, fullname, discipline, photo, bio, field, country FROM editors_list WHERE field = ? ORDER BY id ASC LIMIT ? OFFSET ?";
+        const query = "SELECT id, prefix, fullname, email, discipline, photo, bio, field, country, is_old_editor FROM editors_list WHERE field = ? ORDER BY id ASC LIMIT ? OFFSET ?";
                 const [editors] = await dbPromise.query(query, [field, limit, offset]);
                 const countQuery = "SELECT COUNT(*) as total FROM editors_list WHERE field = ?";
                 const [[{ total }]] = await dbPromise.query(countQuery, [field]);
@@ -192,7 +192,7 @@ const getEditorById = async (req, res) => {
         let editor = cache.get(cacheKey);
         if (editor) return res.json({ status: "success", editor });
 
-        const [rows] = await dbPromise.query("SELECT id, prefix, fullname, discipline, photo, bio, field, country FROM editors_list WHERE id = ?", [id]);
+        const [rows] = await dbPromise.query("SELECT id, prefix, fullname, email, discipline, photo, bio, field, country, is_old_editor FROM editors_list WHERE id = ?", [id]);
         if (rows.length === 0) return res.status(404).json({ status: "error", message: "Editor not found" });
 
         editor = rows[0];
@@ -210,7 +210,7 @@ const addEditor = async (req, res) => {
         if (err) return res.status(400).json({ status: "error", message: err.message });
 
         try {
-            const { prefix, fullname, field, discipline, country, bio } = req.body;
+            const { prefix, fullname, email, field, discipline, country, bio } = req.body;
             if (!prefix || !fullname || !field || !discipline) {
                 return res.status(400).json({ status: "error", message: "Required fields are missing" });
             }
@@ -218,13 +218,17 @@ const addEditor = async (req, res) => {
             const photo = req.file ? req.file.filename : null;
 
             const [result] = await dbPromise.query(
-                `INSERT INTO editors_list (prefix, fullname, field, discipline, country, photo, bio)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [prefix, fullname, field, discipline, country, photo, bio]
+                `INSERT INTO editors_list (prefix, fullname, email, field, discipline, country, photo, bio)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [prefix, fullname, email || null, field, discipline, country, photo, bio]
             );
 
-            // Invalidate related caches
-            cache.del(['fields:withCounts', ...cache.keys().filter(k => k.startsWith('field:'))]);
+            // Invalidate all editor-related caches
+            const keysToDelete = cache.keys().filter(k =>
+                k.startsWith('field:') || k.startsWith('disciplines:')
+            );
+            keysToDelete.push('fields:withCounts');
+            cache.del(keysToDelete);
 
             res.json({ status: "success", message: "Editor added successfully", editorId: result.insertId });
         } catch (error) {
@@ -240,15 +244,17 @@ const updateEditor = async (req, res) => {
         if (err) return res.status(400).json({ status: "error", message: err.message });
 
         try {
-            const { id, prefix, fullname, field, discipline, country, bio } = req.body;
+            const { id, prefix, fullname, email, field, discipline, country, bio } = req.body;
             if (!id) return res.status(400).json({ status: "error", message: "Editor ID is required" });
 
-            const [existing] = await dbPromise.query("SELECT photo FROM editors_list WHERE id = ?", [id]);
+            const [existing] = await dbPromise.query("SELECT photo, is_old_editor FROM editors_list WHERE id = ?", [id]);
             if (existing.length === 0) return res.status(404).json({ status: "error", message: "Editor not found" });
 
             let photo = existing[0].photo;
+            let isOldEditor = existing[0].is_old_editor || 'no';
             if (req.file) {
                 photo = req.file.filename;
+                isOldEditor = 'no';
                 if (existing[0].photo) {
                     try {
                         await fs.unlink(path.join(uploadDir, existing[0].photo));
@@ -257,13 +263,17 @@ const updateEditor = async (req, res) => {
             }
 
             await dbPromise.query(
-                `UPDATE editors_list SET prefix=?, fullname=?, field=?, discipline=?, country=?, photo=?, bio=?
+                `UPDATE editors_list SET prefix=?, fullname=?, email=?, field=?, discipline=?, country=?, photo=?, bio=?, is_old_editor=?
                  WHERE id=?`,
-                [prefix, fullname, field, discipline, country, photo, bio, id]
+                [prefix, fullname, email || null, field, discipline, country, photo, bio, isOldEditor, id]
             );
 
-            // Invalidate caches
-            cache.del([`editor:${id}`, 'fields:withCounts', ...cache.keys().filter(k => k.startsWith('field:'))]);
+            // Invalidate all editor-related caches
+            const keysToDelete = cache.keys().filter(k =>
+                k.startsWith('field:') || k.startsWith('editor:') || k.startsWith('disciplines:')
+            );
+            keysToDelete.push('fields:withCounts');
+            cache.del(keysToDelete);
 
             res.json({ status: "success", message: "Editor updated successfully" });
         } catch (error) {
@@ -279,7 +289,7 @@ const deleteEditor = async (req, res) => {
         const { id } = req.params;
         if (!id) return res.status(400).json({ status: "error", message: "Editor ID is required" });
 
-        const [editor] = await dbPromise.query("SELECT photo FROM editors_list WHERE id = ?", [id]);
+        const [editor] = await dbPromise.query("SELECT photo, is_old_editor FROM editors_list WHERE id = ?", [id]);
         if (editor.length === 0) return res.status(404).json({ status: "error", message: "Editor not found" });
 
         await dbPromise.query("DELETE FROM editors_list WHERE id = ?", [id]);
@@ -290,8 +300,12 @@ const deleteEditor = async (req, res) => {
             } catch (e) { /* ignore */ }
         }
 
-        // Invalidate caches
-        cache.del([`editor:${id}`, 'fields:withCounts', ...cache.keys().filter(k => k.startsWith('field:'))]);
+        // Invalidate all editor-related caches
+            const keysToDelete = cache.keys().filter(k =>
+                k.startsWith('field:') || k.startsWith('editor:') || k.startsWith('disciplines:')
+            );
+            keysToDelete.push('fields:withCounts');
+            cache.del(keysToDelete);
 
         res.json({ status: "success", message: "Editor deleted successfully" });
     } catch (error) {
@@ -326,6 +340,7 @@ const getDisciplinesByField = async (req, res) => {
 const getAllFields = async (req, res) => {
     try {
         const fields = await getFieldsWithCounts();
+        console.log(fields); // Debugging line to check the fields fetched
         res.json({ status: "success", fields: fields.map(f => ({ field: f.field })) });
     } catch (error) {
         console.error("Error fetching fields:", error);
