@@ -38,8 +38,10 @@ const getOverdueReviews = async (req, res) => {
                    s.revisions_count,
                    s.corrections_count,
                    s.status as manuscript_status,
-                   s.is_women_in_contemporary_science,
-                   DATE_ADD(r.date_created, INTERVAL 30 DAY) as due_date,
+                    s.is_women_in_contemporary_science,
+                    s.is_kidnapping_for_ransom,
+                    s.is_belispoint_academic,
+                    DATE_ADD(r.date_created, INTERVAL 30 DAY) as due_date,
                    DATEDIFF(NOW(), DATE_ADD(r.date_created, INTERVAL 30 DAY)) as days_overdue,
                    (SELECT COUNT(*) FROM review_reminders WHERE review_id = r.id) as reminder_count,
                    (SELECT MAX(sent_at) FROM review_reminders WHERE review_id = r.id) as last_reminder

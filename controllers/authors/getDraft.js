@@ -52,7 +52,10 @@ const getDraftSubmissions = async (req, res) => {
                 status,
                 date_submitted as date,
                 last_updated,
-                previous_manuscript_id
+                previous_manuscript_id,
+                is_women_in_contemporary_science,
+                is_kidnapping_for_ransom,
+                is_belispoint_academic
              FROM submissions 
              WHERE ${whereClause} 
              ORDER BY last_updated DESC, id DESC
@@ -80,7 +83,8 @@ const getDraftSubmissions = async (req, res) => {
                 // Determine which step the user is on based on filled fields
                 let currentStep = 1;
                 const submissionData = await dbPromise.query(
-                    `SELECT article_type, discipline, title, abstract, manuscript_file, cover_letter_file
+                    `SELECT article_type, discipline, title, abstract, manuscript_file, cover_letter_file,
+                            is_women_in_contemporary_science, is_kidnapping_for_ransom, is_belispoint_academic
                      FROM submissions WHERE revision_id = ?`,
                     [submission.id]
                 );

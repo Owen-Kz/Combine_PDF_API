@@ -14,7 +14,7 @@ const deleteSubmissionSession = require('../controllers/submissionDrafts.js');
 // Step saving endpoints
 router.post("/submitArticleType", getUserData, manuscriptDataMiddleware, async (req, res) => {
     try {
-        const { article_type, discipline, corresponding_authors_email, previous_manuscript_id, is_women_in_contemporary_science } = req.body;
+        const { article_type, discipline, corresponding_authors_email, previous_manuscript_id, is_women_in_contemporary_science, is_kidnapping_for_ransom, is_belispoint_academic } = req.body;
         const articleId = req.articleId;
 
         await SubmissionManager.saveStepData(articleId, 'article_type', {
@@ -22,7 +22,9 @@ router.post("/submitArticleType", getUserData, manuscriptDataMiddleware, async (
             discipline,
             corresponding_authors_email,
             previous_manuscript_id,
-            is_women_in_contemporary_science
+            is_women_in_contemporary_science,
+            is_kidnapping_for_ransom,
+            is_belispoint_academic
         });
 
         res.json({

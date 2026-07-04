@@ -75,7 +75,10 @@ const getManuscriptsWithDecisions = async (req, res) => {
                 date_submitted as submittedDate,
                 last_updated as lastUpdated,
                 abstract,
-                process_start_date
+                process_start_date,
+                is_women_in_contemporary_science,
+                is_kidnapping_for_ransom,
+                is_belispoint_academic
              FROM submissions 
              WHERE ${whereClause} 
              ORDER BY ${sortBy} ${sortOrder}

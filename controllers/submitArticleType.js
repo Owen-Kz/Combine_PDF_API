@@ -107,12 +107,15 @@ const submitArticleType = async (req, res) => {
                                 article_type = ?, 
                                 discipline = ?, 
                                 previous_manuscript_id = ?, 
-                                is_women_in_contemporary_science = ?, 
+                                is_women_in_contemporary_science = ?,
+                                is_kidnapping_for_ransom = ?,
+                                is_belispoint_academic = ?,
+                                corresponding_authors_email = ?,
                                 status = ?,
                                 last_updated = NOW()
                              WHERE revision_id = ?`, 
                             [article_type, discipline, previous_manuscript_id, 
-                             is_women_in_contemporary_science, submissionStatus, articleID]
+                             is_women_in_contemporary_science, is_kidnapping_for_ransom, is_belispoint_academic, correspondingAuthor, submissionStatus, articleID]
                         );
 
                         if (updateResult.affectedRows === 0) {
@@ -128,6 +131,8 @@ const submitArticleType = async (req, res) => {
                                 discipline = ?,
                                 corresponding_authors_email = ?,
                                 is_women_in_contemporary_science = ?,
+                                is_kidnapping_for_ransom = ?,
+                                is_belispoint_academic = ?,
                                 status = ?,
                                 revisions_count = ?,
                                 corrections_count = ?,
@@ -135,7 +140,8 @@ const submitArticleType = async (req, res) => {
 
                                 last_updated = NOW()`, 
                             [baseArticleId, articleID, article_type, discipline, 
-                             correspondingAuthor, is_women_in_contemporary_science, 
+                             correspondingAuthor, is_women_in_contemporary_science,
+                                is_kidnapping_for_ransom, is_belispoint_academic,
                              submissionStatus, revisionsCount, correctionsCount, 
                              previous_manuscript_id]
                         );

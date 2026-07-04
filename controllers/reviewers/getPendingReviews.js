@@ -38,8 +38,10 @@ const getPendingReviews = async (req, res) => {
                    s.revisions_count,
                    s.corrections_count,
                    s.status as manuscript_status,
-                   s.is_women_in_contemporary_science
-            FROM reviews r
+                    s.is_women_in_contemporary_science,
+                    s.is_kidnapping_for_ransom,
+                    s.is_belispoint_academic
+             FROM reviews r
             LEFT JOIN submissions s ON r.article_id = s.revision_id
             WHERE r.reviewer_email = ? 
             AND (r.review_status = 'saved' OR r.review_status = 'draft' OR r.review_status = 'in_progress')

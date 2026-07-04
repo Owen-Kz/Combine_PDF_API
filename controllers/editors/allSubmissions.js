@@ -35,6 +35,8 @@ const allSubmissions = async (req, res) => {
                     s.process_start_date,
                     s.last_updated,
                     s.is_women_in_contemporary_science as is_women_in_science,
+                    s.is_kidnapping_for_ransom as is_kidnapping_for_ransom,
+                    s.is_belispoint_academic as is_belispoint_academic,
                     s.corresponding_authors_email as corresponding_email,
                     s.manuscript_file,
                     s.document_file,
@@ -143,7 +145,7 @@ const allSubmissions = async (req, res) => {
             if (row.figures) files.figures = row.figures;
             if (row.graphic_abstract) files.graphic_abstract = row.graphic_abstract;
             if (row.supplementary_material) files.supplementary = row.supplementary_material;
-
+            console.log("Files for submission", row.article_id, ":", row.is_kidnapping_for_ransom , row.title);
             return {
                 id: row.article_id,
                 article_id: row.article_id,
@@ -165,7 +167,7 @@ const allSubmissions = async (req, res) => {
                 updatedAt: row.last_updated,
                 isWomenInScience: row.is_women_in_science === 'yes' || row.is_women_in_science === 1,
                 isBelispointAcademic: row.is_belispoint_academic === 'yes' || row.is_belispoint_academic === 1,
-                isKidnappingForRansom: row.is_kidnapping_for_ransom === 'yes' || row.is_kidnapping_for_ransom === 1,
+                isKidnappingForRansom: row.is_kidnapping_for_ransom  === 'yes' || row.is_kidnapping_for_ransom  === 1,
                 authors: authorName,
                 correspondingAuthor: `${row.prefix} ${row.firstname} ${row.lastname}` ,
 

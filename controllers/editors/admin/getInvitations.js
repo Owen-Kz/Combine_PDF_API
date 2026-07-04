@@ -46,6 +46,10 @@ const getAllInvitations = async (req, res) => {
                 s.process_start_date,
                 s.last_updated,
                 s.is_women_in_contemporary_science,
+                s.is_kidnapping_for_ransom,
+                s.is_belispoint_academic,
+                s.corresponding_authors_email,
+                s.previous_manuscript_id,
                 s.corresponding_authors_email,
                 
                 -- Determine role based on invited_for

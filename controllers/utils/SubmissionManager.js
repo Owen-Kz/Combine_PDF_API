@@ -225,11 +225,11 @@ if (type === 'existing-new' && submissionId) {
 
     static getUpdateFieldsForStep(step, data) {
         const stepFieldMap = {
-            'article_type': ['article_type', 'discipline', 'previous_manuscript_id', 'is_women_in_contemporary_science', 'corresponding_authors_email'],
+            'article_type': ['article_type', 'discipline', 'previous_manuscript_id', 'is_women_in_contemporary_science', 'is_kidnapping_for_ransom', 'is_belispoint_academic', 'corresponding_authors_email'],
             'title': ['title'],
             'abstract': ['abstract'],
             'upload_manuscript': ['manuscript_file', 'cover_letter_file', 'document_file', 'tables', 'figures', 'graphic_abstract', 'supplementary_material', 'tracked_manuscript_file'],
-            'disclosures': ['is_women_in_contemporary_science']
+            'disclosures': []
         };
 
         const fields = stepFieldMap[step] || [];
@@ -259,6 +259,12 @@ if (type === 'existing-new' && submissionId) {
                 if (data.is_women_in_contemporary_science) {
                     updateData.is_women_in_contemporary_science = data.is_women_in_contemporary_science;
                 }
+                if (data.is_kidnapping_for_ransom) {
+                    updateData.is_kidnapping_for_ransom = data.is_kidnapping_for_ransom;
+                }
+                if (data.is_belispoint_academic) {           
+                    updateData.is_belispoint_academic = data.is_belispoint_academic;
+                }
                 if (data.previous_manuscript_id) {
                     updateData.previous_manuscript_id = data.previous_manuscript_id;
                 }
@@ -278,10 +284,7 @@ if (type === 'existing-new' && submissionId) {
                 break;
 
             case 'disclosures':
-                // Handle disclosure confirmations
-                if (data.disclosure_confirm) {
-                    updateData.is_women_in_contemporary_science = data.disclosure_confirm;
-                }
+                // Disclosure confirmations stored independently as JSON in submissions.disclosures column
                 break;
         }
     }

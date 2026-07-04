@@ -38,8 +38,10 @@ const getCompletedReviews = async (req, res) => {
                    s.revisions_count,
                    s.corrections_count,
                    s.status as manuscript_status,
-                   s.is_women_in_contemporary_science,
-                   DATE_ADD(r.date_created, INTERVAL 30 DAY) as due_date
+                    s.is_women_in_contemporary_science,
+                    s.is_kidnapping_for_ransom,
+                    s.is_belispoint_academic,
+                    DATE_ADD(r.date_created, INTERVAL 30 DAY) as due_date
             FROM reviews r
             LEFT JOIN submissions s ON r.article_id = s.revision_id
             WHERE r.reviewer_email = ? 

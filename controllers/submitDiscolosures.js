@@ -100,6 +100,8 @@ const SubmitDisclosures = async (req, res) => {
                             article_type,
                             abstract,
                             is_women_in_contemporary_science,
+                            is_kidnapping_for_ransom,
+                            is_belispoint_academic,
                             previous_manuscript_id
                          FROM submissions 
                          WHERE revision_id = ? AND corresponding_authors_email = ? FOR UPDATE`,
@@ -126,6 +128,8 @@ const SubmitDisclosures = async (req, res) => {
                         article_type,
                         abstract,
                         is_women_in_contemporary_science,
+                        is_kidnapping_for_ransom,
+                        is_belispoint_academic,
                         previous_manuscript_id
                     } = manuscript;
 
@@ -161,6 +165,12 @@ const SubmitDisclosures = async (req, res) => {
                     if (!is_women_in_contemporary_science) {
                         validationErrors.push("Women in Contemporary Science selection is required");
                     }
+                    if (!is_kidnapping_for_ransom) {
+                        validationErrors.push("Kidnapping for Ransom selection is required");
+                    }
+                    if (!is_belispoint_academic) {
+                        validationErrors.push("Belispoint Academic selection is required");
+                    }
 
                     // Check for authors (at least one author required)
                     const [authors] = await connection.query(
@@ -190,6 +200,9 @@ const SubmitDisclosures = async (req, res) => {
                         article_type: article_type ? '✓' : '✗',
                         discipline: discipline ? '✓' : '✗',
                         women_in_science: is_women_in_contemporary_science ? '✓' : '✗',
+                        kidnapping_for_ransom: is_kidnapping_for_ransom ? '✓' : '✗',
+                        belispoint_academic: is_belispoint_academic ? '✓' : '✗',
+                        previous_manuscript_id: previous_manuscript_id ? '✓' : '✗',
                         authors: authors.length > 0 ? '✓' : '✗'
                     });
 
@@ -271,6 +284,10 @@ const SubmitDisclosures = async (req, res) => {
                                 article_type,
                                 discipline,
                                 is_women_in_contemporary_science,
+                                is_kidnapping_for_ransom,
+                                is_belispoint_academic,
+                                previous_manuscript_id,
+                                status: review_status,
                                 authors_count: authors.length,
                                 files: {
                                     manuscript: hasManuscriptFile,
@@ -389,7 +406,7 @@ SubmitDisclosures.checkSubmissionReadiness = async (req, res) => {
                 `SELECT 
                     title, abstract, article_type, discipline, status,
                     manuscript_file, cover_letter_file, document_file,
-                    is_women_in_contemporary_science
+                    is_women_in_contemporary_science, is_kidnapping_for_ransom, is_belispoint_academic, previous_manuscript_id
                  FROM submissions 
                  WHERE revision_id = ? AND corresponding_authors_email = ?`,
                 [articleId, req.user.email]
@@ -440,6 +457,14 @@ SubmitDisclosures.checkSubmissionReadiness = async (req, res) => {
             }
             if (!manuscript.is_women_in_contemporary_science) {
                 readiness.missingFields.push("Women in Contemporary Science selection");
+                readiness.isReady = false;
+            }
+            if (!manuscript.is_kidnapping_for_ransom) {
+                readiness.missingFields.push("Kidnapping for Ransom selection");
+                readiness.isReady = false;
+            }
+            if (!manuscript.is_belispoint_academic) {
+                readiness.missingFields.push("Belispoint Academic selection");
                 readiness.isReady = false;
             }
             if (!manuscript.manuscript_file) {
