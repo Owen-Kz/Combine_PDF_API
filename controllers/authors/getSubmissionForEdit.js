@@ -100,9 +100,9 @@ const getSubmissionForEdit = async (req, res) => {
             reviewers: formattedReviewers,
             disclosures,
             manuscriptId: submission.revision_id,
-            isWomenInScience: submission.is_women_in_contemporary_science === 1 || submission.is_women_in_contemporary_science === 'yes' ? 'yes' : 'no',
-            isBelispointAcademic: submission.is_belispoint_academic === 1 || submission.is_belispoint_academic === 'yes' ? 'yes' : 'no',
-            isKidnappingForRansom: submission.is_kidnapping_for_ransom === 1 || submission.is_kidnapping_for_ransom === 'yes' ? 'yes' : 'no',
+            isWomenInScience: submission.is_women_in_contemporary_science == 1 || submission.is_women_in_contemporary_science === 'yes' ? 'yes' : 'no',
+            isBelispointAcademic: submission.is_belispoint_academic == 1 || submission.is_belispoint_academic === 'yes' ? 'yes' : 'no',
+            isKidnappingForRansom: submission.is_kidnapping_for_ransom == 1 || submission.is_kidnapping_for_ransom === 'yes' ? 'yes' : 'no',
             files: {
                 manuscript: submission.manuscript_file,
                 coverLetter: submission.cover_letter_file,
