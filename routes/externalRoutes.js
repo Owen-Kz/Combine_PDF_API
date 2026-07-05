@@ -246,4 +246,7 @@ LogAction(error)
 }
 })
 
+// FEtch Citations from OpenCitations API 
+router.post("/fetch-citations", require("../controllers/utils/submissions/fetchCitations"));
+
 module.exports = router

@@ -25,6 +25,7 @@ const corsOptions = {
       origin === 'https://portal.asfirj.org' ||
       origin === 'https://asfirj.org' ||
       origin === 'https://process.asfirj.org' ||
+      origin.startsWith('http://localhost') || // All localhost origins (dev)
       origin.match(/^https:\/\/.*\.asfirj\.org$/) || // Any subdomain
       (process.env.NODE_ENV === 'development' && origin === 'http://localhost:3000');
     
