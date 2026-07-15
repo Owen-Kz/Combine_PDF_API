@@ -2,6 +2,7 @@
 const db = require("../../../../routes/db.config");
 const dbPromise = require("../../../../routes/dbPromise.config");
 const sendConfirmationEmail = require("../reviewer/sendConfirmationEmail");
+const { sendEditorWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
 const acceptEditor = async (req, res) => {
   let connection;
   try {
@@ -137,8 +138,16 @@ const acceptEditor = async (req, res) => {
 
     await connection.commit();
 
-    // Send confirmation email
+    // Send confirmation email to the inviting editor
     await sendConfirmationEmail(editor_email, email, "accepted");
+
+    // Send welcome email to the newly-accepted editor
+    const editorData = existingEditor[0];
+    sendEditorWelcomeEmail({
+      email,
+      firstName: editorData.firstname || '',
+      lastName: editorData.lastname || ''
+    }).catch(err => console.error("Failed to send editor welcome email:", err.message));
 
     return res.json({ 
       status: "success", 

@@ -1,6 +1,5 @@
 const db = require("../../../../../routes/db.config");
-
-
+const { sendEditorWelcomeEmail } = require("../../../../utils/sendWelcomeEmail");
 
 const acceptReviewerInvitation = async (req, res) => {
     try {
@@ -62,6 +61,12 @@ const acceptReviewerInvitation = async (req, res) => {
 
         // Log the action
         console.log(`Editor ${userEmail} accepted invitation for manuscript ${manuscriptId}`);
+
+        sendEditorWelcomeEmail({
+            email: userEmail,
+            firstName: req.user.firstName || '',
+            lastName: req.user.lastName || ''
+        }).catch(err => console.error("Failed to send editor welcome email:", err.message));
 
         return res.json({
             success: true,

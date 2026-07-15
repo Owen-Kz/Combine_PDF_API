@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const db = require('../../routes/db.config');
-
+const { sendEditorWelcomeEmail } = require('../utils/sendWelcomeEmail');
 
 const createEditorAccount = async (req, res) => {
     const {
@@ -49,6 +49,12 @@ const createEditorAccount = async (req, res) => {
                         [email, fullname, hashedPassword, editorialLevel, discipline]
                     );
                 }
+
+                sendEditorWelcomeEmail({
+                    email,
+                    firstName: firstname || '',
+                    lastName: lastname || ''
+                }).catch(err => console.error("Failed to send editor welcome email:", err.message));
 
                 return res.json({ status: 'success', message: 'Account Created Successfully' });
             }

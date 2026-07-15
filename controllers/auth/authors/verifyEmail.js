@@ -1,5 +1,6 @@
 // controllers/auth/authors/verifyEmail.js
 const db = require("../../../routes/db.config");
+const { sendAuthorWelcomeEmail } = require("../../utils/sendWelcomeEmail");
 
 /**
  * Verifies author email using verification token
@@ -27,7 +28,7 @@ const verifyEmail = async (req, res) => {
 
     // Find user with this token and email
     const [users] = await connection.query(
-      `SELECT id, email, account_status, token_expiry 
+      `SELECT id, email, firstname, lastname, account_status, token_expiry 
        FROM authors_account 
        WHERE email = ? AND verification_token = ?`,
       [email, token]
@@ -72,6 +73,12 @@ const verifyEmail = async (req, res) => {
     );
 
     console.log("Email verified successfully for user:", email);
+
+    sendAuthorWelcomeEmail({
+      email: user.email,
+      firstName: user.firstname || '',
+      lastName: user.lastname || ''
+    }).catch(err => console.error("Failed to send welcome email:", err.message));
 
     return res.json({ 
       status: "success", 

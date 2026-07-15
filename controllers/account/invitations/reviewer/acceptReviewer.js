@@ -1,6 +1,7 @@
 // controllers/invitations/acceptReviewer.js
 const db = require("../../../../routes/db.config");
 const sendConfirmationEmail = require("./sendConfirmationEmail");
+const { sendReviewerWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
 
 const acceptReviewer = async (req, res) => {
   let connection;
@@ -137,8 +138,16 @@ const acceptReviewer = async (req, res) => {
 
     await connection.commit();
 
-    // Send confirmation email
+    // Send confirmation email to editor
     await sendConfirmationEmail(editor_email, email, "accepted");
+
+    // Send welcome email to the reviewer
+    const reviewerName = existingReviewer[0];
+    sendReviewerWelcomeEmail({
+      email,
+      firstName: reviewerName.firstname || '',
+      lastName: reviewerName.lastname || ''
+    }).catch(err => console.error("Failed to send reviewer welcome email:", err.message));
 
     return res.json({ 
       status: "success", 
