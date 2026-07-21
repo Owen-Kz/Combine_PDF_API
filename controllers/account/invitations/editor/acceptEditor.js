@@ -15,7 +15,7 @@ const acceptEditor = async (req, res) => {
       });
     }
 
-    connection = await dbPromise;
+    connection = await dbPromise.getConnection();
     await connection.beginTransaction();
 
     // First check if invitation exists and get its status from invitations table

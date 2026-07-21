@@ -51,6 +51,7 @@ const getCompletedReviews = async (req, res) => {
         let countQuery = `
             SELECT COUNT(*) as total
             FROM reviews r
+            LEFT JOIN submissions s ON r.article_id = s.revision_id
             WHERE r.reviewer_email = ? 
             AND (r.review_status = 'review_submitted' OR r.review_status = 'submitted' OR r.review_status = 'completed')
         `;
