@@ -247,6 +247,7 @@ app.use("/useruploads/editors/", express.static(path.join(__dirname, "/useruploa
 
 // Migrate: add is_special_issue column to journals if missing
 const journalDb = require("./routes/journal.db");
+const dbPromise = require("./routes/dbPromise.config");
 (async () => {
     try {
         await journalDb.query(
@@ -311,6 +312,20 @@ const journalDb = require("./routes/journal.db");
         }
     } catch (_) { /* column may already exist */ }
 })();
+
+// Ensure reminder columns exist on invitations table
+(async () => {
+    try {
+        await dbPromise.query(`ALTER TABLE invitations ADD COLUMN reminder_count INT DEFAULT 0`);
+    } catch (_) {}
+    try {
+        await dbPromise.query(`ALTER TABLE invitations ADD COLUMN last_reminder_sent VARCHAR(500) DEFAULT NULL`);
+    } catch (_) {}
+})();
+
+// Start invitation reminder scheduler (checks every 6 hours)
+const { startInvitationReminderScheduler } = require("./controllers/utils/invitationReminderScheduler");
+startInvitationReminderScheduler();
 
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))

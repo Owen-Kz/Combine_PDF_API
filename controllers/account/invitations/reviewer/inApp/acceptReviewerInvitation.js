@@ -8,7 +8,7 @@ const acceptReviewerInvitation = async (req, res) => {
         const { invitationId, manuscriptId } = req.body;
 
         if (!invitationId || !manuscriptId) {
-            return res.status(400).json({ 
+            return res.json({ 
                 error: "Missing parameters", 
                 message: "Invitation ID and Manuscript ID are required" 
             });
@@ -33,7 +33,7 @@ const acceptReviewerInvitation = async (req, res) => {
 
         // Check if invitation can be accepted
         if (inv.invitation_status !== 'invite_sent' && inv.invitation_status !== 'pending') {
-            return res.status(400).json({ 
+            return res.json({ 
                 error: "Invalid invitation status",
                 message: `This invitation cannot be accepted because it is already ${inv.invitation_status}`
             });
@@ -41,7 +41,7 @@ const acceptReviewerInvitation = async (req, res) => {
 
         // Check if invitation has expired
         if (inv.invitation_expiry_date && new Date(inv.invitation_expiry_date) < new Date()) {
-            return res.status(400).json({ 
+            return res.json({ 
                 error: "Invitation expired",
                 message: "This invitation has expired and cannot be accepted"
             });
@@ -53,9 +53,9 @@ const acceptReviewerInvitation = async (req, res) => {
             [invitationId]
         );
 
-        // Insert into submitted_for_edit table
+        // Insert into submitted_for_review table
         await db.promise().query(
-            "INSERT INTO submitted_for_edit (article_id, editor_email, status) VALUES (?, ?, 'edit_invitation_accepted')",
+            "INSERT INTO submitted_for_review (article_id, editor_email, status) VALUES (?, ?, 'review_invitation_accepted')",
             [manuscriptId, userEmail]
         );
 

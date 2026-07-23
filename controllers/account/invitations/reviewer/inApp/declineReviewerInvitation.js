@@ -8,7 +8,7 @@ const declineReviewerInvitation = async (req, res) => {
         const { invitationId, manuscriptId, reason } = req.body;
 
         if (!invitationId || !manuscriptId) {
-            return res.status(400).json({ 
+            return res.json({ 
                 error: "Missing parameters", 
                 message: "Invitation ID and Manuscript ID are required" 
             });
@@ -32,7 +32,7 @@ const declineReviewerInvitation = async (req, res) => {
 
         // Check if invitation can be declined
         if (inv.invitation_status !== 'invite_sent' && inv.invitation_status !== 'pending') {
-            return res.status(400).json({ 
+            return res.json({ 
                 error: "Invalid invitation status",
                 message: `This invitation cannot be declined because it is already ${inv.invitation_status}`
             });
