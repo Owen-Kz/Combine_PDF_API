@@ -33,6 +33,7 @@ const corsOptions = {
       callback(null, true);
     } else {
       console.error('CORS blocked origin:', origin);
+      LogAction(`CORS blocked origin: ${origin}, Request URL: ${req.originalUrl}, Timestamp: ${new Date()}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
