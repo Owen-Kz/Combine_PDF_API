@@ -167,12 +167,12 @@ router.get("/article-data", async (req, res) => {
         LogAction(`Request from IP: ${clientIp}`);
         
         // Optional: Log full request details
-        LogAction('Request Headers:', req.headers);
-        LogAction('Request Socket:', {
+        LogAction('Request Headers:', JSON.stringify(req.headers));
+        LogAction('Request Socket:', JSON.stringify({
             remoteAddress: req.socket?.remoteAddress,
             remotePort: req.socket?.remotePort,
             localAddress: req.socket?.localAddress
-        });
+        }));
 
         // Check if the client has already viewed this 
         const [hasViewed] = await db.query("SELECT * FROM view_download_count WHERE  user_ip = ? AND article_id = ? AND type = 'viewed'", [clientIp, article.buffer])
