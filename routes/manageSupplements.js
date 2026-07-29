@@ -842,14 +842,14 @@ router.delete("/delete/:id", AuthorLoggedIn, async (req, res) => {
 // ============================================
 // CREATE NEW ISSUE/SUPPLEMENT
 // ============================================
-router.post("/create", AuthorLoggedIn, upload.fields([
+router.post("/create-publication", AuthorLoggedIn, upload.fields([
     { name: 'manuscriptCover', maxCount: 1 },
     { name: 'manuscript_file', maxCount: 1 }
 ]), async (req, res) => {
     try {
         const userId = req.user.id;
         console.log("Create request body:", req.body);
-
+        LogAction(userId, "Attempting to create a new issue/supplement", "create_issue_supplement");
         // Check if user is admin
         if (!(await isAdminAccount(userId))) {
             return res.json({ error: "Not authorized" });
