@@ -55,7 +55,7 @@ const acceptReviewerInvitation = async (req, res) => {
 
         // Insert into submitted_for_review table
         await db.promise().query(
-            "INSERT INTO submitted_for_review (article_id, editor_email, status) VALUES (?, ?, 'review_invitation_accepted')",
+            "INSERT INTO submitted_for_review (article_id, reviewer_email, status) VALUES (?, ?, 'review_invitation_accepted')",
             [manuscriptId, userEmail]
         );
 

@@ -47,22 +47,6 @@ const sendReviewReminder = async (req, res) => {
       });
     }
 
-    // Get editor details
-    const [editorResults] = await dbPromise.query(
-      `SELECT email, fullname FROM editors WHERE email = ?`,
-      [req.user.email]
-    );
-
-    if (editorResults.length === 0) {
-      return res.status(403).json({ 
-        status: "error", 
-        message: "Unauthorized account" 
-      });
-    }
-
-    const editorEmail = editorResults[0].email;
-    const editorName = editorResults[0].fullname;
-
     // Get manuscript details
     const [manuscriptResults] = await dbPromise.query(
       `SELECT title, revision_id FROM submissions WHERE revision_id = ?`,
@@ -145,10 +129,6 @@ const sendReviewReminder = async (req, res) => {
             <p>If you are unable to complete this review, please let us know immediately by responding to this email.</p>
             
             <p>Thank you for your attention to this matter.</p>
-            
-            <p>Best regards,<br>
-            ${escapeHtml(editorName)}<br>
-            ASFIRJ Editorial Office</p>
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} ASFI Research Journal. All rights reserved.</p>
@@ -201,10 +181,6 @@ const sendReviewReminder = async (req, res) => {
             </div>
             
             <p>Thank you for your contribution to ASFIRJ.</p>
-            
-            <p>Best regards,<br>
-            ${escapeHtml(editorName)}<br>
-            ASFIRJ Editorial Office</p>
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} ASFI Research Journal. All rights reserved.</p>

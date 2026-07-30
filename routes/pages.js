@@ -92,6 +92,12 @@ const getAllCompletedReviews = require("../controllers/editors/reviews/getAllCom
 const CombineWordDocuments = require("../external/combinePDF");
 const updateAccount = require("../controllers/pages/updateAccountPage");
 
+// Decision flow controllers
+const inviteEditorToDecide = require("../controllers/editors/decisions/inviteEditorToDecide");
+const getPendingDecisions = require("../controllers/editors/decisions/getPendingDecisions");
+const getDecisionData = require("../controllers/editors/decisions/getDecisionData");
+const submitDecision = require("../controllers/editors/decisions/submitDecision");
+
 
 
   config();
@@ -268,6 +274,12 @@ router.post("/editors/email/acceptPaper", AuthorLoggedIn, AcceptPaper)
 router.post("/editors/email/returnPaper", AuthorLoggedIn, ReturnPaper)
 router.post("/editors/email/revisePaper", AuthorLoggedIn, RevisePaper)
 router.post("/editors/email/rejectPaper", AuthorLoggedIn, RejectPaper)
+
+// Decision flow endpoints
+router.post("/editors/backend/editors/invite-editor-decision", AuthorLoggedIn, inviteEditorToDecide);
+router.get("/editors/backend/editors/pending-decisions", AuthorLoggedIn, getPendingDecisions);
+router.get("/editors/backend/editors/decision-data/:articleId", AuthorLoggedIn, getDecisionData);
+router.post("/editors/backend/editors/submit-decision", AuthorLoggedIn, submitDecision);
 router.post("/editors/email/bulkEmail", AuthorLoggedIn, sendBulkEmail)
 router.post("/editors/createAccount", editorSignUp)
 router.post("/editors/remindReviewer", AuthorLoggedIn, remindReviewer)
