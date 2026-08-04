@@ -215,7 +215,6 @@ const myPreviousSubmissions = async (req, res) => {
                         s.revision_id,
                         s.revisions_count,
                         s.corrections_count,
-                        s.previous_manuscript_id,
                         s.title,
                         s.abstract,
                         s.article_type,
