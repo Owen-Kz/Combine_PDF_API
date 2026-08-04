@@ -1,10 +1,40 @@
 const express = require("express");
 const { config } = require("dotenv");
+const axios = require("axios");
 const dbPromise = require("./dbPromise.config");
 const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
+const { sendEmail } = require("../controllers/utils/sendEmail");
 const router = express.Router();
 
 config();
+
+// Helper to download a file as base64 for Brevo email attachments
+async function downloadFileAsBase64(url, fileName) {
+    try {
+        const response = await axios({
+            method: 'get',
+            url,
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            maxContentLength: 10 * 1024 * 1024
+        });
+
+        const base64Data = Buffer.from(response.data, 'binary').toString('base64');
+        const contentType = response.headers['content-type'] || 'application/octet-stream';
+        const fileSize = response.headers['content-length'] || response.data.length;
+
+        return {
+            content: base64Data,
+            name: fileName,
+            contentType,
+            size: fileSize,
+            url
+        };
+    } catch (error) {
+        console.error(`Error downloading file ${fileName} from ${url}:`, error.message);
+        throw new Error(`Failed to download attachment: ${fileName}`);
+    }
+}
 
 // Helper function to get user's emails (as sender or recipient)
 async function getUserEmails(userEmail, folder = 'inbox', search = '') {
@@ -367,6 +397,149 @@ router.post("/:id/star", AuthorLoggedIn, async (req, res) => {
         res.status(500).json({
             status: "error",
             message: "Failed to toggle star status"
+        });
+    }
+});
+
+// POST /api/messages/:id/forward - Forward an email to a different address
+router.post("/:id/forward", AuthorLoggedIn, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userEmail = req.user.email;
+        const { to, subject, body, attachmentIds = [] } = req.body;
+
+        if (!to || !to.trim()) {
+            return res.status(400).json({ status: "error", message: "Recipient email is required" });
+        }
+
+        if (!subject || !subject.trim()) {
+            return res.status(400).json({ status: "error", message: "Subject is required" });
+        }
+
+        if (!body || !body.trim()) {
+            return res.status(400).json({ status: "error", message: "Message body is required" });
+        }
+
+        // Validate recipient emails (comma-separated allowed)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const recipients = to.split(',').map(e => e.trim()).filter(Boolean);
+        if (recipients.length === 0) {
+            return res.status(400).json({ status: "error", message: "No valid recipient email provided" });
+        }
+        for (const recipient of recipients) {
+            if (!emailRegex.test(recipient)) {
+                return res.status(400).json({ status: "error", message: `Invalid email format: ${recipient}` });
+            }
+        }
+
+        // Fetch original email details with attachments
+        const emailDetails = await getEmailDetails(id);
+
+        if (!emailDetails) {
+            return res.status(404).json({
+                status: "error",
+                message: "Message not found"
+            });
+        }
+
+        // Check if user has access to this email
+        if (emailDetails.sender !== userEmail && emailDetails.recipient !== userEmail) {
+            const [ccMatch] = await dbPromise.query(
+                "SELECT id FROM email_cc WHERE email_id = ? AND cc_email = ?",
+                [id, userEmail]
+            );
+
+            const [bccMatch] = await dbPromise.query(
+                "SELECT id FROM email_bcc WHERE email_id = ? AND bcc_email = ?",
+                [id, userEmail]
+            );
+
+            if (ccMatch.length === 0 && bccMatch.length === 0) {
+                return res.status(403).json({
+                    status: "error",
+                    message: "You don't have permission to forward this message"
+                });
+            }
+        }
+
+        // Determine which original attachments to carry over
+        let selectedAttachments = [];
+        if (Array.isArray(attachmentIds) && attachmentIds.length > 0) {
+            selectedAttachments = emailDetails.attachments.filter(
+                a => attachmentIds.includes(String(a.id))
+            );
+        }
+
+        // Prepare Brevo attachments by downloading each file to base64
+        const brevoAttachments = [];
+        for (const att of selectedAttachments) {
+            if (att.file_path && /^https?:\/\//.test(att.file_path)) {
+                try {
+                    const downloaded = await downloadFileAsBase64(att.file_path, att.file_name);
+                    brevoAttachments.push({
+                        content: downloaded.content,
+                        name: downloaded.name,
+                        contentType: downloaded.contentType
+                    });
+                } catch (err) {
+                    console.error(`Skipping attachment ${att.file_name}:`, err.message);
+                }
+            }
+        }
+
+        // Send the forwarded email via Brevo
+        const sendResult = await sendEmail({
+            to: recipients,
+            subject,
+            htmlContent: body,
+            fromName: req.user.fullname || 'ASFI Research Journal',
+            attachments: brevoAttachments.length > 0 ? brevoAttachments : null
+        });
+
+        if (sendResult.status !== 'success') {
+            return res.status(500).json({
+                status: "error",
+                message: sendResult.message || "Failed to send email"
+            });
+        }
+
+        // Store forwarded email in sent_emails so it appears in the Sent folder
+        const [emailResult] = await dbPromise.query(
+            `INSERT INTO sent_emails 
+             (article_id, sender, recipient, subject, status, body, sent_at, email_for) 
+             VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), 'forwarded')`,
+            [emailDetails.article_id || null, userEmail, recipients.join(', '), subject, body]
+        );
+
+        const newEmailId = emailResult.insertId;
+
+        // Re-insert carried-over attachments for the new email
+        if (selectedAttachments.length > 0) {
+            const attachmentValues = selectedAttachments.map(att => [
+                newEmailId,
+                att.file_name,
+                att.file_path,
+                att.file_size,
+                att.mime_type
+            ]);
+            await dbPromise.query(
+                "INSERT INTO email_attachments (email_id, file_name, file_path, file_size, mime_type) VALUES ?",
+                [attachmentValues]
+            );
+        }
+
+        res.json({
+            status: "success",
+            message: `Email forwarded successfully to ${recipients.join(', ')}`,
+            emailId: newEmailId,
+            recipient: recipients.join(', ')
+        });
+
+    } catch (error) {
+        console.error("Error forwarding message:", error);
+        res.status(500).json({
+            status: "error",
+            message: "Failed to forward message"
         });
     }
 });
