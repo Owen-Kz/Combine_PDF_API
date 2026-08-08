@@ -88,6 +88,8 @@ const AuthorsLogin = require("../controllers/auth/authors/login");
 const sendReviewReminder = require("../controllers/account/invitations/sendReviewerReminder");
 const exportReviewPDF = require("../controllers/editors/reviews/exportReviewPDF");
 const exportReviewExcel = require("../controllers/editors/reviews/exportReviewExcel");
+const exportAllReviews = require("../controllers/editors/reviews/exportAllReviews");
+const getReviewsByArticle = require("../controllers/editors/reviews/getReviewsByArticle");
 const getAllCompletedReviews = require("../controllers/editors/reviews/getAllCompletedReviews");
 const CombineWordDocuments = require("../external/combinePDF");
 const updateAccount = require("../controllers/pages/updateAccountPage");
@@ -226,6 +228,8 @@ router.get("/editors/getReviews", AuthorLoggedIn, getReviews)
 router.get("/editors/reviewer-profile/:email", AuthorLoggedIn, getReviewerProfile)
 router.post("/editors/export-review-pdf", AuthorLoggedIn, exportReviewPDF);
 router.post("/editors/export-review-excel", AuthorLoggedIn, exportReviewExcel);
+router.post("/editors/export-all-reviews", AuthorLoggedIn, exportAllReviews);
+router.post("/editors/reviews-by-article", AuthorLoggedIn, getReviewsByArticle);
 
 router.get("/editors/getAuthors", AuthorLoggedIn,getSubmissionAuthors)
 router.post("/editors/articleinvitations", AuthorLoggedIn, getInvitations)
