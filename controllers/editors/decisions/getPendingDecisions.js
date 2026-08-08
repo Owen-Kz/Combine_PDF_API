@@ -36,12 +36,15 @@ const getPendingDecisions = async (req, res) => {
         s.date_submitted,
         s.status,
         i.invitation_status,
+        i.invitation_date,
         i.invitation_expiry_date,
         i.invited_user,
+        i.decision_viewed,
         (SELECT COUNT(*) FROM reviews r WHERE r.article_id = s.revision_id AND r.review_status = 'review_submitted') AS reviews_count,
         (SELECT COUNT(*) FROM invitations inv WHERE inv.invitation_link = s.revision_id AND inv.invited_for = 'Submission Review' AND inv.invitation_status IN ('accepted', 'completed', 'review_saved', 'review_submitted')) AS expected_reviews
       FROM invitations i
       INNER JOIN submissions s ON s.revision_id = i.invitation_link
+        AND s.id = (SELECT MIN(id) FROM submissions WHERE revision_id = i.invitation_link)
       WHERE i.invited_user = ?
         AND i.invited_for = 'To Decide'
         AND i.invitation_status IN ('pending', 'invite_sent')

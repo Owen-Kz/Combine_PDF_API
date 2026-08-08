@@ -6,6 +6,7 @@ const crypto = require("crypto")
 
 const RandomString = crypto.randomBytes(10).toString('hex');
 const db = require("../../routes/db.config");
+const { notifyEditorForDecision } = require("../editors/decisions/inviteEditorForDecision");
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -198,6 +199,7 @@ const submitReview = async (req, res) => {
         }
 
         // If submitting, update the review status in the invitations table
+        let editorInvited = false;
         if (action === 'submit') {
             await db.promise().query(
                 `UPDATE invitations SET invitation_status = 'completed' 
@@ -205,6 +207,18 @@ const submitReview = async (req, res) => {
                 [manuscriptId, userEmail]
             );
             await updateInvitationsStatus('review_submitted', manuscriptId, userEmail)
+
+            // Notify the responsible editor that a manuscript awaits their decision.
+            // Failing to notify the editor should not fail the review submission.
+            try {
+                const notifyResult = await notifyEditorForDecision({
+                    articleId: manuscriptId,
+                    invitedByEmail: userEmail
+                });
+                editorInvited = notifyResult.invited;
+            } catch (notifyError) {
+                console.error("Error notifying editor for decision:", notifyError);
+            }
         }
 
         return res.json({
@@ -213,6 +227,7 @@ const submitReview = async (req, res) => {
                 ? "Review submitted successfully" 
                 : "Review saved as draft",
             reviewId: reviewId,
+            editorInvited,
             data: reviewData
         });
 

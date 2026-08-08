@@ -1,5 +1,7 @@
 const mysql = require("mysql2/promise");
 const Brevo = require("@getbrevo/brevo");
+const multer = require("multer");
+const fs = require("fs");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -10,9 +12,19 @@ const dbConfig = {
   database: process.env.D_NAME,
 };
 
+const upload = multer({ dest: "uploads/" });
+
 const submitDecision = async (req, res) => {
   let connection;
   try {
+    // Parse multipart form data (attachments[])
+    await new Promise((resolve, reject) => {
+      upload.array("attachments[]")(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
     const { articleId, decisionType, compiledLetter, subject, message, ccEmail, bccEmail } = req.body;
     const editorEmail = req.user?.email || "";
 
@@ -109,6 +121,31 @@ const submitDecision = async (req, res) => {
       if (bccList.length > 0) emailData.bcc = bccList.map(e => ({ email: e }));
     }
 
+    // Collect and attach files (max 10)
+    const attachments = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files.slice(0, 10)) {
+        try {
+          const content = fs.readFileSync(file.path).toString("base64");
+          attachments.push({
+            content,
+            name: file.originalname,
+            contentType: file.mimetype || "application/octet-stream",
+            size: file.size
+          });
+        } catch (err) {
+          console.error(`Failed to process attachment ${file.originalname}:`, err.message);
+        }
+      }
+      if (attachments.length > 0) {
+        emailData.attachment = attachments.map(att => ({
+          content: att.content,
+          name: att.name,
+          contentType: att.contentType
+        }));
+      }
+    }
+
     await apiInstance.sendTransacEmail(emailData);
 
     await connection.execute(
@@ -137,6 +174,15 @@ const submitDecision = async (req, res) => {
     return res.status(500).json({ status: "error", message: "Internal server error" });
   } finally {
     if (connection) await connection.end();
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (e) {
+          // ignore cleanup errors
+        }
+      }
+    }
   }
 };
 

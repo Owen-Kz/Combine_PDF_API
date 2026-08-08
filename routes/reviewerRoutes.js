@@ -10,6 +10,7 @@ const getCompletedReviews = require("../controllers/reviewers/getCompletedReview
 const submitReview = require("../controllers/reviewers/submitReviews");
 const getReviewDraft = require("../controllers/reviewers/getReviewDraft");
 const getReviewerStats = require("../controllers/reviewers/getReviewerStats");
+const inviteEditorDecision = require("../controllers/reviewers/inviteEditorDecision");
 const router = express.Router()
 config()
 
@@ -33,5 +34,6 @@ router.get("/stats", getReviewerStats);
 // Review submission endpoints
 router.post("/submit-review", submitReview);
 router.get("/review-draft/:manuscriptId", getReviewDraft);
+router.post("/invite-editor-decision", inviteEditorDecision);
 
 module.exports = router

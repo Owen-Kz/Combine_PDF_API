@@ -8,6 +8,8 @@ const allAcceptedSubmissions = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.body.search || '';
+        const decision = req.body.decision || 'all';
+        const type = req.body.type || 'all';
         const offset = (page - 1) * limit;
 
         if (!userId) {
@@ -18,7 +20,7 @@ const allAcceptedSubmissions = async (req, res) => {
             return res.status(403).json({ error: "Not authorized" });
         }
 
-        // Base query for decisioned submissions (Accepted/Rejected)
+        // Base query for decisioned submissions
         let baseQuery = `
             WITH RankedSubmissions AS (
                 SELECT 
@@ -69,7 +71,7 @@ const allAcceptedSubmissions = async (req, res) => {
                 LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
                 WHERE s.title != '' 
                 AND s.title != 'Draft Submission' 
-                AND (LOWER(s.status) = 'accepted' OR LOWER(s.status) = 'rejected')
+                AND (LOWER(s.status) = 'accepted' OR LOWER(s.status) = 'rejected' OR LOWER(s.status) = 'returned_for_correction' OR LOWER(s.status) = 'returned_for_revision')
         `;
 
         let countQuery = `
@@ -78,7 +80,7 @@ const allAcceptedSubmissions = async (req, res) => {
             LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
             WHERE s.title != '' 
             AND s.title != 'Draft Submission'
-            AND (LOWER(s.status) = 'accepted' OR LOWER(s.status) = 'rejected')
+            AND (LOWER(s.status) = 'accepted' OR LOWER(s.status) = 'rejected' OR LOWER(s.status) = 'returned_for_correction' OR LOWER(s.status) = 'returned_for_revision')
         `;
 
         let queryParams = [];
@@ -109,6 +111,24 @@ const allAcceptedSubmissions = async (req, res) => {
             countParams.push(...searchParams);
         }
 
+        // Add decision status filter
+        if (decision && decision !== 'all') {
+            const decisionCondition = ` AND LOWER(s.status) = ?`;
+            baseQuery += decisionCondition;
+            countQuery += decisionCondition;
+            queryParams.push(decision.toLowerCase());
+            countParams.push(decision.toLowerCase());
+        }
+
+        // Add article type filter
+        if (type && type !== 'all') {
+            const typeCondition = ` AND s.article_type = ?`;
+            baseQuery += typeCondition;
+            countQuery += typeCondition;
+            queryParams.push(type);
+            countParams.push(type);
+        }
+
         // Complete the base query
         baseQuery += `
             )
@@ -124,6 +144,43 @@ const allAcceptedSubmissions = async (req, res) => {
         // Execute queries
         const [submissions] = await db.promise().query(baseQuery, queryParams);
         const [countResult] = await db.promise().query(countQuery, countParams);
+
+        // Decision stats (always computed against the base set, not the current page)
+        const statsQuery = `
+            SELECT LOWER(s.status) as decision, COUNT(DISTINCT s.article_id) as cnt
+            FROM submissions s
+            LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
+            WHERE s.title != '' 
+            AND s.title != 'Draft Submission'
+            AND (LOWER(s.status) = 'accepted' OR LOWER(s.status) = 'rejected' OR LOWER(s.status) = 'returned_for_correction' OR LOWER(s.status) = 'returned_for_revision')
+            GROUP BY LOWER(s.status)
+        `;
+        const [statsRows] = await db.promise().query(statsQuery, []);
+        const decisionStats = {
+            accepted: 0,
+            rejected: 0,
+            returned_for_correction: 0,
+            returned_for_revision: 0
+        };
+        statsRows.forEach(row => {
+            if (decisionStats[row.decision] !== undefined) {
+                decisionStats[row.decision] = row.cnt;
+            }
+        });
+
+        // Unique article types for the filter dropdown
+        const typesQuery = `
+            SELECT DISTINCT s.article_type as type
+            FROM submissions s
+            WHERE s.title != '' 
+            AND s.title != 'Draft Submission'
+            AND (LOWER(s.status) = 'accepted' OR LOWER(s.status) = 'rejected' OR LOWER(s.status) = 'returned_for_correction' OR LOWER(s.status) = 'returned_for_revision')
+            AND s.article_type IS NOT NULL
+            AND s.article_type != ''
+            ORDER BY s.article_type ASC
+        `;
+        const [typesRows] = await db.promise().query(typesQuery, []);
+        const articleTypes = typesRows.map(row => row.type);
 
         // Format the results
         const formattedSubmissions = submissions.map(row => {
@@ -190,7 +247,7 @@ const allAcceptedSubmissions = async (req, res) => {
                 abstract: row.abstract,
                 type: row.article_type || 'Research Article',
                 discipline: row.discipline,
-                decision: row.status?.toLowerCase() === 'accepted' ? 'accepted' : 'rejected',
+                decision: row.status?.toLowerCase(),
                 status: row.status,
                 date: new Date(row.date_submitted).toLocaleDateString('en-GB', { 
                     day: 'numeric', 
@@ -237,7 +294,10 @@ const allAcceptedSubmissions = async (req, res) => {
             total: countResult[0]?.total || 0,
             totalPages: Math.ceil((countResult[0]?.total || 0) / limit),
             currentPage: page,
-            limit: limit
+            limit: limit,
+            decisionStats: decisionStats,
+            articleTypes: articleTypes,
+            filters: { decision, type, search }
         });
 
     } catch (error) {

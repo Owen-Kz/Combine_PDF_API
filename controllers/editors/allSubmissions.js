@@ -5,6 +5,7 @@ const isAdminAccount = require("./isAdminAccount");
 const allSubmissions = async (req, res) => {
     try {
         const userId = req.user.id;
+        const userEmail = req.user.email;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search || '';
@@ -62,7 +63,8 @@ const allSubmissions = async (req, res) => {
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND invitation_status = 'invite_sent') as pending_reviewers,
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND (invitation_status = 'accepted' OR invitation_status = 'edit_invitation_accepted' OR invitation_status = 'edit_submitted')) as accepted_editors,
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'declined') as declined_editors,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'invite_sent') as pending_editors
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'invite_sent') as pending_editors,
+                    (SELECT COUNT(*) FROM invitations inv2 WHERE inv2.invitation_link = s.revision_id AND inv2.invited_for = 'To Decide' AND inv2.invitation_status IN ('pending', 'invite_sent') AND inv2.decision_viewed = 0 AND inv2.invited_user = ?) as new_reviews
                 FROM submissions s
                 LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
                 WHERE s.title != '' AND s.title != 'Draft Submission'
@@ -75,7 +77,7 @@ const allSubmissions = async (req, res) => {
             WHERE s.title != '' AND s.title != 'Draft Submission'
         `;
 
-        let queryParams = [];
+        let queryParams = [userEmail];
         let countParams = [];
 
         // Add search conditions if search query exists
@@ -112,6 +114,8 @@ const allSubmissions = async (req, res) => {
             LIMIT ? OFFSET ?
         `;
 
+        // The new_reviews subquery references the current user, so its
+        // parameter is the first placeholder in the query.
         queryParams.push(limit, offset);
 
         // Execute queries
@@ -185,6 +189,7 @@ const allSubmissions = async (req, res) => {
                     declined: row.declined_editors || 0,
                     pending: row.pending_editors || 0
                 },
+                newReviews: row.new_reviews || 0,
                 files: files
             };
         });

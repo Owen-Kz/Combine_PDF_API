@@ -21,7 +21,8 @@ const getDashboardStats = async (req, res) => {
             editorInvitesCount,
             acceptedCount,
             inboxCount,
-            prendingReviewsCouunt
+            prendingReviewsCouunt,
+            pendingDecisionsCount
         ] = await Promise.all([
             // Submissions count
             new Promise((resolve) => {
@@ -53,7 +54,7 @@ const getDashboardStats = async (req, res) => {
             
             // Decisioned count
             new Promise((resolve) => {
-                db.query(`SELECT COUNT(*) AS count FROM submissions WHERE status IN ('accepted', 'rejected', 'published')`, (err, results) => {
+                db.query(`SELECT COUNT(*) AS count FROM submissions WHERE status IN ('accepted', 'rejected', 'published', 'returned_for_correction', 'returned_for_revision')`, (err, results) => {
                     if (err) resolve(0);
                     else resolve(results[0]?.count || 0);
                 });
@@ -99,6 +100,17 @@ const getDashboardStats = async (req, res) => {
                     if (err) resolve(0);
                     else resolve(results[0]?.count || 0);
                 });
+            }),
+
+            // Pending decisions count (editor awaiting decision on manuscripts)
+            new Promise((resolve) => {
+                const query = isAdmin 
+                    ? `SELECT COUNT(*) AS count FROM invitations WHERE invited_for = 'To Decide' AND invitation_status IN ('pending', 'invite_sent')`
+                    : `SELECT COUNT(*) AS count FROM invitations WHERE invited_for = 'To Decide' AND invitation_status IN ('pending', 'invite_sent') AND invited_user = ?`;
+                db.query(query, isAdmin ? [] : [req.user.email], (err, results) => {
+                    if (err) resolve(0);
+                    else resolve(results[0]?.count || 0);
+                });
             })
         ]);
 
@@ -113,6 +125,7 @@ const getDashboardStats = async (req, res) => {
                 editorInvitations: editorInvitesCount,
                 accepted:acceptedCount,
                 pendingReviews: prendingReviewsCouunt,
+                pendingDecisions: pendingDecisionsCount,
                 inbox:inboxCount,
             }
         });

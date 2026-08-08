@@ -1,6 +1,7 @@
 // backend/controllers/editors/getAllInvitations.js
 const dbPromise = require("../../../routes/dbPromise.config");
 const isAdminAccount = require("../isAdminAccount");
+const sendInvitationReminder = require("../../utils/sendInvitationReminder");
 
 const getAllInvitations = async (req, res) => {
     try {
@@ -67,8 +68,8 @@ const getAllInvitations = async (req, res) => {
                     ELSE 'normal'
                 END as priority,
                 
-                -- Reminder count (you might need a separate table for this)
-                0 as reminder_count,
+                -- Reminder count
+                i.reminder_count as reminder_count,
                 
                 -- Additional timestamps based on status
                 CASE 
@@ -258,7 +259,28 @@ const getInvitationById = async (req, res) => {
             return res.status(404).json({ success: false, error: "Invitation not found" });
         }
 
-        return res.json({ success: true, invitation: invitation[0] });
+        // For reviewer invitations, attach the submitted review (if any) so the
+        // invitations management page can display it when clicking the eye icon.
+        let review = null;
+        if (invitation[0].invited_for === 'Submission Review') {
+            const [reviewRows] = await dbPromise.query(`
+                SELECT 
+                    r.*,
+                    CONCAT_WS(' ', a.prefix, a.firstname, a.lastname) AS reviewer_name
+                FROM reviews r
+                LEFT JOIN authors_account a ON r.reviewer_email = a.email
+                WHERE r.article_id = ? AND r.reviewer_email = ?
+                  AND r.review_status IN ('review_submitted', 'completed')
+                ORDER BY r.id DESC
+                LIMIT 1
+            `, [invitation[0].invitation_link, invitation[0].invited_user]);
+            if (reviewRows.length > 0) {
+                review = reviewRows[0];
+                review.reviewer_name = (review.reviewer_name || '').trim() || review.reviewer_email || 'Reviewer';
+            }
+        }
+
+        return res.json({ success: true, invitation: invitation[0], review });
 
     } catch (error) {
         console.error("Error fetching invitation:", error);
@@ -339,6 +361,96 @@ const cancelInvitation = async (req, res) => {
     }
 };
 
+// POST /api/invitations/:id/remind
+const remindInvitation = async (req, res) => {
+    try {
+        if (!req.user || !(await isAdminAccount(req.user.id))) {
+            return res.status(403).json({ success: false, error: "Unauthorized" });
+        }
+
+        const { id } = req.params;
+
+        const [invitationRows] = await dbPromise.query(`
+            SELECT 
+                i.*,
+                s.title,
+                s.revision_id,
+                s.article_id,
+                s.corresponding_authors_email
+            FROM invitations i
+            LEFT JOIN submissions s ON i.invitation_link = s.revision_id
+            WHERE i.id = ?
+        `, [id]);
+
+        if (invitationRows.length === 0) {
+            return res.status(404).json({ success: false, error: "Invitation not found" });
+        }
+
+        const inv = invitationRows[0];
+
+        const remindableStatuses = ['pending', 'invite_sent', 'accepted'];
+        if (!remindableStatuses.includes(inv.invitation_status)) {
+            return res.status(400).json({
+                success: false,
+                error: `A reminder cannot be sent for an invitation with status '${inv.invitation_status}'`
+            });
+        }
+
+        const recipientEmail = inv.invited_user;
+        const manuscriptId = inv.revision_id || inv.article_id || inv.invitation_link;
+
+        let daysUntilExpiry = 14;
+        if (inv.invitation_expiry_date) {
+            const diff = Math.ceil(
+                (new Date(inv.invitation_expiry_date) - new Date()) / (1000 * 60 * 60 * 24)
+            );
+            daysUntilExpiry = Math.max(diff, 0);
+        }
+
+        const emailResult = await sendInvitationReminder({
+            recipientEmail,
+            invitedFor: inv.invited_for,
+            manuscriptId,
+            daysUntilExpiry,
+            expiryDate: inv.invitation_expiry_date
+        });
+
+        if (emailResult.status !== 'success') {
+            console.error("Error sending manual invitation reminder:", emailResult.message);
+            return res.status(500).json({
+                success: false,
+                error: "Failed to send the reminder email"
+            });
+        }
+
+        await dbPromise.query(`
+            UPDATE invitations 
+            SET reminder_count = reminder_count + 1,
+                last_reminder_sent = NOW()
+            WHERE id = ?
+        `, [id]);
+
+        await dbPromise.query(`
+            INSERT INTO invitation_logs (invitation_id, action, performed_by, reason, performed_at)
+            VALUES (?, 'reminder_sent', ?, ?, NOW())
+        `, [id, req.user.email, 'Manual reminder sent']);
+
+        await dbPromise.query(`
+            INSERT INTO sent_emails (article_id, sender, recipient, subject, status, body, sent_at, email_for)
+            VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), 'invitation_reminder')
+        `, [manuscriptId, req.user.email, recipientEmail, emailResult.subject, 'Manual invitation reminder']);
+
+        return res.json({
+            success: true,
+            message: `Reminder sent successfully to ${recipientEmail}`
+        });
+
+    } catch (error) {
+        console.error("Error sending invitation reminder:", error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 // GET /api/invitations/stats
 const getInvitationStats = async (req, res) => {
     try {
@@ -369,6 +481,7 @@ module.exports = {
     getAllInvitations,
     resendInvitation,
     cancelInvitation,
+    remindInvitation,
     getInvitationStats,
     getInvitationById
 };

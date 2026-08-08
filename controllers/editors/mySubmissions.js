@@ -123,7 +123,8 @@ const mySubmissions = async (req, res) => {
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND invitation_status = 'invite_sent') as pending_reviewers,
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND (invitation_status = 'accepted' OR invitation_status = 'edit_invitation_accepted' OR invitation_status = 'edit_submitted')) as accepted_editors,
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'declined') as declined_editors,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'invite_sent') as pending_editors
+                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'invite_sent') as pending_editors,
+                    (SELECT COUNT(*) FROM invitations inv2 WHERE inv2.invitation_link = s.revision_id AND inv2.invited_for = 'To Decide' AND inv2.invitation_status IN ('pending', 'invite_sent') AND inv2.decision_viewed = 0 AND inv2.invited_user = ?) as new_reviews
                 FROM submissions s
                 LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
                 WHERE s.article_id IN (?)
@@ -134,7 +135,7 @@ const mySubmissions = async (req, res) => {
             ORDER BY id DESC
         `;
 
-        const [submissions] = await db.promise().query(submissionsQuery, [articleIds]);
+        const [submissions] = await db.promise().query(submissionsQuery, [editorEmail, articleIds]);
 
         // Format the results (same formatting as allSubmissions)
         const formattedSubmissions = submissions.map(row => {
@@ -203,6 +204,7 @@ const mySubmissions = async (req, res) => {
                     declined: row.declined_editors || 0,
                     pending: row.pending_editors || 0
                 },
+                newReviews: row.new_reviews || 0,
                 files: files
             };
         });

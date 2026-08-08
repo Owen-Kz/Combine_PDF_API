@@ -69,7 +69,8 @@ const inviteReviewerEmail = async (req, res) => {
       subject, 
       message, 
       ccEmail, 
-      bccEmail 
+      bccEmail, 
+      handlingEditorEmail 
     } = req.body;
 
     if (!articleId || !reviewerEmail || !subject || !message) {
@@ -133,7 +134,34 @@ const inviteReviewerEmail = async (req, res) => {
         message: "Unauthorized account" 
       });
     }
-    const editorEmail = editorData[0].email;
+
+    // Determine the handling editor (who receives all correspondence)
+    // Defaults to the logged-in user; an explicit handling editor email is
+    // used instead when provided (the person sending the invitation may not
+    // be the handling editor).
+    let editorEmail = editorData[0].email;
+    if (handlingEditorEmail && handlingEditorEmail.trim()) {
+      const normalizedHandlingEditor = handlingEditorEmail.trim();
+      if (!emailRegex.test(normalizedHandlingEditor)) {
+        return res.status(400).json({ 
+          status: "error", 
+          message: "Invalid handling editor email format" 
+        });
+      }
+      if (normalizedHandlingEditor.toLowerCase() !== editorEmail.toLowerCase()) {
+        const handlingEditorData = await dbQuery(
+          `SELECT email FROM editors WHERE email = ?`,
+          [normalizedHandlingEditor]
+        );
+        if (!handlingEditorData.length) {
+          return res.status(400).json({ 
+            status: "error", 
+            message: "Handling editor email is not a registered editor account" 
+          });
+        }
+        editorEmail = handlingEditorData[0].email;
+      }
+    }
 
     // Check if reviewer is an author
     const isAuthor = await dbQuery(

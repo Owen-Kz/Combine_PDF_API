@@ -102,15 +102,23 @@ const inviteEditorToDecide = async (req, res) => {
     await apiInstance.sendTransacEmail(emailData);
 
     await connection.execute(
-      "INSERT INTO sent_emails (article_id, sender, recipient, subject, status, sent_at, email_for) VALUES (?, ?, ?, ?, 'Delivered', NOW(), 'invite_editor_decision')",
-      [articleId, requester, editorEmail, emailData.subject]
+      "INSERT INTO sent_emails (article_id, sender, recipient, subject, status, body, sent_at, email_for) VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), 'invite_editor_decision')",
+      [articleId, requester, editorEmail, emailData.subject, htmlContent]
     );
+
+    const [editorNameRows] = await connection.execute(
+      "SELECT email, fullname FROM editors WHERE email = ? LIMIT 1",
+      [editorEmail]
+    );
+    const invitedUserName = editorNameRows.length > 0
+      ? (editorNameRows[0].fullname || editorEmail)
+      : editorEmail;
 
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 14);
     await connection.execute(
-      "INSERT INTO invitations (invitation_link, invited_user, invitation_status, invitation_expiry_date, invited_for) VALUES (?, ?, 'pending', ?, 'To Decide')",
-      [articleId, editorEmail, expiryDate.toISOString().split("T")[0]]
+      "INSERT INTO invitations (invitation_link, invited_user, invited_user_name, invitation_status, invitation_expiry_date, invited_for) VALUES (?, ?, ?, 'pending', ?, 'To Decide')",
+      [articleId, editorEmail, invitedUserName, expiryDate.toISOString().split("T")[0]]
     );
 
     await connection.execute(

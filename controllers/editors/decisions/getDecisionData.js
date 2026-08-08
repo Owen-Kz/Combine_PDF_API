@@ -68,13 +68,20 @@ const getDecisionData = async (req, res) => {
       FROM submission_authors sa
       LEFT JOIN authors_account aa ON sa.authors_email = aa.email
       WHERE sa.submission_id = ?
-      ORDER BY sa.author_order ASC`,
-      [submissions[0].id]
+      ORDER BY sa.id ASC`,
+      [submissions[0].revision_id]
     );
 
     const [keywords] = await connection.execute(
-      `SELECT keyword FROM submission_keywords WHERE submission_id = ?`,
-      [submissions[0].id]
+      `SELECT keyword FROM submission_keywords WHERE article_id = ?`,
+      [submissions[0].revision_id] 
+    );
+
+    // Mark the decision invitation as viewed so the "new" indicator clears
+    await connection.execute(
+      `UPDATE invitations SET decision_viewed = 1 
+       WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'To Decide'`,
+      [articleId, editorEmail]
     );
 
     return res.json({
@@ -90,8 +97,8 @@ const getDecisionData = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error fetching decision data:", error);
-    return res.status(500).json({ status: "error", message: "Internal server error" });
+    console.log("Error fetching decision data:", error);
+    return res.status(500).json({ status: "error", message: "Internal server erroawrr" });
   } finally {
     if (connection) await connection.end();
   }
