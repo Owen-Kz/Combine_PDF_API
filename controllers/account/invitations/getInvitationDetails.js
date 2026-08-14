@@ -160,13 +160,13 @@ const getInvitationDetails = async (req, res) => {
 
     if (editorInvitations.length > 0) {
       const invitation = editorInvitations[0];
-      console.log("Found editor invitation:", {
-        id: invitation.id,
-        status: invitation.invitation_status,
-        invited_by: invitation.invited_user_name,
-        date: invitation.invitation_date,
-        expires: invitation.invitation_expiry_date
-      });
+      // console.log("Found editor invitation:", {
+      //   id: invitation.id,
+      //   status: invitation.invitation_status,
+      //   invited_by: invitation.invited_user_name,
+      //   date: invitation.invitation_date,
+      //   expires: invitation.invitation_expiry_date
+      // });
 
       return res.json({
         success: true,

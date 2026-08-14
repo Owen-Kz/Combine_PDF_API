@@ -2,6 +2,8 @@
 const dbPromise = require("../../../routes/dbPromise.config");
 const isAdminAccount = require("../isAdminAccount");
 const sendInvitationReminder = require("../../utils/sendInvitationReminder");
+const saveEmailDetails = require("../../account/invitations/saveEmail");
+
 
 const getAllInvitations = async (req, res) => {
     try {
@@ -435,10 +437,18 @@ const remindInvitation = async (req, res) => {
             VALUES (?, 'reminder_sent', ?, ?, NOW())
         `, [id, req.user.email, 'Manual reminder sent']);
 
-        await dbPromise.query(`
-            INSERT INTO sent_emails (article_id, sender, recipient, subject, status, body, sent_at, email_for)
-            VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), 'invitation_reminder')
-        `, [manuscriptId, req.user.email, recipientEmail, emailResult.subject, 'Manual invitation reminder']);
+        await saveEmailDetails(
+            recipientEmail,
+            emailResult.subject,
+            'Manual invitation reminder',
+            req.user.email,
+            manuscriptId,
+            [],
+            [],
+            [],
+            'invitation_reminder',
+            'Delivered'
+        );
 
         return res.json({
             success: true,

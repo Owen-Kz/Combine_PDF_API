@@ -3,6 +3,7 @@ const Brevo = require("@getbrevo/brevo");
 const multer = require("multer");
 const fs = require("fs");
 const dotenv = require("dotenv");
+const saveEmailDetails = require("../../account/invitations/saveEmail");
 dotenv.config();
 
 const dbConfig = {
@@ -148,16 +149,17 @@ const submitDecision = async (req, res) => {
 
     await apiInstance.sendTransacEmail(emailData);
 
-    await connection.execute(
-      "INSERT INTO sent_emails (article_id, sender, recipient, subject, status, body, sent_at, email_for) VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), ?)",
-      [
-        articleId,
-        editorEmail,
-        authorEmail,
-        subject,
-        JSON.stringify({ message: message?.substring(0, 1000) || "", compiledLetter: compiledLetter?.substring(0, 1000) || "" }),
-        `${decisionType}_paper`
-      ]
+    await saveEmailDetails(
+      authorEmail,
+      subject,
+      JSON.stringify({ message: message || "", compiledLetter: compiledLetter || "" }),
+      editorEmail,
+      articleId,
+      ccEmail ? ccEmail.split(",").map(e => e.trim()).filter(Boolean) : [],
+      bccEmail ? bccEmail.split(",").map(e => e.trim()).filter(Boolean) : [],
+      [],
+      `${decisionType}_paper`,
+      "Delivered"
     );
 
     await connection.execute(

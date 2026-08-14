@@ -109,36 +109,92 @@ const createEditorAccount = async (req, res) => {
     await connection.beginTransaction();
     console.log("Transaction started");
 
-    // First, check if user already exists in authors_account
+    // Handle discipline (if "Other" was selected)
+    const finalDiscipline = discipline === 'Other' && otherDiscipline ? otherDiscipline : discipline;
+
+    // First, check if the user already has an account. If they're already an
+    // editor, refuse. If they're an existing (non-editor) author, promote the
+    // existing account instead of failing — this lets an existing author
+    // complete the editors signup form and accept without a duplicate-account
+    // error, and their password is never overwritten.
     console.log("Checking if user already exists in authors_account:", email);
     const [existingAuthor] = await connection.query(
-      "SELECT email FROM authors_account WHERE email = ?",
+      "SELECT * FROM authors_account WHERE email = ?",
       [email]
     );
 
-    if (existingAuthor.length > 0) {
-      console.error("User already exists in authors_account:", email);
-      await connection.rollback();
-      return res.status(409).json({ 
-        status: "error", 
-        message: "An account with this email already exists. Please log in instead." 
-      });
-    }
+    let promotedExisting = false;
 
-    // Check if user already exists in editors table
-    console.log("Checking if user already exists in editors table:", email);
-    const [existingEditor] = await connection.query(
-      "SELECT email FROM editors WHERE email = ?",
-      [email]
-    );
-
-    if (existingEditor.length > 0) {
-      console.error("User already exists in editors table:", email);
+    if (existingAuthor.length > 0 && existingAuthor[0].is_editor === 'yes') {
+      console.error("User is already an editor:", email);
       await connection.rollback();
       return res.status(409).json({ 
         status: "error", 
         message: "An editor account with this email already exists. Please log in instead." 
       });
+    }
+
+    if (existingAuthor.length > 0) {
+      console.log("Existing author found, promoting to editor:", email);
+      promotedExisting = true;
+      const existingRow = existingAuthor[0];
+
+      // Update the existing account to be an editor (keep its existing password)
+      await connection.query(
+        `UPDATE authors_account 
+         SET is_editor = 'yes', is_reviewer = 'yes', is_available_for_review = ?, editor_invite_status = 'accepted',
+             orcid_id = ?, discipline = ?, affiliations = ?, affiliation_country = ?, affiliation_city = ?
+         WHERE email = ?`,
+        [
+          reviewAvailability === 'yes' ? 'yes' : 'no',
+          orcid || existingRow.orcid_id || '',
+          finalDiscipline || existingRow.discipline || '',
+          affiliation || existingRow.affiliations || '',
+          affiliationCountry || existingRow.affiliation_country || '',
+          affiliationCity || existingRow.affiliation_city || '',
+          email
+        ]
+      );
+
+      // Make sure an editors record exists (mirrors migrateAccount)
+      const [existingEditorCheck] = await connection.query(
+        "SELECT email FROM editors WHERE email = ?",
+        [email]
+      );
+
+      if (existingEditorCheck.length === 0) {
+        const existingFullname = [existingRow.prefix, existingRow.firstname, existingRow.lastname, existingRow.othername]
+          .filter(part => part && part.trim())
+          .join(' ')
+          .trim();
+        await connection.query(
+          `INSERT INTO editors (email, fullname, editorial_level, editorial_section, password, created_at) 
+           VALUES (?, ?, ?, ?, ?, NOW())`,
+          [
+            email,
+            existingFullname || [prefix, firstName, lastName, otherName].filter(Boolean).join(' ').trim(),
+            'sectional_editor',
+            finalDiscipline || existingRow.discipline || '',
+            existingRow.password
+          ]
+        );
+      }
+    } else {
+      // No account yet — check the editors table for an orphaned editor record
+      console.log("Checking if user already exists in editors table:", email);
+      const [existingEditor] = await connection.query(
+        "SELECT email FROM editors WHERE email = ?",
+        [email]
+      );
+
+      if (existingEditor.length > 0) {
+        console.error("User already exists in editors table:", email);
+        await connection.rollback();
+        return res.status(409).json({ 
+          status: "error", 
+          message: "An editor account with this email already exists. Please log in instead." 
+        });
+      }
     }
 
     // Verify the invitation exists and is still valid
@@ -196,68 +252,69 @@ const createEditorAccount = async (req, res) => {
     //   });
     // }
 
-    // Hash password
-    console.log("Hashing password...");
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Password hashed successfully");
+    // Only create the account records for brand-new users; existing authors
+    // were promoted above.
+    if (!promotedExisting) {
+      // Hash password
+      console.log("Hashing password...");
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log("Password hashed successfully");
 
-    // Handle discipline (if "Other" was selected)
-    const finalDiscipline = discipline === 'Other' && otherDiscipline ? otherDiscipline : discipline;
+      // Construct full name for editors table
+      const fullName = [prefix, firstName, lastName, otherName]
+        .filter(part => part && part.trim())
+        .join(' ')
+        .trim();
 
-    // Construct full name for editors table
-    const fullName = [prefix, firstName, lastName, otherName]
-      .filter(part => part && part.trim())
-      .join(' ')
-      .trim();
+      console.log("Creating author account in authors_account for:", email);
 
-    console.log("Creating author account in authors_account for:", email);
-    
-    // Create author account
-    const [authorInsertResult] = await connection.query(
-      `INSERT INTO authors_account 
-       (prefix, email, orcid_id, discipline, firstname, lastname, othername, 
-        affiliations, affiliation_country, affiliation_city, is_available_for_review, 
-        is_editor, editor_invite_status, account_status, password, is_reviewer) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        prefix || '',
-        email,
-        orcid || '',
-        finalDiscipline,
-        firstName,
-        lastName,
-        otherName || '',
-        affiliation,
-        affiliationCountry,
-        affiliationCity,
-        reviewAvailability === 'yes' ? 'yes' : 'no',
-        'yes', // is_editor
-        'accepted', // editor_invite_status
-        'verified', // account_status
-        hashedPassword,
-        'yes' // is_reviewer (set to yes for editors)
-      ]
-    );
+      // Create author account
+      const [authorInsertResult] = await connection.query(
+        `INSERT INTO authors_account 
+         (prefix, email, orcid_id, discipline, firstname, lastname, othername, 
+          affiliations, affiliation_country, affiliation_city, is_available_for_review, 
+          is_editor, editor_invite_status, account_status, password, is_reviewer) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          prefix || '',
+          email,
+          orcid || '',
+          finalDiscipline,
+          firstName,
+          lastName,
+          otherName || '',
+          affiliation,
+          affiliationCountry,
+          affiliationCity,
+          reviewAvailability === 'yes' ? 'yes' : 'no',
+          'yes', // is_editor
+          'accepted', // editor_invite_status
+          'verified', // account_status
+          hashedPassword,
+          'yes' // is_reviewer (set to yes for editors)
+        ]
+      );
 
-    console.log("Author account created. Insert ID:", authorInsertResult?.insertId || 'N/A');
+      console.log("Author account created. Insert ID:", authorInsertResult?.insertId || 'N/A');
 
-    // Create editor record in editors table
-    console.log("Creating editor record in editors table for:", email);
-    
-    const [editorInsertResult] = await connection.query(
-      `INSERT INTO editors
-       (email, fullname, editorial_level, editorial_section, password, created_at) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [
-        email,
-        fullName,
-        'sectional_editor', // Default editorial level for invited editors
-        finalDiscipline,
-        hashedPassword
-      ]
-    );
+      // Create editor record in editors table
+      console.log("Creating editor record in editors table for:", email);
 
-    console.log("Editor record created. Insert ID:", editorInsertResult?.insertId || 'N/A');
+      const [editorInsertResult] = await connection.query(
+        `INSERT INTO editors
+         (email, fullname, editorial_level, editorial_section, password, created_at) 
+         VALUES (?, ?, ?, ?, ?, NOW())`,
+        [
+          email,
+          fullName,
+          'sectional_editor', // Default editorial level for invited editors
+          finalDiscipline,
+          hashedPassword
+        ]
+      );
+
+      console.log("Editor record created. Insert ID:", editorInsertResult?.insertId || 'N/A');
+    }
 
     // Commit the transaction
     await connection.commit();

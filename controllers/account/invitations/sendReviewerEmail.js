@@ -265,7 +265,7 @@ const inviteReviewerEmail = async (req, res) => {
 
     // Create invitation record
     const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 7);
+    expiryDate.setDate(expiryDate.getDate() + 14);
     
     await dbQuery(
       `INSERT INTO invitations 

@@ -132,13 +132,6 @@ if (req.files && req.files.length > 0) {
       return;
     }
 
-    // // Mark email as sent
-    // await connection.execute(
-    //   "INSERT INTO sent_emails (article_id, sender, subject, status) VALUES (?, ?, ?, 'Delivered') ON DUPLICATE KEY UPDATE status = 'Delivered'",
-    //   [articleId, editor_email, subject]
-    // );
-
-
     
 
     if (!responseSent) {

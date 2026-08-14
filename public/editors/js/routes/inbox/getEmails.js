@@ -45,31 +45,45 @@ async function GetEmailContent(emailID) {
 
 
 
-                // Parse the Quill content from the JSON data]
-                const quillContent = JSON.parse(data.emails.body);
+                // Render the email body. The stored body may be Quill Delta JSON
+                // (older records) or already-formatted HTML (newer records), so
+                // try to parse JSON first and fall back to rendering HTML directly.
+                function renderEmailBody(rawBody) {
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(rawBody);
+                    } catch (e) {
+                        // Not JSON - body is already HTML or plain text
+                        parsed = null;
+                    }
 
-                // Create a Quill instance in "read-only" mode to render the content as HTML
-                function renderQuillAsHTML(divId, deltaContent) {
-                    // Create a Quill instance in a temporary div
-                    const tempDiv = document.createElement('div');
-                    const quill = new Quill(tempDiv, {
-                        theme: 'snow',
-                        modules: { toolbar: false },
-                        readOnly: true,
-                    });
+                    const isDelta = Array.isArray(parsed) || (parsed && Array.isArray(parsed.ops));
+                    if (isDelta) {
+                        const deltaContent = Array.isArray(parsed) ? parsed : parsed.ops;
 
-                    // Set the content as Quill Delta and extract the HTML
-                    quill.setContents(deltaContent);
+                        // Create a Quill instance in "read-only" mode to render the content as HTML
+                        const tempDiv = document.createElement('div');
+                        const quill = new Quill(tempDiv, {
+                            theme: 'snow',
+                            modules: { toolbar: false },
+                            readOnly: true,
+                        });
 
-                    // Get the innerHTML from the Quill editor
-                    const htmlContent = tempDiv.innerHTML;
+                        quill.setContents(deltaContent);
+                        contentDiv.innerHTML += tempDiv.innerHTML;
+                        return;
+                    }
 
-                    // Render the extracted HTML into the specified div
-                    contentDiv.innerHTML += htmlContent;
+                    if (parsed && (parsed.compiledLetter || parsed.message)) {
+                        renderEmailBody(parsed.compiledLetter || parsed.message);
+                        return;
+                    }
+
+                    // Already HTML (or plain text) - inject directly
+                    contentDiv.innerHTML += rawBody || '';
                 }
 
-                // Render the Quill content as HTML in the "content" div
-                renderQuillAsHTML('content', quillContent);
+                renderEmailBody(data.emails.body);
 
                 if (Attachments.length > 0) {
                     contentDiv.innerHTML += `<hr/>`

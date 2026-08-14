@@ -3,6 +3,7 @@ const db = require("../../../../routes/db.config");
 const dbPromise = require("../../../../routes/dbPromise.config");
 const sendConfirmationEmail = require("../reviewer/sendConfirmationEmail");
 const { sendEditorWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
+const generateInvitationSession = require("../generateInvitationSession");
 const acceptEditor = async (req, res) => {
   let connection;
   try {
@@ -97,14 +98,25 @@ const acceptEditor = async (req, res) => {
 
     const editor_email = invitation[0].submitted_by;
 
-    // Check if editor exists in authors_account
+    // Check if editor exists in authors_account and is already an editor
+    // (in the editors table with is_editor = 'yes'). If not, the user needs to
+    // complete the editors signup form first.
     const [existingEditor] = await connection.query(
       "SELECT * FROM authors_account WHERE email = ?",
       [email]
     );
 
-    if (existingEditor.length === 0) {
-      // Editor doesn't have an account yet
+    const [editorRows] = await connection.query(
+      "SELECT email FROM editors WHERE email = ?",
+      [email]
+    );
+
+    if (
+      existingEditor.length === 0 ||
+      existingEditor[0].is_editor !== 'yes' ||
+      editorRows.length === 0
+    ) {
+      // Editor doesn't have an active editor account yet
       return res.status(200).json({
         status: "info",
         message: "Please create an account first",
@@ -138,6 +150,22 @@ const acceptEditor = async (req, res) => {
 
     await connection.commit();
 
+    // Re-fetch the (now-updated) editor record so the session reflects the
+    // current is_editor / is_reviewer flags
+    const [updatedEditor] = await connection.query(
+      "SELECT * FROM authors_account WHERE email = ?",
+      [email]
+    );
+    const editorRow = updatedEditor[0] || existingEditor[0];
+
+    // Generate a login session so the editor lands logged-in on their dashboard
+    const { token: sessionToken, user: sessionUser } = await generateInvitationSession(
+      req,
+      res,
+      editorRow,
+      (sql, params) => connection.query(sql, params)
+    );
+
     // Send confirmation email to the inviting editor
     await sendConfirmationEmail(editor_email, email, "accepted");
 
@@ -151,7 +179,10 @@ const acceptEditor = async (req, res) => {
 
     return res.json({ 
       status: "success", 
-      message: "Editor invitation accepted successfully"
+      message: "Editor invitation accepted successfully",
+      token: sessionToken,
+      user: sessionUser,
+      redirectTo: "/editors/dashboard"
     });
 
   } catch (error) {

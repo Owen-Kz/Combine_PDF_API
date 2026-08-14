@@ -1,6 +1,7 @@
 const Brevo = require("@getbrevo/brevo");
 const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
+const saveEmailDetails = require("./saveEmail");
 dotenv.config();
 
 // Database Configuration with connection pooling
@@ -171,11 +172,17 @@ async function AcceptanceEmailToEditor(RecipientEmail, subject, message, editor_
     await apiInstance.sendTransacEmail(emailData);
 
     // Log the email in database
-    await connection.execute(
-      `INSERT INTO sent_emails 
-       (article_id, sender, recipient, subject, status, body, sent_at) 
-       VALUES (?, ?, ?, ?, 'Delivered',?, NOW())`,
-      [article_id, editor_email, RecipientEmail, subject, message]
+    await saveEmailDetails(
+      RecipientEmail,
+      subject,
+      message,
+      editor_email,
+      article_id,
+      validCC,
+      validBCC,
+      [],
+      "",
+      "Delivered"
     );
 
     return { 
@@ -194,11 +201,18 @@ async function AcceptanceEmailToEditor(RecipientEmail, subject, message, editor_
     // Log the failure in database if connection exists
     if (connection) {
       try {
-        await connection.execute(
-          `INSERT INTO sent_emails 
-           (article_id, sender, recipient, subject, status, error_message, body, sent_at) 
-           VALUES (?, ?, ?, ?, 'Failed', ?, ?, NOW())`,
-          [article_id, editor_email, RecipientEmail, subject, error.message.substring(0, 255), message]
+        await saveEmailDetails(
+          RecipientEmail,
+          subject,
+          message,
+          editor_email,
+          article_id,
+          [],
+          [],
+          [],
+          "",
+          "Failed",
+          error.message.substring(0, 255)
         );
       } catch (dbError) {
         console.error("Failed to log error in database:", dbError);

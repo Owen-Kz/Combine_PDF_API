@@ -1,6 +1,7 @@
 const mysql = require("mysql2/promise");
 const Brevo = require("@getbrevo/brevo");
 const dotenv = require("dotenv");
+const saveEmailDetails = require("../../account/invitations/saveEmail");
 dotenv.config();
 
 const dbConfig = {
@@ -101,9 +102,17 @@ const inviteEditorToDecide = async (req, res) => {
 
     await apiInstance.sendTransacEmail(emailData);
 
-    await connection.execute(
-      "INSERT INTO sent_emails (article_id, sender, recipient, subject, status, body, sent_at, email_for) VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), 'invite_editor_decision')",
-      [articleId, requester, editorEmail, emailData.subject, htmlContent]
+    await saveEmailDetails(
+      editorEmail,
+      emailData.subject,
+      htmlContent,
+      requester,
+      articleId,
+      [],
+      [],
+      [],
+      "invite_editor_decision",
+      "Delivered"
     );
 
     const [editorNameRows] = await connection.execute(

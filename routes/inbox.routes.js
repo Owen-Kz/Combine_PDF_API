@@ -5,6 +5,8 @@ const dbPromise = require("./dbPromise.config");
 const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
 const { sendEmail } = require("../controllers/utils/sendEmail");
 const router = express.Router();
+const saveEmailDetails = require("../controllers/account/invitations/saveEmail");
+
 
 config();
 
@@ -108,7 +110,7 @@ async function getUserEmails(userEmail, folder = 'inbox', search = '') {
         }
     }
 
-    query += ` ORDER BY se.sent_at DESC`;
+    query += ` ORDER BY se.id DESC`;
 
  
 
@@ -504,29 +506,23 @@ router.post("/:id/forward", AuthorLoggedIn, async (req, res) => {
         }
 
         // Store forwarded email in sent_emails so it appears in the Sent folder
-        const [emailResult] = await dbPromise.query(
-            `INSERT INTO sent_emails 
-             (article_id, sender, recipient, subject, status, body, sent_at, email_for) 
-             VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), 'forwarded')`,
-            [emailDetails.article_id || null, userEmail, recipients.join(', '), subject, body]
+        const newEmailId = await saveEmailDetails(
+            recipients.join(', '),
+            subject,
+            body,
+            userEmail,
+            emailDetails.article_id || null,
+            [],
+            [],
+            selectedAttachments.map(att => ({
+                name: att.file_name,
+                url: att.file_path,
+                size: att.file_size,
+                mime_type: att.mime_type
+            })),
+            "forwarded",
+            "Delivered"
         );
-
-        const newEmailId = emailResult.insertId;
-
-        // Re-insert carried-over attachments for the new email
-        if (selectedAttachments.length > 0) {
-            const attachmentValues = selectedAttachments.map(att => [
-                newEmailId,
-                att.file_name,
-                att.file_path,
-                att.file_size,
-                att.mime_type
-            ]);
-            await dbPromise.query(
-                "INSERT INTO email_attachments (email_id, file_name, file_path, file_size, mime_type) VALUES ?",
-                [attachmentValues]
-            );
-        }
 
         res.json({
             status: "success",

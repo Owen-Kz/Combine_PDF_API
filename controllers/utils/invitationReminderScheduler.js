@@ -46,9 +46,9 @@ async function checkAndSendReminders() {
           await dbPromise.promise().query(
             `UPDATE invitations 
              SET reminder_count = reminder_count + 1,
-                 last_reminder_sent = ?
+                 last_reminder_sent = NOW()
              WHERE id = ?`,
-            [result.subject, inv.id]
+            [inv.id]
           );
           console.log(
             `[Scheduler] Reminder #${window.reminderNumber} sent to ${inv.invited_user} for ${inv.invitation_link} (${daysUntilExpiry}d remaining)`

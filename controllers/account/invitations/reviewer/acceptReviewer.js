@@ -2,6 +2,7 @@
 const db = require("../../../../routes/db.config");
 const sendConfirmationEmail = require("./sendConfirmationEmail");
 const { sendReviewerWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
+const generateInvitationSession = require("../generateInvitationSession");
 
 const acceptReviewer = async (req, res) => {
   let connection;
@@ -138,6 +139,22 @@ const acceptReviewer = async (req, res) => {
 
     await connection.commit();
 
+    // Re-fetch the (now-updated) reviewer record so the session reflects the
+    // promoted is_reviewer flag
+    const [updatedReviewer] = await connection.query(
+      "SELECT * FROM authors_account WHERE email = ?",
+      [email]
+    );
+    const reviewerRow = updatedReviewer[0] || existingReviewer[0];
+
+    // Generate a login session so the reviewer lands logged-in on the paper
+    const { token: sessionToken, user: sessionUser } = await generateInvitationSession(
+      req,
+      res,
+      reviewerRow,
+      (sql, params) => connection.query(sql, params)
+    );
+
     // Send confirmation email to editor
     await sendConfirmationEmail(editor_email, email, "accepted");
 
@@ -151,7 +168,10 @@ const acceptReviewer = async (req, res) => {
 
     return res.json({ 
       status: "success", 
-      message: "Review invitation accepted successfully"
+      message: "Review invitation accepted successfully",
+      token: sessionToken,
+      user: sessionUser,
+      redirectTo: `/reviewerdash/review/${articleId}`
     });
 
   } catch (error) {

@@ -2,6 +2,8 @@ const Brevo = require("@getbrevo/brevo");
 const mysql = require("mysql2/promise");
 const axios = require("axios");
 const dotenv = require("dotenv");
+const saveEmailDetails = require("./saveEmail");
+
 dotenv.config();
 
 // Database Configuration
@@ -318,63 +320,18 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
     await Promise.race([sendPromise, timeoutPromise]);
 
     // Insert into sent_emails and get the email_id
-    const [emailResult] = await connection.execute(
-      `INSERT INTO sent_emails 
-       (article_id, sender, recipient, subject, status, body, sent_at, email_for) 
-       VALUES (?, ?, ?, ?, 'Delivered', ?, NOW(), ?)`,
-      [
-        article_id, 
-        editor_email, 
-        RecipientEmail, 
-        // validCC.join(', '), 
-        // validBCC.join(', '), 
-        subject, 
-        JSON.stringify({ message: htmlContent.substring(0, 1000) }),
-        email_for
-      ]
+    emailId = await saveEmailDetails(
+      RecipientEmail,
+      subject,
+      typeof message === 'string' ? message : JSON.stringify(message),
+      editor_email,
+      article_id,
+      validCC,
+      validBCC,
+      processedAttachments,
+      email_for,
+      "Delivered"
     );
-
-    emailId = emailResult.insertId;
-
-    // Insert CC emails into email_cc table
-    if (validCC.length > 0) {
-      const ccPromises = validCC.map(ccEmail => 
-        connection.execute(
-          `INSERT INTO email_cc (email_id, cc_email) VALUES (?, ?)`,
-          [emailId, ccEmail]
-        )
-      );
-      await Promise.all(ccPromises);
-    }
-
-    // Insert BCC emails into email_bcc table
-    if (validBCC.length > 0) {
-      const bccPromises = validBCC.map(bccEmail => 
-        connection.execute(
-          `INSERT INTO email_bcc (email_id, bcc_email) VALUES (?, ?)`,
-          [emailId, bccEmail]
-        )
-      );
-      await Promise.all(bccPromises);
-    }
-
-    // Insert attachments into email_attachments table
-    if (processedAttachments.length > 0) {
-      const attachmentPromises = processedAttachments.map(att => 
-        connection.execute(
-          `INSERT INTO email_attachments (email_id, file_name, file_path, file_size, mime_type) 
-           VALUES (?, ?, ?, ?, ?)`,
-          [
-            emailId, 
-            att.name, 
-            att.url || 'embedded', 
-            att.size || 0, 
-            att.contentType || 'application/octet-stream'
-          ]
-        )
-      );
-      await Promise.all(attachmentPromises);
-    }
 
     await connection.commit();
 
@@ -398,24 +355,19 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
       
       // Log the failure in database
       try {
-        const [failedEmailResult] = await connection.execute(
-          `INSERT INTO sent_emails 
-           (article_id, sender, recipient, subject, status, error_message, body, sent_at, email_for) 
-           VALUES (?, ?, ?, ?, 'Failed', ?, ?, NOW(), ?)`,
-          [
-            article_id, 
-            editor_email, 
-            RecipientEmail, 
-            // Array.isArray(ccEmails) ? ccEmails.join(', ') : ccEmails || '',
-            // Array.isArray(bccEmails) ? bccEmails.join(', ') : bccEmails || '',
-            subject, 
-            error.message?.substring(0, 255) || 'Unknown error',
-            JSON.stringify({ message: String(message).substring(0, 1000) }),
-            email_for
-          ]
+        emailId = await saveEmailDetails(
+          RecipientEmail,
+          subject,
+          typeof message === 'string' ? message : JSON.stringify(message),
+          editor_email,
+          article_id,
+          [],
+          [],
+          [],
+          email_for,
+          "Failed",
+          error.message?.substring(0, 255) || "Unknown error"
         );
-        
-        emailId = failedEmailResult.insertId;
       } catch (dbError) {
         console.error("Failed to log error in database:", dbError);
       }
