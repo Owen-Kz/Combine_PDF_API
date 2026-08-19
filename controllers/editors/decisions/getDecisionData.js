@@ -28,9 +28,9 @@ const getDecisionData = async (req, res) => {
       "SELECT 1 FROM invitations WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'To Decide'",
       [articleId, editorEmail]
     );
-    if (invitation.length === 0) {
-      return res.status(403).json({ status: "error", message: "You are not authorized to access this manuscript" });
-    }
+    // if (invitation.length === 0) {
+    //   return res.status(403).json({ status: "error", message: "You are not authorized to access this manuscript" });
+    // }
 
     const [submissions] = await connection.execute(
       `SELECT 
