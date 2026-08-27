@@ -56,18 +56,19 @@ const acceptEditor = async (req, res) => {
 
     // Find the invitation in submitted_for_edit table
     const [invitation] = await connection.query(
-      `SELECT * FROM submitted_for_edit 
-       WHERE article_id = ? AND editor_email = ? AND status = 'submitted_for_edit'`,
+      `SELECT * FROM invitations 
+       WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'To Edit'`,
       [articleId, email]
     );
 
     if (invitation.length === 0) {
       // Check if there's a record with different status to give appropriate message
       const [existingRecord] = await connection.query(
-        `SELECT status FROM submitted_for_edit 
-         WHERE article_id = ? AND editor_email = ?`,
+        `SELECT invitation_status FROM invitations 
+         WHERE invitation_link = ? AND invited_user = ?`,
         [articleId, email]
       );
+      console.log(articleId, email, "BAKSKM")
 
       if (existingRecord.length > 0) {
         const currentStatus = existingRecord[0].status;
@@ -98,25 +99,14 @@ const acceptEditor = async (req, res) => {
 
     const editor_email = invitation[0].submitted_by;
 
-    // Check if editor exists in authors_account and is already an editor
-    // (in the editors table with is_editor = 'yes'). If not, the user needs to
-    // complete the editors signup form first.
+    // Check if editor exists in authors_account
     const [existingEditor] = await connection.query(
       "SELECT * FROM authors_account WHERE email = ?",
       [email]
     );
 
-    const [editorRows] = await connection.query(
-      "SELECT email FROM editors WHERE email = ?",
-      [email]
-    );
-
-    if (
-      existingEditor.length === 0 ||
-      existingEditor[0].is_editor !== 'yes' ||
-      editorRows.length === 0
-    ) {
-      // Editor doesn't have an active editor account yet
+    // If user doesn't exist in authors_account, they need to create an account first
+    if (existingEditor.length === 0) {
       return res.status(200).json({
         status: "info",
         message: "Please create an account first",
@@ -124,9 +114,50 @@ const acceptEditor = async (req, res) => {
       });
     }
 
-    // Update editor status
+    const isAlreadyEditor = existingEditor[0].is_editor === 'yes' || existingEditor[0].is_editor === '1';
+
+    // If user exists but is NOT already an editor, promote them:
+    // 1. Set is_editor='yes' and is_reviewer='yes' in authors_account
+    // 2. Migrate their details to the editors table
+    if (!isAlreadyEditor) {
+      await connection.query(
+        "UPDATE authors_account SET is_editor = 'yes', is_reviewer = 'yes', is_available_for_review = 'yes' WHERE email = ?",
+        [email]
+      );
+
+      // Check if they already have an editors record (shouldn't, but be safe)
+      const [existingEditorRecord] = await connection.query(
+        "SELECT email FROM editors WHERE email = ?",
+        [email]
+      );
+
+      if (existingEditorRecord.length === 0) {
+        // Build fullname from authors_account data
+        const editorRow = existingEditor[0];
+        const fullname = [editorRow.prefix, editorRow.firstname, editorRow.lastname, editorRow.othername]
+          .filter(part => part && part.trim())
+          .join(' ')
+          .trim();
+
+        // Insert into editors table with sectional_editor level and blank editorial_section
+        await connection.query(
+          `INSERT INTO editors (email, fullname, password, token, editorial_level, editorial_section) 
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            email,
+            fullname,
+            editorRow.password,
+            '',
+            'sectional_editor',
+            ''
+          ]
+        );
+      }
+    }
+
+    // Ensure reviewer flags are set
     await connection.query(
-      "UPDATE authors_account SET is_reviewer = 'yes', is_available_for_review = 'yes', is_editor = 'yes' WHERE email = ?",
+      "UPDATE authors_account SET is_reviewer = 'yes', is_available_for_review = 'yes' WHERE email = ?",
       [email]
     );
 

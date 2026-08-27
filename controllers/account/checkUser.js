@@ -23,23 +23,18 @@ const checkUser = async (req, res) => {
       });
       
     } else if (type === 'editor') {
-      // An editor invitation can be accepted without the signup form only when
-      // the user already has an active editor account (authors_account row with
-      // is_editor = 'yes' AND a record in the editors table).
+      // For editor invitations, check if user already has an account in
+      // authors_account. If they do, we can promote them directly to editor
+      // without requiring them to fill the signup form again.
       const [user] = await dbPromise.query(
         "SELECT email, is_editor FROM authors_account WHERE email = ?",
         [email]
       );
-
-      const [editor] = await dbPromise.query(
-        "SELECT email FROM editors WHERE email = ?",
-        [email]
-      );
       
       return res.json({ 
-        exists: user.length > 0 && user[0].is_editor === 'yes' && editor.length > 0,
+        exists: user.length > 0,
         type: 'editor',
-        is_editor: user.length > 0 && user[0].is_editor === 'yes'
+        is_editor: user.length > 0 && (user[0].is_editor === 'yes' || user[0].is_editor === '1')
       });
     }
 

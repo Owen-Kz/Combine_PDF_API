@@ -54,18 +54,18 @@ const acceptReviewer = async (req, res) => {
       }
     }
 
-    // Find the invitation in submitted_for_review table
+    // Find the invitation in invitations table
     const [invitation] = await connection.query(
-      `SELECT * FROM submitted_for_review 
-       WHERE article_id = ? AND reviewer_email = ? AND status = 'submitted_for_review'`,
+      `SELECT * FROM invitations 
+       WHERE invitation_link = ? AND invited_user = ? AND status = 'Submission Review'`,
       [articleId, email]
     );
 
     if (invitation.length === 0) {
       // Check if there's a record with different status to give appropriate message
       const [existingRecord] = await connection.query(
-        `SELECT status FROM submitted_for_review 
-         WHERE article_id = ? AND reviewer_email = ?`,
+        `SELECT invitation_status FROM invitations 
+         WHERE invitation_link = ? AND invited_user = ?`,
         [articleId, email]
       );
 
@@ -113,11 +113,14 @@ const acceptReviewer = async (req, res) => {
       });
     }
 
-    // Update reviewer status
-    await connection.query(
-      "UPDATE authors_account SET is_reviewer = 'yes', is_available_for_review = 'yes' WHERE email = ?",
-      [email]
-    );
+    // Ensure is_reviewer is set to 'yes' (promote existing user if needed)
+    const isAlreadyReviewer = existingReviewer[0].is_reviewer === 'yes';
+    if (!isAlreadyReviewer) {
+      await connection.query(
+        "UPDATE authors_account SET is_reviewer = 'yes', is_available_for_review = 'yes' WHERE email = ?",
+        [email]
+      );
+    }
 
     // Update submission status
     await connection.query(
