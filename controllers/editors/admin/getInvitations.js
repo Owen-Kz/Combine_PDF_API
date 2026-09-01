@@ -1,6 +1,6 @@
 // backend/controllers/editors/getAllInvitations.js
 const dbPromise = require("../../../routes/dbPromise.config");
-const isAdminAccount = require("../isAdminAccount");
+const isEditorInChiefOrAdmin = require("../isEditorInChiefOrAdmin");
 const sendInvitationReminder = require("../../utils/sendInvitationReminder");
 const saveEmailDetails = require("../../account/invitations/saveEmail");
 
@@ -8,7 +8,7 @@ const saveEmailDetails = require("../../account/invitations/saveEmail");
 const getAllInvitations = async (req, res) => {
     try {
         // Check if user is authenticated and is admin
-        if (!req.user || !(await isAdminAccount(req.user.id))) {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
             return res.status(403).json({ 
                 success: false, 
                 error: "Unauthorized Access" 
@@ -231,7 +231,7 @@ const getAllInvitations = async (req, res) => {
 // GET /api/invitations/:id
 const getInvitationById = async (req, res) => {
     try {
-        if (!req.user || !(await isAdminAccount(req.user.id))) {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
             return res.status(403).json({ success: false, error: "Unauthorized" });
         }
 
@@ -293,7 +293,7 @@ const getInvitationById = async (req, res) => {
 // POST /api/invitations/:id/resend
 const resendInvitation = async (req, res) => {
     try {
-        if (!req.user || !(await isAdminAccount(req.user.id))) {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
             return res.status(403).json({ success: false, error: "Unauthorized" });
         }
 
@@ -330,7 +330,7 @@ const resendInvitation = async (req, res) => {
 // POST /api/invitations/:id/cancel
 const cancelInvitation = async (req, res) => {
     try {
-        if (!req.user || !(await isAdminAccount(req.user.id))) {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
             return res.status(403).json({ success: false, error: "Unauthorized" });
         }
 
@@ -366,7 +366,7 @@ const cancelInvitation = async (req, res) => {
 // POST /api/invitations/:id/remind
 const remindInvitation = async (req, res) => {
     try {
-        if (!req.user || !(await isAdminAccount(req.user.id))) {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
             return res.status(403).json({ success: false, error: "Unauthorized" });
         }
 
@@ -464,7 +464,7 @@ const remindInvitation = async (req, res) => {
 // GET /api/invitations/stats
 const getInvitationStats = async (req, res) => {
     try {
-        if (!req.user || !(await isAdminAccount(req.user.id))) {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
             return res.status(403).json({ success: false, error: "Unauthorized" });
         }
 

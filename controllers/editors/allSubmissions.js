@@ -149,7 +149,6 @@ const allSubmissions = async (req, res) => {
             if (row.figures) files.figures = row.figures;
             if (row.graphic_abstract) files.graphic_abstract = row.graphic_abstract;
             if (row.supplementary_material) files.supplementary = row.supplementary_material;
-            console.log("Files for submission", row.article_id, ":", row.is_kidnapping_for_ransom , row.title);
             return {
                 id: row.article_id,
                 article_id: row.article_id,

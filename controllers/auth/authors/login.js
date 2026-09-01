@@ -193,7 +193,7 @@ const AuthorsLogin = async (req, res) => {
                         [user.email]
                     );
                 }, "SELECT editor");
-
+                console.log("Editor data fetched:", editorData.length > 0 ? "Found" : "Not found");
                 if (editorData.length > 0) {
                     console.log("Editor account found:", editorData[0].email);
                     editorialLevel = editorData[0].editorial_level || "sectional_editor";

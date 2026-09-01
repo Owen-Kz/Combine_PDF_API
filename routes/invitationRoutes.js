@@ -10,6 +10,9 @@ const createReviewerAccount = require("../controllers/account/invitations/review
 const acceptEditor = require("../controllers/account/invitations/editor/acceptEditor");
 const declineEditor = require("../controllers/account/invitations/editor/declineEditor");
 const createEditorAccount = require("../controllers/account/invitations/editor/createEditorAccount");
+const getEditorialAssistantInvitationDetails = require("../controllers/account/invitations/editorialAssistant/getEditorialAssistantInvitationDetails");
+const acceptEditorialAssistantInvite = require("../controllers/account/invitations/editorialAssistant/acceptEditorialAssistantInvite");
+const createEditorialAssistantAccount = require("../controllers/account/invitations/editorialAssistant/createEditorialAssistantAccount");
 
 // Public routes (no authentication required)
 router.post("/invitation/check-user", checkUser);
@@ -22,5 +25,10 @@ router.post("/invitation/create-reviewer-account", createReviewerAccount);
 router.post("/invitation/editor/accept", acceptEditor);
 router.post("/invitation/editor/decline", declineEditor);
 router.post("/invitation/create-editor-account", createEditorAccount);
+
+// Editorial assistant invitation routes (public onboarding)
+router.post("/invitation/assistant/details", getEditorialAssistantInvitationDetails);
+router.post("/invitation/assistant/accept", acceptEditorialAssistantInvite);
+router.post("/invitation/create-assistant-account", createEditorialAssistantAccount);
 
 module.exports = router;

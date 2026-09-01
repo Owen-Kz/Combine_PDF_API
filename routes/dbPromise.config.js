@@ -11,8 +11,8 @@ const dbPromise = mysql.createPool({
     queueLimit: 0,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
-    acquireTimeout: 10000,
-    lockWaitTimeout: 5,
+    // acquireTimeout: 10000,
+    // lockWaitTimeout: 5,
 });
 
 module.exports = dbPromise;

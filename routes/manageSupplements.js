@@ -5,7 +5,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const dbPromise = require("./journal.db");
-const isAdminAccount = require("../controllers/editors/isAdminAccount");
+const isEditorInChiefOrAdmin = require("../controllers/editors/isEditorInChiefOrAdmin");
 const SendPublicationEmail = require("../controllers/utils/sendPublicationEmail");
 const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
 const { LogAction } = require("../Logger");
@@ -110,7 +110,7 @@ router.get("/issues/all", AuthorLoggedIn, async (req, res) => {
         const userId = req.user.id;
 
         // Check if user is admin
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -279,7 +279,7 @@ router.get("/supplements/all", AuthorLoggedIn, async (req, res) => {
         const userId = req.user.id;
 
         // Check if user is admin
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -458,7 +458,7 @@ router.get("/item/:id", AuthorLoggedIn, async (req, res) => {
         const itemId = req.params.id;
 
         // Check if user is admin
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -568,7 +568,7 @@ router.post("/update/:id", AuthorLoggedIn, upload.fields([
         const itemId = req.params.id;
 
         // Check if user is admin
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -774,7 +774,7 @@ router.delete("/delete/:id", AuthorLoggedIn, async (req, res) => {
         const itemId = req.params.id;
 
         // Check if user is admin
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -851,7 +851,7 @@ router.post("/create-publication", AuthorLoggedIn, upload.fields([
         console.log("Create request body:", req.body);
         LogAction(userId, "Attempting to create a new issue/supplement", "create_issue_supplement");
         // Check if user is admin
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1088,7 +1088,7 @@ router.post("/downloads/:id", async (req, res) => {
 router.get("/special-issues/:id/journals", AuthorLoggedIn, async (req, res) => {
   try {
     const userId = req.user.id;
-    if (!(await isAdminAccount(userId))) {
+    if (!(await isEditorInChiefOrAdmin(userId))) {
       return res.json({ error: "Not authorized" });
     }
 
@@ -1145,7 +1145,7 @@ function generateSlug(str) {
 router.get("/special-issues/all", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1175,7 +1175,7 @@ router.get("/special-issues/all", AuthorLoggedIn, async (req, res) => {
 router.post("/special-issues/create", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1213,7 +1213,7 @@ router.post("/special-issues/create", AuthorLoggedIn, async (req, res) => {
 router.put("/special-issues/update/:id", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1245,7 +1245,7 @@ router.put("/special-issues/update/:id", AuthorLoggedIn, async (req, res) => {
 router.delete("/special-issues/delete/:id", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1282,7 +1282,7 @@ router.delete("/special-issues/delete/:id", AuthorLoggedIn, async (req, res) => 
 router.get("/special-issues/available-journals", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1391,7 +1391,7 @@ router.get("/special-issues/available-journals", AuthorLoggedIn, async (req, res
 router.put("/special-issues/:id/assign-bulk", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 
@@ -1438,7 +1438,7 @@ router.put("/special-issues/:id/assign-bulk", AuthorLoggedIn, async (req, res) =
 router.put("/special-issues/:id/remove-bulk", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.json({ error: "Not authorized" });
         }
 

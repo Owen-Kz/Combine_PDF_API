@@ -1,7 +1,7 @@
 const express = require("express");
 const dbPromise = require("./dbPromise.config");
 const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
-const isAdminAccount = require("../controllers/editors/isAdminAccount");
+const isEditorInChiefOrAdmin = require("../controllers/editors/isEditorInChiefOrAdmin");
 const { sendNewsletter } = require("../controllers/utils/sendEmail");
 const router = express.Router();
 
@@ -120,7 +120,7 @@ router.get("/subscribers", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
         
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.status(403).json({ status: "error", error: "Unauthorized Access" });
         }
 
@@ -156,7 +156,7 @@ router.post("/subscriber", AuthorLoggedIn, async (req, res) => {
         const userId = req.user.id;
         const { email } = req.body;
 
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.status(403).json({ status: "error", error: "Unauthorized Access" });
         }
 
@@ -207,7 +207,7 @@ router.delete("/subscriber/:id", AuthorLoggedIn, async (req, res) => {
         const userId = req.user.id;
         const { id } = req.params;
 
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.status(403).json({ status: "error", error: "Unauthorized Access" });
         }
 
@@ -240,7 +240,7 @@ router.get("/history", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
         
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.status(403).json({ status: "error", error: "Unauthorized Access" });
         }
 
@@ -267,7 +267,7 @@ router.post("/send", AuthorLoggedIn, async (req, res) => {
         const userId = req.user.id;
         const { subject, content, recipients, recipientType, selectedIds } = req.body;
 
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.status(403).json({ status: "error", error: "Unauthorized Access" });
         }
 
@@ -351,7 +351,7 @@ router.get("/stats", AuthorLoggedIn, async (req, res) => {
     try {
         const userId = req.user.id;
         
-        if (!(await isAdminAccount(userId))) {
+        if (!(await isEditorInChiefOrAdmin(userId))) {
             return res.status(403).json({ status: "error", error: "Unauthorized Access" });
         }
 

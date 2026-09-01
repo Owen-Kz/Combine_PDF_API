@@ -29,7 +29,7 @@ const promisePool = pool.promise();
 const testConnection = async () => {
   try {
     const connection = await promisePool.getConnection();
-    console.log('✅ Database connected successfully');
+    console.log('Database connected successfully');
     connection.release();
     return true;
   } catch (error) {
@@ -42,7 +42,7 @@ const testConnection = async () => {
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down database connection...');
   await pool.end();
-  console.log('✅ Database connection closed');
+  console.log('Database connection closed');
   process.exit(0);
 });
 

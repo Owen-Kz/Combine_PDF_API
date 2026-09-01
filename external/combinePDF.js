@@ -408,9 +408,7 @@ const CombineWordDocuments = async (req, res) => {
     const submission = submissions[0];
     const isOldSubmission = submission.is_old_submission === 'yes';
     
-    console.log(`Processing files for submission: ${revisionId}`);
-    console.log(`Submission type: ${isOldSubmission ? 'Old (Cloudinary)' : 'New (Local)'}`);
-
+ 
     // Get all file URLs from the submission
     const fileUrls = getFileUrlsFromSubmission(submission);
     

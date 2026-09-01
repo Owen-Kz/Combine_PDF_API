@@ -1,36 +1,215 @@
 // backend/middleware/AuthorLoggedIn.js
 const jwt = require("jsonwebtoken");
-const db = require("../../routes/db.config");
 const dbPromise = require("../../routes/dbPromise.config");
 
+// Helper function to fetch editor data with author association
+const fetchEditorData = async (email, token) => {
+  try {
+    // Fetch editor details
+    const [editorResults] = await dbPromise.query(
+      `SELECT id, email, fullname, editorial_level, editorial_section
+       FROM editors WHERE email = ?`,
+      [email]
+    );
+
+    if (editorResults.length === 0) return null;
+
+    const editorData = editorResults[0];
+
+    // Fetch associated author data
+    const [authorResults] = await dbPromise.query(
+      `SELECT id as author_id, prefix, firstname, lastname, othername, orcid_id, 
+              discipline, affiliations, affiliation_country, affiliation_city,
+              is_available_for_review, is_editor, is_reviewer, editor_invite_status,
+              reviewer_invite_status, account_status, asfi_membership_id, date_joined
+       FROM authors_account WHERE email = ?`,
+      [editorData.email]
+    );
+
+    // Determine role flags
+    const isAdmin = ['admin', 'editor_in_chief', 'editor-in-chief'].includes(editorData.editorial_level);
+    const isEditorInChief = ['editor-in-chief', 'editor_in_chief', 'editorial_assistant'].includes(editorData.editorial_level);
+    const isAssociateEditor = ['associate_editor', 'sectional_editor'].includes(editorData.editorial_level);
+    const isEditorialAssistant = ['editorial_assistant', 'editorial-assistant'].includes(editorData.editorial_level);
+
+    const authorData = authorResults.length > 0 ? authorResults[0] : null;
+
+    return {
+      // Editor data
+      id: editorData.id,
+      email: editorData.email,
+      fullname: editorData.fullname,
+      editorialLevel: editorData.editorial_level,
+      editorialSection: editorData.editorial_section,
+      sessionType: 'editor',
+      
+      // Role flags
+      isAdmin,
+      isEditorInChief,
+      isAssociateEditor,
+      isEditorialAssistant,
+      
+      // Author data (if exists)
+      ...(authorData && {
+        authorId: authorData.author_id,
+        prefix: authorData.prefix,
+        authorFirstName: authorData.firstname,
+        authorLastName: authorData.lastname,
+        otherName: authorData.othername,
+        orcidId: authorData.orcid_id,
+        discipline: authorData.discipline,
+        affiliations: authorData.affiliations,
+        affiliationCountry: authorData.affiliation_country,
+        affiliationCity: authorData.affiliation_city,
+        isAvailableForReview: authorData.is_available_for_review,
+        isEditor: authorData.is_editor,
+        isReviewer: authorData.is_reviewer,
+        editorInviteStatus: authorData.editor_invite_status,
+        reviewerInviteStatus: authorData.reviewer_invite_status,
+        accountStatus: authorData.account_status,
+        asfiMembershipId: authorData.asfi_membership_id,
+        dateJoined: authorData.date_joined,
+        
+        // Permissions based on author data
+        canAccessReviewer: authorData.is_reviewer === 'yes' || authorData.is_reviewer === 1,
+        canAccessAuthor: true,
+        canAccessAdmin: isAdmin || isEditorInChief,
+      }),
+      
+      // Editor-only permissions
+      canAccessEditorFeatures: true,
+      canAccessAdminFeatures: isAdmin || isEditorInChief,
+      canAccessAssociateFeatures: isAssociateEditor || isEditorInChief,
+      
+      // Editor metadata
+      _meta: {
+        hasAuthorAccount: !!authorData,
+        authorAccountId: authorData?.author_id || null,
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching editor data:", error);
+    return null;
+  }
+};
+
+// Helper function to fetch author data with editor association
+const fetchAuthorData = async (id, email) => {
+  try {
+    const [authorResults] = await dbPromise.query(
+      `SELECT id, email, prefix, firstname, lastname, othername, orcid_id, 
+              discipline, affiliations, affiliation_country, affiliation_city,
+              is_available_for_review, is_editor, is_reviewer, editor_invite_status,
+              reviewer_invite_status, account_status, asfi_membership_id, date_joined
+       FROM authors_account WHERE id = ?`,
+      [id]
+    );
+
+    if (authorResults.length === 0) return null;
+
+    const authorData = authorResults[0];
+    let editorData = null;
+
+    // Check if author is also an editor and fetch editor details
+    if (authorData.is_editor === 'yes' || authorData.is_editor === 1) {
+      const [editorResults] = await dbPromise.query(
+        `SELECT editorial_level FROM editors WHERE email = ?`,
+        [authorData.email]
+      );
+      
+      if (editorResults.length > 0) {
+        const editorialLevel = editorResults[0].editorial_level;
+        editorData = {
+          editorialLevel,
+          isAdmin: ['admin', 'editor_in_chief', 'editor-in-chief'].includes(editorialLevel),
+          isAssociateEditor: ['associate_editor', 'sectional_editor'].includes(editorialLevel),
+          isEditorInChief: ['editor-in-chief', 'editor_in_chief', 'editorial_assistant'].includes(editorialLevel),
+          isEditorialAssistant: ['editorial_assistant', 'editorial-assistant'].includes(editorialLevel),
+        };
+      }
+    }
+
+    const isAdmin = editorData?.isAdmin || false;
+    const isAssociateEditor = editorData?.isAssociateEditor || false;
+    const isEditorInChief = editorData?.isEditorInChief || false;
+
+    return {
+      // Author data
+      id: authorData.id,
+      email: authorData.email,
+      prefix: authorData.prefix,
+      firstName: authorData.firstname,
+      lastName: authorData.lastname,
+      otherName: authorData.othername,
+      fullname: `${authorData.firstname} ${authorData.lastname}`,
+      sessionType: 'author',
+      orcidId: authorData.orcid_id,
+      discipline: authorData.discipline,
+      affiliations: authorData.affiliations,
+      affiliationCountry: authorData.affiliation_country,
+      affiliationCity: authorData.affiliation_city,
+      isAvailableForReview: authorData.is_available_for_review,
+      isEditor: authorData.is_editor,
+      isReviewer: authorData.is_reviewer,
+      editorInviteStatus: authorData.editor_invite_status,
+      reviewerInviteStatus: authorData.reviewer_invite_status,
+      accountStatus: authorData.account_status,
+      asfiMembershipId: authorData.asfi_membership_id,
+      dateJoined: authorData.date_joined,
+      
+      // Role flags
+      isAdmin,
+      isEditorInChief,
+      isAssociateEditor,
+      isEditorialAssistant: editorData?.isEditorialAssistant || false,
+      
+      // Permissions
+      canAccessReviewer: authorData.is_reviewer === 'yes' || authorData.is_reviewer === 1,
+      canAccessAuthor: true,
+      canAccessEditor: isAdmin || isAssociateEditor || isEditorInChief,
+      canAccessAdmin: isAdmin || isEditorInChief,
+      canAccessAssociateFeatures: isAssociateEditor || isEditorInChief,
+      
+      // Editor metadata (if applicable)
+      ...(editorData && {
+        _editor: {
+          editorialLevel: editorData.editorialLevel,
+          hasEditorAccess: true,
+        }
+      }),
+      
+      _meta: {
+        hasEditorAccount: !!editorData,
+        editorLevel: editorData?.editorialLevel || null,
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching author data:", error);
+    return null;
+  }
+};
+
+// Main middleware
 const AuthorLoggedIn = async (req, res, next) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
     
-    console.log("Auth Header received:", authHeader ? "Present" : "Missing");
-    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log("No valid Authorization header format");
       return res.status(401).json({ error: "Not authenticated - No token provided" });
     }
 
-    const token = authHeader.split(' ')[1]; // Extract token from "Bearer <token>"
+    const token = authHeader.split(' ')[1];
     
     if (!token) {
-      console.log("Token is empty after Bearer prefix");
       return res.status(401).json({ error: "Not authenticated - Empty token" });
     }
-    
-    console.log("Token extracted, verifying...");
     
     // Verify JWT token
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log("Token verified successfully for user:", decoded.email || decoded.id);
     } catch (jwtError) {
-      console.error("JWT Verification failed:", jwtError.message);
       if (jwtError.name === 'JsonWebTokenError') {
         return res.status(401).json({ error: "Invalid token" });
       }
@@ -40,197 +219,62 @@ const AuthorLoggedIn = async (req, res, next) => {
       return res.status(401).json({ error: "Token verification failed" });
     }
     
-    // Check both session tables
-    const [editorSession] = await dbPromise.query(
-      "SELECT * FROM editors_session WHERE editor_id = ? AND session_token = ? AND expires_at > NOW()",
-      [decoded.email, token]
-    );
-
-    const [authorSession] = await dbPromise.query(
-      "SELECT * FROM authors_session WHERE user_id = ? AND session_token = ? AND expires_at > NOW()",
-      [decoded.authorId || decoded.id, token]
-    );
+    // Check both session tables in parallel
+    const [editorSession, authorSession] = await Promise.all([
+      dbPromise.query(
+        "SELECT * FROM editors_session WHERE editor_id = ? AND session_token = ? AND expires_at > NOW()",
+        [decoded.email, token]
+      ),
+      dbPromise.query(
+        "SELECT * FROM authors_session WHERE user_id = ? AND session_token = ? AND expires_at > NOW()",
+        [decoded.authorId || decoded.id, token]
+      )
+    ]);
 
     let userData = null;
     let sessionType = null;
 
-    // Check if editor session exists (editor logged in)
-    if (editorSession.length > 0) {
+    // Check editor session first
+    if (editorSession[0]?.length > 0) {
       sessionType = 'editor';
-      console.log("Editor session found");
-      
-      // Get editor details from editors table
-      const [editorResults] = await dbPromise.query(
-        `SELECT id, email, fullname, editorial_level, editorial_section
-         FROM editors WHERE email = ?`,
-        [decoded.email]
-      );
-
-      if (editorResults.length > 0) {
-        const editorData = editorResults[0];
-        
-        // Also fetch author data if exists (using the same email)
-        const [authorResults] = await dbPromise.query(
-          `SELECT id as author_id, prefix, firstname, lastname, othername, orcid_id, 
-                  discipline, affiliations, affiliation_country, affiliation_city,
-                  is_available_for_review, is_editor, is_reviewer, editor_invite_status,
-                  reviewer_invite_status, account_status, asfi_membership_id, date_joined
-           FROM authors_account WHERE email = ?`,
-          [editorData.email]
-        );
-
-        // Determine role based on editorial level
-        const isAdmin = editorData.editorial_level === 'admin' || 
-                       editorData.editorial_level === 'editor_in_chief';
-        const isEditorInChief = editorData.editorial_level === 'editor-in-chief' || 
-                               editorData.editorial_level === 'editor_in_chief'|| 
-                               editorData.editorial_level === 'editorial_assistant';
-
-        // Combine editor and author data
-        userData = {
-          // Editor data
-          id: editorData.id,
-          email: editorData.email,
-          fullname: editorData.fullname,
-          editorialLevel: editorData.editorial_level,
-          editorialSection: editorData.editorial_section,
-          sessionType: 'editor',
-          
-          // Role flags
-          isAdmin: isAdmin,
-          isEditorInChief: isEditorInChief,
-          isAssociateEditor: editorData.editorial_level === 'associate_editor' || 
-                            editorData.editorial_level === 'sectional_editor',
-          isEditorialAssistant: editorData.editorial_level === 'editorial_assistant' || 
-                               editorData.editorial_level === 'editorial-assistant',
-          
-          // Author data (if exists)
-          ...(authorResults.length > 0 ? {
-            authorId: authorResults[0].author_id,
-            prefix: authorResults[0].prefix,
-            authorFirstName: authorResults[0].firstname,
-            authorLastName: authorResults[0].lastname,
-            otherName: authorResults[0].othername,
-            orcidId: authorResults[0].orcid_id,
-            discipline: authorResults[0].discipline,
-            affiliations: authorResults[0].affiliations,
-            affiliationCountry: authorResults[0].affiliation_country,
-            affiliationCity: authorResults[0].affiliation_city,
-            isAvailableForReview: authorResults[0].is_available_for_review,
-            isEditor: authorResults[0].is_editor,
-            isReviewer: authorResults[0].is_reviewer,
-            editorInviteStatus: authorResults[0].editor_invite_status,
-            reviewerInviteStatus: authorResults[0].reviewer_invite_status,
-            accountStatus: authorResults[0].account_status,
-            asfiMembershipId: authorResults[0].asfi_membership_id,
-            dateJoined: authorResults[0].date_joined,
-          
-            // Permissions based on author data
-            canAccessReviewer: authorResults[0].is_reviewer === 'yes' || authorResults[0].is_reviewer === 1,
-            canAccessAuthor: true, // Editors can always access author dashboard
-            canAccessAdmin: isAdmin || isEditorInChief, // Only admin and editor-in-chief can access admin features
-          } : {
-            // Default values if no author account
-            canAccessReviewer: false,
-            canAccessAuthor: true,
-            canAccessAdmin: isAdmin || isEditorInChief,
-          })
-        };
-        
-        console.log(`Editor authenticated: ${userData.email} (Editor - ${editorData.editorial_level})`);
-        if (userData.authorId) {
-          console.log(`Associated author account found: ID ${userData.authorId}`);
-        }
-      }
-    }
-    // Check if author session exists (author logged in directly)
-    else if (authorSession.length > 0) {
+      userData = await fetchEditorData(decoded.email, token);
+    } 
+    // Check author session
+    else if (authorSession[0]?.length > 0) {
       sessionType = 'author';
-      console.log("Author session found");
-      
-      // Get author details from authors_account table
-      const [authorResults] = await dbPromise.query(
-        `SELECT id, email, prefix, firstname, lastname, othername, orcid_id, 
-                discipline, affiliations, affiliation_country, affiliation_city,
-                is_available_for_review, is_editor, is_reviewer, editor_invite_status,
-                reviewer_invite_status, account_status, asfi_membership_id, date_joined
-         FROM authors_account WHERE id = ?`,
-        [decoded.id]
-      );
-
-      if (authorResults.length > 0) {
-        const authorData = authorResults[0];
-        
-        userData = {
-          // Author data
-          id: authorData.id,
-          email: authorData.email,
-          prefix: authorData.prefix,
-          firstName: authorData.firstname,
-          lastName: authorData.lastname,
-          otherName: authorData.othername,
-          fullname: `${authorData.firstname} ${authorData.lastname}`,
-          sessionType: 'author',
-          orcidId: authorData.orcid_id,
-          discipline: authorData.discipline,
-          affiliations: authorData.affiliations,
-          affiliationCountry: authorData.affiliation_country,
-          affiliationCity: authorData.affiliation_city,
-          isAvailableForReview: authorData.is_available_for_review,
-          isEditor: authorData.is_editor,
-          isReviewer: authorData.is_reviewer,
-          editorInviteStatus: authorData.editor_invite_status,
-          reviewerInviteStatus: authorData.reviewer_invite_status,
-          accountStatus: authorData.account_status,
-          asfiMembershipId: authorData.asfi_membership_id,
-          dateJoined: authorData.date_joined,
-          
-          // Role flags
-          isAdmin: false,
-          isEditorInChief: false,
-          isAssociateEditor: false,
-          isEditorialAssistant: false,
-          
-          // Permissions
-          canAccessReviewer: authorData.is_reviewer === 'yes' || authorData.is_reviewer === 1,
-          canAccessAuthor: true,
-          canAccessEditor: authorData.is_editor === 'yes' || authorData.is_editor === 1,
-          canAccessAdmin: false, // Authors cannot access admin features
-        };
-        
-        console.log(`Author authenticated: ${userData.email} (Author)`);
-        if (userData.isEditor) {
-          console.log(`User is also an editor: ${userData.isEditor}`);
-        }
-      }
+      userData = await fetchAuthorData(decoded.authorId || decoded.id, decoded.email);
     }
 
     // If no valid session found
     if (!userData) {
-      console.log("No valid session found for token");
       return res.status(401).json({ error: "Session expired or invalid" });
     }
 
     // Update last activity in the appropriate session table
-    if (sessionType === 'editor') {
-      await dbPromise.query(
-        "UPDATE editors_session SET last_activity = NOW() WHERE session_token = ?",
-        [token]
-      );
-    } else if (sessionType === 'author') {
-      await dbPromise.query(
-        "UPDATE authors_session SET last_activity = NOW() WHERE session_token = ?",
-        [token]
-      );
-    }
+    const sessionTable = sessionType === 'editor' ? 'editors_session' : 'authors_session';
+    const sessionIdColumn = sessionType === 'editor' ? 'editor_id' : 'user_id';
+    
+    await dbPromise.query(
+      `UPDATE ${sessionTable} SET last_activity = NOW() WHERE session_token = ? AND ${sessionIdColumn} = ?`,
+      [token, sessionType === 'editor' ? decoded.email : decoded.id]
+    );
 
     // Set user data in request object
     req.user = userData;
     
+    // Log user authentication
+    console.log(`${sessionType} authenticated: ${userData.email} (${userData.sessionType})`);
+    if (userData._meta?.hasAuthorAccount) {
+      console.log(`Associated author account: ${userData._meta.authorAccountId}`);
+    }
+    if (userData._meta?.hasEditorAccount) {
+      console.log(`Associated editor account: ${userData._meta.editorLevel}`);
+    }
+    
     next();
 
   } catch (error) {
-    console.error("AuthorLoggedIn error:", error);
+    console.error(" AuthorLoggedIn error:", error);
     return res.status(500).json({ error: "Authentication error", details: error.message });
   }
 };

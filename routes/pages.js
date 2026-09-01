@@ -100,6 +100,14 @@ const getPendingDecisions = require("../controllers/editors/decisions/getPending
 const getDecisionData = require("../controllers/editors/decisions/getDecisionData");
 const submitDecision = require("../controllers/editors/decisions/submitDecision");
 
+// Editors management
+const requireEditorInChiefOrAdmin = require("../controllers/editors/management/requireEditorInChiefOrAdmin");
+const getEditorsList = require("../controllers/editors/management/getEditorsList");
+const updateEditorLevel = require("../controllers/editors/management/updateEditorLevel");
+const setEditorStatus = require("../controllers/editors/management/setEditorStatus");
+const deleteEditorAccount = require("../controllers/editors/management/deleteEditorAccount");
+const inviteEditorialAssistant = require("../controllers/editors/management/inviteEditorialAssistant");
+
 
 
   config();
@@ -182,7 +190,7 @@ router.post("/auth/verify-token", verifyToken);
 router.post("/auth/logout", logout);
 
 router.get("/editors/all-submissions", AuthorLoggedIn, allSubmissions)
-router.get("/editors/archivedSubmissions", AuthorLoggedIn, ArchivedSubmissions)
+router.get("/editors/archivedSubmissions", AuthorLoggedIn, requireEditorInChiefOrAdmin, ArchivedSubmissions)
 router.post("/editors/allPreviousSubmissions", AuthorLoggedIn, myPreviousSubmissions)
 
 router.get("/editors/my-submissions", AuthorLoggedIn, mySubmissions)
@@ -205,7 +213,7 @@ router.get("/editors/countAcceptedReviewerInvitations", AuthorLoggedIn, countacc
 router.get("/editors/countRejectedReviewerInvitations", AuthorLoggedIn, countRejectedReviewerInvitaions)
 router.get("/editors/countTotalReviewerInvitations", AuthorLoggedIn, counttotalReviewerInvitaions)
 
-router.get("/editors/authorsList", AuthorLoggedIn, getAllAuthors)
+router.get("/editors/authorsList", AuthorLoggedIn, requireEditorInChiefOrAdmin, getAllAuthors)
             
 router.get("/editors/authorsProfileForSearch", AuthorLoggedIn, getAuthorsProfileForSearch, getAuthorAccount)
 router.get("/editors/authorProfileDetails", AuthorLoggedIn, getAuthorsProfileForSearch)
@@ -236,9 +244,9 @@ router.post("/editors/articleinvitations", AuthorLoggedIn, getInvitations)
 router.post("/editors/viewReview",AuthorLoggedIn, viewReview)
 router.get("/editors/all-completed-reviews",AuthorLoggedIn, getAllCompletedReviews)
 
-router.post("/editors/accounts/verifyUser", AuthorLoggedIn, VerifyAuthorAccount)
-router.post("/editors/accounts/deleteAuthor", AuthorLoggedIn, DeleteAuthorAccount)
-router.post("/editors/accounts/migrateAuthor", AuthorLoggedIn, MigrateAccount)
+router.post("/editors/accounts/verifyUser", AuthorLoggedIn, requireEditorInChiefOrAdmin, VerifyAuthorAccount)
+router.post("/editors/accounts/deleteAuthor", AuthorLoggedIn, requireEditorInChiefOrAdmin, DeleteAuthorAccount)
+router.post("/editors/accounts/migrateAuthor", AuthorLoggedIn, requireEditorInChiefOrAdmin, MigrateAccount)
 
 
 // Invitations Controls 
@@ -287,10 +295,10 @@ router.post("/editors/backend/editors/submit-decision", AuthorLoggedIn, submitDe
 router.post("/editors/email/bulkEmail", AuthorLoggedIn, sendBulkEmail)
 router.post("/editors/createAccount", editorSignUp)
 router.post("/editors/remindReviewer", AuthorLoggedIn, remindReviewer)
-router.get("/editors/getAnnouncements", AuthorLoggedIn, require("../controllers/editors/announcements/getAnnouncements"))
-router.post("/editors/uploadAnnouncement", AuthorLoggedIn, require("../controllers/editors/announcements/uploadAnnouncement"))
-router.post("/editors/editAnnouncement", AuthorLoggedIn, require("../controllers/editors/announcements/editAnnouncement"))
-router.post("/editors/deleteAnnouncement", AuthorLoggedIn, deleteAnnouncement)
+router.get("/editors/getAnnouncements", AuthorLoggedIn, requireEditorInChiefOrAdmin, require("../controllers/editors/announcements/getAnnouncements"))
+router.post("/editors/uploadAnnouncement", AuthorLoggedIn, requireEditorInChiefOrAdmin, require("../controllers/editors/announcements/uploadAnnouncement"))
+router.post("/editors/editAnnouncement", AuthorLoggedIn, requireEditorInChiefOrAdmin, require("../controllers/editors/announcements/editAnnouncement"))
+router.post("/editors/deleteAnnouncement", AuthorLoggedIn, requireEditorInChiefOrAdmin, deleteAnnouncement)
 router.post("/editors/verifyCode", AuthorLoggedIn, (req, res) => {
   
     const verifyCode = req.body.code;
@@ -316,27 +324,37 @@ router.get("/editors/logout", (req,res) =>{
 // EDITOR MANAGMENENT 
 // Public routes
 
-// API routes for AJAX requests
-router.get("/api/editors/by-field", AuthorLoggedIn, getEditorsByField);
-router.get("/api/editors/:id", AuthorLoggedIn, getEditorById);
-router.get("/api/disciplines/by-field", AuthorLoggedIn, getDisciplinesByField);
-router.get("/api/fields", AuthorLoggedIn, getAllFields);
+// API routes for AJAX requests (restricted to Editors-in-Chief and Admins)
+router.get("/api/editors/by-field", AuthorLoggedIn, requireEditorInChiefOrAdmin, getEditorsByField);
+router.get("/api/editors/:id", AuthorLoggedIn, requireEditorInChiefOrAdmin, getEditorById);
+router.get("/api/disciplines/by-field", AuthorLoggedIn, requireEditorInChiefOrAdmin, getDisciplinesByField);
+router.get("/api/fields", AuthorLoggedIn, requireEditorInChiefOrAdmin, getAllFields);
 
 // Protected routes (require authentication)
 router.post('/api/editors/add', 
     AuthorLoggedIn,
+    requireEditorInChiefOrAdmin,
     addEditor
 );
 
 router.post('/api/editors/update', 
     AuthorLoggedIn, 
+    requireEditorInChiefOrAdmin,
     updateEditor
 );
 
 router.delete('/api/editors/delete/:id', 
     AuthorLoggedIn, 
+    requireEditorInChiefOrAdmin,
     deleteEditor
 );
+
+// Editors management (role-gated to editors-in-chief and admins only)
+router.get("/editors/management/list", AuthorLoggedIn, requireEditorInChiefOrAdmin, getEditorsList);
+router.post("/editors/management/update-level", AuthorLoggedIn, requireEditorInChiefOrAdmin, updateEditorLevel);
+router.post("/editors/management/set-status", AuthorLoggedIn, requireEditorInChiefOrAdmin, setEditorStatus);
+router.post("/editors/management/delete", AuthorLoggedIn, requireEditorInChiefOrAdmin, deleteEditorAccount);
+router.post("/editors/management/invite", AuthorLoggedIn, requireEditorInChiefOrAdmin, inviteEditorialAssistant);
 
 
 
