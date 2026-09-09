@@ -57,7 +57,7 @@ const acceptReviewer = async (req, res) => {
     // Find the invitation in invitations table
     const [invitation] = await connection.query(
       `SELECT * FROM invitations 
-       WHERE invitation_link = ? AND invited_user = ? AND status = 'Submission Review'`,
+       WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'`,
       [articleId, email]
     );
 
