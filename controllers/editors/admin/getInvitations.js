@@ -282,7 +282,38 @@ const getInvitationById = async (req, res) => {
             }
         }
 
-        return res.json({ success: true, invitation: invitation[0], review });
+        // Fetch the exact sent email message associated with this invitation so
+        // the invitations management page can display it in the detail modal.
+        // The link between the tables is: invitations.invitation_link equals
+        // sent_emails.article_id, and invitations.invited_for tells us which
+        // email_for value(s) correspond to the invitation message.
+        let sentEmail = null;
+        const emailForValues = invitation[0].invited_for === 'To Edit'
+            ? ['editor_invitation', 'To Edit']
+            : [invitation[0].invited_for];
+
+        const [sentEmailRows] = await dbPromise.query(`
+            SELECT 
+                id,
+                recipient,
+                subject,
+                body,
+                sender,
+                article_id,
+                email_for,
+                status,
+                sent_at
+            FROM sent_emails
+            WHERE article_id = ? AND recipient = ? AND email_for IN (?)
+            ORDER BY id DESC
+            LIMIT 1
+        `, [invitation[0].invitation_link, invitation[0].invited_user, emailForValues]);
+
+        if (sentEmailRows.length > 0) {
+            sentEmail = sentEmailRows[0];
+        }
+
+        return res.json({ success: true, invitation: invitation[0], review, sentEmail });
 
     } catch (error) {
         console.error("Error fetching invitation:", error);
