@@ -1,4 +1,4 @@
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const mysql = require("mysql2/promise");
 const axios = require("axios");
 const dotenv = require("dotenv");
@@ -20,11 +20,8 @@ const dbConfig = {
 // Create a connection pool
 const pool = mysql.createPool(dbConfig);
 
-// Initialize Brevo API
-const senderEmail = process.env.BREVO_EMAIL;
-const apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new Brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+// Sender email for outbound mail
+const senderEmail = process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL;
 
 // HTML escaping function to prevent XSS
 const escapeHtml = (unsafe) => {
@@ -312,7 +309,7 @@ async function ReviewerAccountEmail(RecipientEmail, subject, message, editor_ema
     }
 
     // Send email with timeout
-    const sendPromise = apiInstance.sendTransacEmail(emailData);
+    const sendPromise = sendMail(emailData);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Email sending timeout after 30 seconds')), 30000)
     );

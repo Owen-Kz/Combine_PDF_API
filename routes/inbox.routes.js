@@ -10,7 +10,7 @@ const saveEmailDetails = require("../controllers/account/invitations/saveEmail")
 
 config();
 
-// Helper to download a file as base64 for Brevo email attachments
+// Helper to download a file as base64 for email attachments
 async function downloadFileAsBase64(url, fileName) {
     try {
         const response = await axios({
@@ -472,13 +472,13 @@ router.post("/:id/forward", AuthorLoggedIn, async (req, res) => {
             );
         }
 
-        // Prepare Brevo attachments by downloading each file to base64
-        const brevoAttachments = [];
+        // Prepare attachments by downloading each file to base64
+        const emailAttachments = [];
         for (const att of selectedAttachments) {
             if (att.file_path && /^https?:\/\//.test(att.file_path)) {
                 try {
                     const downloaded = await downloadFileAsBase64(att.file_path, att.file_name);
-                    brevoAttachments.push({
+                    emailAttachments.push({
                         content: downloaded.content,
                         name: downloaded.name,
                         contentType: downloaded.contentType
@@ -489,13 +489,13 @@ router.post("/:id/forward", AuthorLoggedIn, async (req, res) => {
             }
         }
 
-        // Send the forwarded email via Brevo
+        // Send the forwarded email via SMTP
         const sendResult = await sendEmail({
             to: recipients,
             subject,
             htmlContent: body,
             fromName: req.user.fullname || 'ASFI Research Journal',
-            attachments: brevoAttachments.length > 0 ? brevoAttachments : null
+            attachments: emailAttachments.length > 0 ? emailAttachments : null
         });
 
         if (sendResult.status !== 'success') {

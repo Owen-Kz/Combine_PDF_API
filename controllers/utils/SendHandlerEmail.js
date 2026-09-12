@@ -1,4 +1,4 @@
-const Brevo = require('@getbrevo/brevo');
+const sendMail = require('./nodeMailer');
 const dotenv = require('dotenv');
 const dbPromise = require('../../routes/dbPromise.config');
 
@@ -38,13 +38,6 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
     }
 
     try {
-        // API key and sender email from environment variables
-        const apiKey = process.env.BREVO_API_KEY;
-        if (!apiKey) throw new Error('BREVO_API_KEY is not configured');
-        
-        const senderEmail = "no-reply@asfirj.org";
-        if (!senderEmail) throw new Error('BREVO_EMAIL is not configured');
-
         const currentYear = new Date().getUTCFullYear();
         const currentDate = new Date().toLocaleDateString('en-US', {
             year: 'numeric',
@@ -66,10 +59,6 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
                 headerText = `A revision has been submitted for`;
             }
         }
-
-        // Configure Brevo API
-        const apiInstance = new Brevo.TransactionalEmailsApi();
-        apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 
         // HTML email template with proper styling
         const emailContent = `
@@ -154,7 +143,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         // Email payload
         const emailData = {
             sender: { 
-                email: senderEmail, 
+                email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
                 name: 'ASFI Research Journal' 
             },
             to: [{ 
@@ -170,7 +159,7 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         };
 
         // Send email
-        const response = await apiInstance.sendTransacEmail(emailData);
+        const response = await sendMail(emailData);
         
         return { 
             status: 'success', 

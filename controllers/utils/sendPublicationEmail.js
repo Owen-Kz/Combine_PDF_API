@@ -1,7 +1,7 @@
 // backend/utils/SendPublicationEmail.js
 require("dotenv").config();
 
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("./nodeMailer");
 // const dbPromise = require("../../journal.db");
 const { escapeHtml } = require("./security");
 const fs = require('fs');
@@ -96,13 +96,6 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
         // Read the PDF file as base64 for attachment
         const pdfContent = fs.readFileSync(pdfPath);
         const base64PDF = pdfContent.toString('base64');
-
-        // Configure Brevo API
-        const apiInstance = new Brevo.TransactionalEmailsApi();
-        apiInstance.setApiKey(
-            Brevo.TransactionalEmailsApiApiKeys.apiKey,
-            process.env.BREVO_API_KEY
-        );
 
         const currentDate = new Date().toLocaleDateString('en-US', {
             year: 'numeric',
@@ -208,7 +201,7 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
         // Email configuration with attachment
         const email = {
             sender: { 
-                email: process.env.BREVO_EMAIL, 
+                email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
                 name: "ASFI Research Journal" 
             },
             to: [{ 
@@ -227,8 +220,8 @@ const SendPublicationEmail = async (recipientEmail, manuscriptTitle, manuscriptI
             }
         };
 
-        // Send email via Brevo
-        const response = await apiInstance.sendTransacEmail(email);
+        // Send email
+        const response = await sendMail(email);
         
         console.log(`Publication email sent successfully to ${recipientEmail} for manuscript ${manuscriptId}`);
         

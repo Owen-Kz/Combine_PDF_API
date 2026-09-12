@@ -1,5 +1,5 @@
 // backend/controllers/editors/sendReviewReminder.js
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const { escapeHtml } = require("../../utils/security");
 const convertQUILLTOHTML = require("./convertHTML");
 const dotenv = require("dotenv");
@@ -190,17 +190,10 @@ const sendReviewReminder = async (req, res) => {
       `;
     }
 
-    // Configure Brevo API
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(
-      Brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.BREVO_API_KEY
-    );
-
     // Prepare email data
     const emailData = {
       sender: { 
-        email: process.env.BREVO_EMAIL, 
+        email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
         name: "ASFI Research Journal" 
       },
       to: [{ email: reviewerEmail }],
@@ -213,7 +206,7 @@ const sendReviewReminder = async (req, res) => {
     };
 
     // Send email
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
 
     // Insert reminder record into review_reminders table
     await dbPromise.query(

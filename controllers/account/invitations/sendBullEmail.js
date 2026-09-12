@@ -1,4 +1,4 @@
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const db = require("../../../routes/db.config");
 const { promisify } = require("util");
@@ -106,10 +106,6 @@ const sendBulkEmail = async (recipientEmail, subject, message, editorEmail, arti
       return { status: "error", message: "Invalid email format" };
     }
 
-    // Configure Brevo API
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.authentications.apiKey.apiKey = process.env.BREVO_API_KEY;
-
     // Convert message to HTML
     const contentArray = JSON.parse(message);
     const htmlContent = convertToHTML(contentArray);
@@ -147,7 +143,7 @@ const sendBulkEmail = async (recipientEmail, subject, message, editorEmail, arti
     // Prepare email data
     const emailData = {
       sender: { 
-        email: process.env.BREVO_EMAIL, 
+        email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
         name: "ASFI Research Journal" 
       },
       to: [{ email: recipientEmail }],
@@ -168,7 +164,7 @@ const sendBulkEmail = async (recipientEmail, subject, message, editorEmail, arti
     };
 
     // Send email
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
 
     // Update email status in database
     await dbQuery(

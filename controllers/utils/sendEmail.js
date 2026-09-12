@@ -1,5 +1,5 @@
 // backend/utils/sendEmail.js
-const Brevo = require('@getbrevo/brevo');
+const sendMail = require('./nodeMailer');
 const dotenv = require('dotenv');
 const dbPromise = require('../../routes/dbPromise.config');
 
@@ -22,7 +22,7 @@ function escapeHtml(text) {
 }
 
 /**
- * Sends an email using Brevo API
+ * Sends an email using SMTP (nodemailer)
  * @param {Object} options - Email options
  * @param {string|string[]} options.to - Recipient email address(es)
  * @param {string} options.subject - Email subject
@@ -64,16 +64,9 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
     }
 
     try {
-        // API key and sender email from environment variables
-        const apiKey = process.env.BREVO_API_KEY;
-        if (!apiKey) throw new Error('BREVO_API_KEY is not configured');
-        
-        const senderEmail = process.env.BREVO_EMAIL;
-        if (!senderEmail) throw new Error('BREVO_EMAIL is not configured');
-
-        // Configure Brevo API
-        const apiInstance = new Brevo.TransactionalEmailsApi();
-        apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+        // Sender email from environment variables
+        const senderEmail = process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL;
+        if (!senderEmail) throw new Error('NODE_MAILER_SENDER_EMAIL is not configured');
 
         // Prepare email data
         const emailData = {
@@ -96,7 +89,7 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
         }
 
         // Send email
-        const response = await apiInstance.sendTransacEmail(emailData);
+        const response = await sendMail(emailData);
         
         // Log the email in database with content
         await logEmailToDatabase({

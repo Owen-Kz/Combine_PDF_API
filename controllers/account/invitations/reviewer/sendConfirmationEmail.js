@@ -1,14 +1,8 @@
 // controllers/invitations/sendConfirmationEmail.js
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../../utils/nodeMailer");
 
 const sendConfirmationEmail = async (recipientEmail, reviewerEmail, status) => {
   try {
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(
-      Brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.BREVO_API_KEY
-    );
-
     const currentYear = new Date().getFullYear();
     const statusText = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 
@@ -53,7 +47,7 @@ const sendConfirmationEmail = async (recipientEmail, reviewerEmail, status) => {
 
     const emailData = {
       sender: { 
-        email: process.env.BREVO_EMAIL, 
+        email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL, 
         name: "ASFI Research Journal" 
       },
       to: [{ email: recipientEmail }],
@@ -65,7 +59,7 @@ const sendConfirmationEmail = async (recipientEmail, reviewerEmail, status) => {
       }
     };
 
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
     return { status: "success", message: "Confirmation email sent successfully" };
 
   } catch (error) {

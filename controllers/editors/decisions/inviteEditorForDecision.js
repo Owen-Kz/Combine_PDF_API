@@ -3,7 +3,7 @@
 // submitted (see controllers/reviewers/submitReviews.js) and by the manual
 // "Invite Editor" action on the reviewer dashboard.
 const mysql = require("mysql2/promise");
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("../../account/invitations/saveEmail");
 
@@ -169,11 +169,8 @@ const notifyEditorForDecision = async ({ articleId, editorEmail = null, invitedB
       const subject = `Decision Required: ${articleId} - ${submission[0].title || "Manuscript"}`;
       const htmlContent = buildDecisionEmailHtml(submission[0], reviews[0].total);
 
-      const apiInstance = new Brevo.TransactionalEmailsApi();
-      apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-
-      await apiInstance.sendTransacEmail({
-        sender: { email: process.env.BREVO_EMAIL, name: "ASFI Research Journal" },
+      await sendMail({
+        sender: { email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL, name: "ASFI Research Journal" },
         to: [{ email }],
         subject,
         htmlContent,

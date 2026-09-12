@@ -1,14 +1,8 @@
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("./nodeMailer");
 const { escapeHtml } = require("./security");
 
 const sendInvitationReminder = async ({ recipientEmail, invitedFor, manuscriptId, daysUntilExpiry, expiryDate, customMessage, baseUrl }) => {
   try {
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(
-      Brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.BREVO_API_KEY
-    );
-
     const currentYear = new Date().getFullYear();
     const roleLabel = invitedFor === "Submission Review" ? "reviewer" : "editor";
     const actionLabel = invitedFor === "Submission Review" ? "review" : "edit";
@@ -79,7 +73,7 @@ const sendInvitationReminder = async ({ recipientEmail, invitedFor, manuscriptId
 
     const emailData = {
       sender: {
-        email: process.env.BREVO_EMAIL,
+        email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
         name: "ASFI Research Journal",
       },
       to: [{ email: recipientEmail }],
@@ -91,7 +85,7 @@ const sendInvitationReminder = async ({ recipientEmail, invitedFor, manuscriptId
       },
     };
 
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
     return { status: "success", subject, htmlContent };
   } catch (error) {
     console.error("Error sending invitation reminder:", error);

@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("./nodeMailer");
 const db = require("../../routes/db.config");
 
 /**
@@ -35,13 +35,6 @@ const sendEmailReminder = async (RecipientEmail, subject, emailContent) => {
     }
 
     try {
-        // Brevo API Configuration
-        const apiInstance = new Brevo.TransactionalEmailsApi();
-        apiInstance.setApiKey(
-            Brevo.TransactionalEmailsApiApiKeys.apiKey,
-            process.env.BREVO_API_KEY
-        );
-
         // Current year for footer
         const currentYear = new Date().getUTCFullYear();
 
@@ -107,7 +100,7 @@ const sendEmailReminder = async (RecipientEmail, subject, emailContent) => {
         // Email configuration
         const email = {
             sender: { 
-                email: process.env.BREVO_EMAIL, 
+                email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
                 name: "ASFI Research Journal" 
             },
             to: [{ email: RecipientEmail }],
@@ -120,7 +113,7 @@ const sendEmailReminder = async (RecipientEmail, subject, emailContent) => {
         };
 
         // Send email
-        const response = await apiInstance.sendTransacEmail(email);
+        const response = await sendMail(email);
         
         console.log(`Email sent successfully to ${RecipientEmail}`);
         return { 

@@ -1,4 +1,4 @@
-const Brevo = require('@getbrevo/brevo');
+const sendMail = require('./nodeMailer');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 const dbPromise = require('../../routes/dbPromise.config');
@@ -53,10 +53,6 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         const loginUrl = `https://portal.asfirj.org/portal/verify-email?token=${verificationToken}&email=${encodeURIComponent(recipientEmail)}`;
         const updateUrl = `https://process.asfirj.org/updateAccount?e=${encryptedButton}`;
         
-
-        // Configure Brevo API
-        const apiInstance = new Brevo.TransactionalEmailsApi();
-        apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
         // HTML email template with proper styling
         const htmlContent = `
@@ -158,7 +154,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         // Email payload
         const emailData = {
             sender: { 
-                email: process.env.BREVO_EMAIL, 
+                email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
                 name: "ASFI Research Journal" 
             },
             to: [{ 
@@ -174,7 +170,7 @@ async function sendCoAuthorEmail(recipientEmail, password) {
         };
 
         // Send email
-        const response = await apiInstance.sendTransacEmail(emailData);
+        const response = await sendMail(emailData);
 
         return { 
             status: 'success', 

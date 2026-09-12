@@ -1,4 +1,4 @@
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
@@ -18,11 +18,8 @@ const dbConfig = {
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
 
-// Initialize Brevo API
-const senderEmail = process.env.BREVO_EMAIL;
-const apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new Brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+// Sender email for outbound mail
+const senderEmail = process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL;
 
 // HTML escaping function to prevent XSS
 const escapeHtml = (unsafe) => {
@@ -169,7 +166,7 @@ async function AcceptanceEmailToEditor(RecipientEmail, subject, message, editor_
     };
 
     // Send email
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
 
     // Log the email in database
     await saveEmailDetails(

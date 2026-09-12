@@ -1,5 +1,5 @@
 const mysql = require("mysql2/promise");
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("../../account/invitations/saveEmail");
 dotenv.config();
@@ -66,9 +66,6 @@ const inviteEditorToDecide = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const decisionLink = `${frontendUrl}/editors/decision/${articleId}`;
 
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -94,13 +91,13 @@ const inviteEditorToDecide = async (req, res) => {
     `;
 
     const emailData = {
-      sender: { email: process.env.BREVO_EMAIL, name: "ASFI Research Journal" },
+      sender: { email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL, name: "ASFI Research Journal" },
       to: [{ email: editorEmail }],
       subject: `Decision Required: ${submission[0].revision_id} - ${submission[0].title || "Manuscript"}`,
       htmlContent: htmlContent,
     };
 
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
 
     await saveEmailDetails(
       editorEmail,

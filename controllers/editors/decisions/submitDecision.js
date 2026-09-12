@@ -1,5 +1,5 @@
 const mysql = require("mysql2/promise");
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const multer = require("multer");
 const fs = require("fs");
 const dotenv = require("dotenv");
@@ -86,9 +86,6 @@ const submitDecision = async (req, res) => {
       compiledHtml = `<div style="margin: 16px 0; padding: 16px; background: #f9fafb; border-left: 4px solid #7c3aed; border-radius: 4px;">${compiledLetter}</div>`;
     }
 
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -107,7 +104,7 @@ const submitDecision = async (req, res) => {
 
     const authorEmail = submission[0].corresponding_authors_email;
     const emailData = {
-      sender: { email: process.env.BREVO_EMAIL, name: "ASFI Research Journal" },
+      sender: { email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL, name: "ASFI Research Journal" },
       to: [{ email: authorEmail }],
       subject: subject,
       htmlContent: emailHtml,
@@ -147,7 +144,7 @@ const submitDecision = async (req, res) => {
       }
     }
 
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
 
     await saveEmailDetails(
       authorEmail,

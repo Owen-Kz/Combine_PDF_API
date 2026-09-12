@@ -1,6 +1,6 @@
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
-const Brevo = require("@getbrevo/brevo");
+const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
 const isAdminAccount = require("../../editors/isAdminAccount");
@@ -214,17 +214,10 @@ const inviteReviewerEmail = async (req, res) => {
       invitedFor
     );
 
-    // Configure Brevo API
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(
-      Brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.BREVO_API_KEY
-    );
-
     // Prepare email data
     const emailData = {
       sender: { 
-        email: process.env.BREVO_EMAIL, 
+        email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
         name: "ASFI Research Journal" 
       },
       to: [{ email: reviewerEmail }],
@@ -253,7 +246,7 @@ const inviteReviewerEmail = async (req, res) => {
     };
 
     // Send email
-    await apiInstance.sendTransacEmail(emailData);
+    await sendMail(emailData);
 
     // Record the invitation
     await dbQuery(
