@@ -95,6 +95,9 @@ const getAllInvitations = async (req, res) => {
         let countQuery = `
             SELECT COUNT(*) as total
             FROM invitations i
+            LEFT JOIN submissions s ON s.id = (
+                SELECT MAX(s2.id) FROM submissions s2 WHERE s2.revision_id = i.invitation_link
+            )
             WHERE 1=1
         `;
 
