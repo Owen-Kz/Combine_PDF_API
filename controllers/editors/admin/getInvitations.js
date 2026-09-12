@@ -86,7 +86,9 @@ const getAllInvitations = async (req, res) => {
                 'system@asfirj.org' as invited_by_email
 
             FROM invitations i
-            LEFT JOIN submissions s ON i.invitation_link = s.revision_id
+            LEFT JOIN submissions s ON s.id = (
+                SELECT MAX(s2.id) FROM submissions s2 WHERE s2.revision_id = i.invitation_link
+            )
             WHERE 1=1
         `;
 
@@ -252,7 +254,9 @@ const getInvitationById = async (req, res) => {
                 a.prefix,
                 a.affiliations
             FROM invitations i
-            LEFT JOIN submissions s ON i.invitation_link = s.revision_id
+            LEFT JOIN submissions s ON s.id = (
+                SELECT MAX(s2.id) FROM submissions s2 WHERE s2.revision_id = i.invitation_link
+            )
             LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
             WHERE i.id = ?
         `, [id]);
@@ -402,6 +406,7 @@ const remindInvitation = async (req, res) => {
         }
 
         const { id } = req.params;
+        const { notes, extendDays } = req.body || {};
 
         const [invitationRows] = await dbPromise.query(`
             SELECT 
@@ -411,7 +416,9 @@ const remindInvitation = async (req, res) => {
                 s.article_id,
                 s.corresponding_authors_email
             FROM invitations i
-            LEFT JOIN submissions s ON i.invitation_link = s.revision_id
+            LEFT JOIN submissions s ON s.id = (
+                SELECT MAX(s2.id) FROM submissions s2 WHERE s2.revision_id = i.invitation_link
+            )
             WHERE i.id = ?
         `, [id]);
 
@@ -432,10 +439,51 @@ const remindInvitation = async (req, res) => {
         const recipientEmail = inv.invited_user;
         const manuscriptId = inv.revision_id || inv.article_id || inv.invitation_link;
 
+        // Optional: extend the invitation expiry date by the requested number of days.
+        // Defaults to no change (the setting is optional and only applied when provided).
+        let expiryDateForEmail = inv.invitation_expiry_date;
+        if (extendDays !== undefined && extendDays !== null && extendDays !== '') {
+            const days = parseInt(extendDays, 10);
+            if (isNaN(days) || days <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: "extendDays must be a positive number of days"
+                });
+            }
+            // Compute the new expiry date in JS (avoids MySQL prepared-statement
+            // quirks with INTERVAL placeholders) and store it back as YYYY-MM-DD.
+            let baseDate;
+            if (inv.invitation_expiry_date) {
+                const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(inv.invitation_expiry_date);
+                if (m) {
+                    baseDate = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+                } else {
+                    baseDate = new Date(inv.invitation_expiry_date);
+                }
+            }
+            if (!baseDate || isNaN(baseDate)) {
+                baseDate = new Date();
+            }
+            const newExpiryDate = new Date(baseDate);
+            newExpiryDate.setDate(newExpiryDate.getDate() + days);
+            const newExpiryDateStr = [
+                newExpiryDate.getFullYear(),
+                String(newExpiryDate.getMonth() + 1).padStart(2, '0'),
+                String(newExpiryDate.getDate()).padStart(2, '0')
+            ].join('-');
+
+            await dbPromise.query(`
+                UPDATE invitations 
+                SET invitation_expiry_date = ?
+                WHERE id = ?
+            `, [newExpiryDateStr, id]);
+            expiryDateForEmail = newExpiryDateStr;
+        }
+
         let daysUntilExpiry = 14;
-        if (inv.invitation_expiry_date) {
+        if (expiryDateForEmail) {
             const diff = Math.ceil(
-                (new Date(inv.invitation_expiry_date) - new Date()) / (1000 * 60 * 60 * 24)
+                (new Date(expiryDateForEmail) - new Date()) / (1000 * 60 * 60 * 24)
             );
             daysUntilExpiry = Math.max(diff, 0);
         }
@@ -445,7 +493,8 @@ const remindInvitation = async (req, res) => {
             invitedFor: inv.invited_for,
             manuscriptId,
             daysUntilExpiry,
-            expiryDate: inv.invitation_expiry_date
+            expiryDate: expiryDateForEmail,
+            customMessage: notes
         });
 
         if (emailResult.status !== 'success') {
@@ -462,6 +511,31 @@ const remindInvitation = async (req, res) => {
                 last_reminder_sent = NOW()
             WHERE id = ?
         `, [id]);
+
+        // Save the full reminder details into review_reminders so the
+        // reminder history (subject, body, notes) can be shown later.
+        const [existingReminders] = await dbPromise.query(
+            `SELECT COUNT(*) as count FROM review_reminders WHERE review_id = ?`,
+            [id]
+        );
+        const reminderNumber = (existingReminders[0].count || 0) + 1;
+
+        await dbPromise.query(
+            `INSERT INTO review_reminders 
+             (review_id, article_id, reviewer_email, reminder_type, reminder_number, sent_at, due_date, days_overdue, status, email_subject, email_body, notes) 
+             VALUES (?, ?, ?, 'manual', ?, NOW(), ?, ?, 'sent', ?, ?, ?)`,
+            [
+                id,
+                manuscriptId,
+                recipientEmail,
+                reminderNumber,
+                expiryDateForEmail || null,
+                null,
+                emailResult.subject,
+                emailResult.htmlContent,
+                notes || null
+            ]
+        );
 
         await dbPromise.query(`
             INSERT INTO invitation_logs (invitation_id, action, performed_by, reason, performed_at)
@@ -518,11 +592,66 @@ const getInvitationStats = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 };
+
+// GET /api/invitations/:id/reminders
+const getInvitationReminders = async (req, res) => {
+    try {
+        if (!req.user || !(await isEditorInChiefOrAdmin(req.user.id))) {
+            return res.status(403).json({ success: false, error: "Unauthorized" });
+        }
+
+        const { id } = req.params;
+
+        const [invitationRows] = await dbPromise.query(
+            `SELECT id, invited_user, invitation_link, invited_for FROM invitations WHERE id = ?`,
+            [id]
+        );
+
+        if (invitationRows.length === 0) {
+            return res.status(404).json({ success: false, error: "Invitation not found" });
+        }
+
+        const [reminders] = await dbPromise.query(
+            `SELECT 
+                id,
+                review_id,
+                article_id,
+                reviewer_email,
+                reminder_type,
+                reminder_number,
+                sent_at,
+                due_date,
+                days_overdue,
+                status,
+                response_received,
+                email_subject,
+                email_body,
+                notes,
+                created_at
+            FROM review_reminders
+            WHERE review_id = ?
+            ORDER BY sent_at DESC, id DESC`,
+            [id]
+        );
+
+        return res.json({
+            success: true,
+            invitation: invitationRows[0],
+            reminders
+        });
+
+    } catch (error) {
+        console.error("Error fetching invitation reminders:", error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = {
     getAllInvitations,
     resendInvitation,
     cancelInvitation,
     remindInvitation,
     getInvitationStats,
-    getInvitationById
+    getInvitationById,
+    getInvitationReminders
 };

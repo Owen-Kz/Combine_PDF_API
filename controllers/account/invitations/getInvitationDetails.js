@@ -196,14 +196,15 @@ const getInvitationDetails = async (req, res) => {
     if (processedInvitations.length > 0) {
       const processed = processedInvitations[0];
       console.log("Found processed invitation with status:", processed.invitation_status);
-      
+      const invitationStatus = processed.invitation_status;
+      if(invitationStatus === 'review_invitation_accepted' || invitationStatus === 'review_request_rejected' || invitationStatus === 'review_submitted') {
       return res.status(400).json({
         success: false,
         message: `Invitation already ${processed.invitation_status === 'accepted' ? 'accepted' : 'processed'}`,
         status: processed.invitation_status,
         type: processed.invited_for === 'Submission Review' ? 'reviewer' : 'editor',
         submission: articleData
-      });
+      });}
     }
 
     // No invitation found

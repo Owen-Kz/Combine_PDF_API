@@ -56,7 +56,12 @@ const getReviewerInvitations = async (req, res) => {
                 inviter.fullname as invited_by_name,
                 inviter.email as invited_by_email
             FROM invitations i
-            LEFT JOIN submissions s ON i.invitation_link = s.revision_id OR i.invitation_link = s.article_id
+            LEFT JOIN submissions s ON s.id = (
+                SELECT s2.id FROM submissions s2
+                WHERE s2.revision_id = i.invitation_link OR s2.article_id = i.invitation_link
+                ORDER BY (s2.revision_id = i.invitation_link) DESC, s2.id DESC
+                LIMIT 1
+            )
             LEFT JOIN sent_emails se ON i.invitation_link = se.article_id AND se.email_for = 'Submission Review'
             LEFT JOIN editors inviter ON se.sender = inviter.email
             WHERE i.invited_user = ? AND i.invited_for = 'Submission Review'
