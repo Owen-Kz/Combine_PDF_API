@@ -3,6 +3,8 @@
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 const dotenv = require("dotenv");
+const { LogAction } = require("../../Logger");
+const emailErrorLogger = require("./emailErrorLogger");
 
 dotenv.config();
 
@@ -78,7 +80,7 @@ const buildAttachments = async (brevoAttachments) => {
                     contentType: res.headers["content-type"] || "application/octet-stream",
                 });
             } catch (err) {
-                console.error(`Failed to download attachment ${att.name}:`, err.message);
+                LogAction(`Failed to download attachment ${att.name}: ${err.message}`, "ERROR");
             }
         }
     }
@@ -100,20 +102,37 @@ const buildAttachments = async (brevoAttachments) => {
  * @param {string} emailData.htmlContent
  * @param {Object} [emailData.headers] Extra email headers.
  * @param {Array} [emailData.attachment] Attachments as [{ content|url, name, contentType }].
+ * @param {Object} [options] Optional behavior flags.
+ * @param {boolean} [options.log=true] When false, failures are NOT persisted to
+ *   email_error_logs (used by the retry service so re-failures don't duplicate rows).
+ * @param {string} [options.source] Label used when logging failures.
  * @returns {Promise<{messageId: string}>}
  */
-async function sendMail(emailData) {
+async function sendMail(emailData, options = {}) {
     const senderEmail = getSenderEmail();
     const senderName =
         (emailData.sender && emailData.sender.name) || "ASFI Research Journal";
 
     const mailOptions = {
         from: `"${senderName}" <${senderEmail}>`,
-        to: buildAddressList(emailData.to),
         subject: emailData.subject,
         html: emailData.htmlContent,
         headers: emailData.headers,
     };
+
+    const toAddress = buildAddressList(emailData.to);
+    if (!toAddress) {
+        const error = new Error(
+            `No valid recipients defined for email (subject: ${emailData.subject || ""})`
+        );
+        error.code = "EENVELOPE";
+        if (options.log !== false) {
+            LogAction(`EMAIL FAILED [${options.source || "sendMail"}]: ${error.message}`, "ERROR");
+            await emailErrorLogger.logEmailError({ emailData, error, source: options.source || "sendMail" });
+        }
+        throw error;
+    }
+    mailOptions.to = toAddress;
 
     const cc = buildAddressList(emailData.cc);
     if (cc) mailOptions.cc = cc;
@@ -125,7 +144,16 @@ async function sendMail(emailData) {
     if (attachments) mailOptions.attachments = attachments;
 
     const transporter = createTransporter();
-    const info = await transporter.sendMail(mailOptions);
+    let info;
+    try {
+        info = await transporter.sendMail(mailOptions);
+    } catch (error) {
+        if (options.log !== false) {
+            LogAction(`EMAIL FAILED [${options.source || "sendMail"}]: ${error.message}`, "ERROR");
+            await emailErrorLogger.logEmailError({ emailData, error, source: options.source || "sendMail" });
+        }
+        throw error;
+    }
     return { messageId: info.messageId };
 }
 

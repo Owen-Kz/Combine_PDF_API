@@ -1,5 +1,6 @@
 const db = require("../../../routes/db.config");
 const dbPromise = require("../../../routes/dbPromise.config");
+const { LogAction } = require("../../../Logger");
 /**
  * Get invitation details for reviewers or editors including submission data
  * @param {Object} req - Express request object
@@ -22,7 +23,7 @@ const getInvitationDetails = async (req, res) => {
       if (!email) missingFields.push('email');
       if (!token) missingFields.push('token');
       
-      console.error("Missing required fields:", missingFields.join(', '));
+      LogAction(`getInvitationDetails: missing required fields: ${missingFields.join(', ')}`, "WARN");
       return res.status(400).json({ 
         success: false,
         error: "Missing required fields", 
@@ -39,7 +40,7 @@ const getInvitationDetails = async (req, res) => {
     );
 
     if (submissionResults.length === 0) {
-      console.error("No submission found for ID:", articleId);
+      LogAction(`getInvitationDetails: no submission found for ID: ${articleId}`, "WARN");
       return res.status(404).json({ 
         success: false, 
         error: "No submission data found" 
@@ -208,7 +209,7 @@ const getInvitationDetails = async (req, res) => {
     }
 
     // No invitation found
-    console.error("No invitation found matching the criteria");
+    LogAction(`getInvitationDetails: no invitation found matching criteria (articleId: ${articleId}, email: ${email})`, "WARN");
     console.log("Search criteria:", {
       invitation_link: articleId,
       invited_user: email,
@@ -227,18 +228,12 @@ const getInvitationDetails = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("=== ERROR IN GET INVITATION DETAILS ===");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
+    LogAction(
+      `ERROR IN GET INVITATION DETAILS: ${error.message}` +
+      (error.sql ? ` | SQL: ${error.sql} | Code: ${error.code}` : ""),
+      "ERROR"
+    );
     
-    // Log database error details if available
-    if (error.sql) {
-      console.error("SQL Query:", error.sql);
-      console.error("SQL Error Code:", error.code);
-      console.error("SQL Error Number:", error.errno);
-    }
-
     return res.status(500).json({ 
       success: false,
       error: "Internal server error", 

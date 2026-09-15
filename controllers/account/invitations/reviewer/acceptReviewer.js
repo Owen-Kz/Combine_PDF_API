@@ -3,6 +3,7 @@ const db = require("../../../../routes/db.config");
 const sendConfirmationEmail = require("./sendConfirmationEmail");
 const { sendReviewerWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
 const generateInvitationSession = require("../generateInvitationSession");
+const { LogAction } = require("../../../../Logger");
 
 const acceptReviewer = async (req, res) => {
   let connection;
@@ -158,8 +159,12 @@ const acceptReviewer = async (req, res) => {
       (sql, params) => connection.query(sql, params)
     );
 
-    // Send confirmation email to editor
-    await sendConfirmationEmail(editor_email, email, "accepted");
+    // Send confirmation email to editor (never blocks the acceptance itself)
+    try {
+      await sendConfirmationEmail(editor_email, email, "accepted");
+    } catch (emailError) {
+      LogAction(`Confirmation email to editor failed (accept reviewer): ${emailError.message}`, "ERROR");
+    }
 
     // Send welcome email to the reviewer
     const reviewerName = existingReviewer[0];
@@ -167,7 +172,7 @@ const acceptReviewer = async (req, res) => {
       email,
       firstName: reviewerName.firstname || '',
       lastName: reviewerName.lastname || ''
-    }).catch(err => console.error("Failed to send reviewer welcome email:", err.message));
+    }).catch(err => LogAction(`Failed to send reviewer welcome email: ${err.message}`, "ERROR"));
 
     return res.json({ 
       status: "success", 
@@ -179,7 +184,7 @@ const acceptReviewer = async (req, res) => {
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Error accepting review invitation:", error);
+    LogAction(`Error accepting review invitation: ${error.message}`, "ERROR");
     return res.status(500).json({ 
       status: "error", 
       message: error.message 

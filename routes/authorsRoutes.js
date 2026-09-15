@@ -23,6 +23,7 @@ const getSubmissionForEdit = require("../controllers/authors/getSubmissionForEdi
 const getDraft = require("../controllers/authors/getDraft");
 const submitCorrection = require("../controllers/authors/submitCorrection");
 const submitRevision = require("../controllers/authors/submitRevision");
+const { saveDraft, uploadFiles, finalizeSubmission } = require("../controllers/authors/submitManuscriptHandlers");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
@@ -116,6 +117,17 @@ router.get("/generate-submission-id", async(req,res) =>{
 router.post("/submit-manuscript", submitManuscript);
 router.post("/submit-correction", submitCorrection);
 router.post("/submit-revision", submitRevision);
+
+// Split submission endpoints (legacy endpoints above kept for backward compat)
+router.post("/submit-manuscript/draft", saveDraft);
+router.post("/submit-manuscript/files", uploadFiles);
+router.post("/submit-manuscript/finalize", finalizeSubmission);
+router.post("/submit-revision/draft", saveDraft);
+router.post("/submit-revision/files", uploadFiles);
+router.post("/submit-revision/finalize", finalizeSubmission);
+router.post("/submit-correction/draft", saveDraft);
+router.post("/submit-correction/files", uploadFiles);
+router.post("/submit-correction/finalize", finalizeSubmission);
 
 
 // Get submission for editing

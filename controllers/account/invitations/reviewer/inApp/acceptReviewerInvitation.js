@@ -1,5 +1,6 @@
 const db = require("../../../../../routes/db.config");
 const { sendEditorWelcomeEmail } = require("../../../../utils/sendWelcomeEmail");
+const { LogAction } = require("../../../../../Logger");
 
 const acceptReviewerInvitation = async (req, res) => {
     try {
@@ -66,7 +67,7 @@ const acceptReviewerInvitation = async (req, res) => {
             email: userEmail,
             firstName: req.user.firstName || '',
             lastName: req.user.lastName || ''
-        }).catch(err => console.error("Failed to send editor welcome email:", err.message));
+        }).catch(err => LogAction(`Failed to send editor welcome email: ${err.message}`, "ERROR"));
 
         return res.json({
             success: true,
@@ -77,7 +78,7 @@ const acceptReviewerInvitation = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error accepting invitation:", error);
+        LogAction(`Error accepting reviewer invitation: ${error.message}`, "ERROR");
         return res.status(500).json({ 
             error: "Failed to accept invitation", 
             message: error.message 

@@ -169,7 +169,7 @@ async function logEmailToDatabase({ recipientCount, recipients, subject, content
  */
 async function sendNewsletter(recipients, subject, htmlContent, fromName = 'ASFI Research Journal') {
     if (!Array.isArray(recipients) || recipients.length === 0) {
-        return { status: 'error', message: 'No recipients specified' };
+        return { status: 'error', message: `No recipients specified ${recipients}` };
     }
 
     // Split into batches of 100 to avoid API limits

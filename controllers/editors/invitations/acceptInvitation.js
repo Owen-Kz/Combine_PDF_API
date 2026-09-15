@@ -1,6 +1,6 @@
 const db = require("../../../routes/db.config");
 const isAdminAccount = require("../isAdminAccount");
-
+const { LogAction } = require("../../../Logger");
 
 const acceptInvitation = async (req, res) => {
     try {
@@ -73,7 +73,7 @@ const acceptInvitation = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error accepting invitation:", error);
+        LogAction(`Error accepting invitation: ${error.message}`, "ERROR");
         return res.status(500).json({ 
             error: "Failed to accept invitation", 
             message: error.message 

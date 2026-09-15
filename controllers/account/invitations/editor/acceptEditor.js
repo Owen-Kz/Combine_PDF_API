@@ -4,6 +4,7 @@ const dbPromise = require("../../../../routes/dbPromise.config");
 const sendConfirmationEmail = require("../reviewer/sendConfirmationEmail");
 const { sendEditorWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
 const generateInvitationSession = require("../generateInvitationSession");
+const { LogAction } = require("../../../../Logger");
 const acceptEditor = async (req, res) => {
   let connection;
   try {
@@ -70,7 +71,7 @@ const acceptEditor = async (req, res) => {
       );
       console.log(articleId, email, "BAKSKM")
 
-      if (existingRecord.length > 0) {
+if (existingRecord.length > 0) {
         const currentStatus = existingRecord[0].status;
         
         if (currentStatus === 'edit_invitation_accepted') {
@@ -197,8 +198,12 @@ const acceptEditor = async (req, res) => {
       (sql, params) => connection.query(sql, params)
     );
 
-    // Send confirmation email to the inviting editor
-    await sendConfirmationEmail(editor_email, email, "accepted");
+    // Send confirmation email to the inviting editor (never blocks acceptance)
+    try {
+      await sendConfirmationEmail(editor_email, email, "accepted");
+    } catch (emailError) {
+      LogAction(`Confirmation email to editor failed (accept editor): ${emailError.message}`, "ERROR");
+    }
 
     // Send welcome email to the newly-accepted editor
     const editorData = existingEditor[0];
@@ -206,7 +211,7 @@ const acceptEditor = async (req, res) => {
       email,
       firstName: editorData.firstname || '',
       lastName: editorData.lastname || ''
-    }).catch(err => console.error("Failed to send editor welcome email:", err.message));
+    }).catch(err => LogAction(`Failed to send editor welcome email: ${err.message}`, "ERROR"));
 
     return res.json({ 
       status: "success", 
@@ -218,7 +223,7 @@ const acceptEditor = async (req, res) => {
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Error accepting editor invitation:", error);
+    LogAction(`Error accepting editor invitation: ${error.message}`, "ERROR");
     return res.status(500).json({ 
       status: "error", 
       message: error.message 

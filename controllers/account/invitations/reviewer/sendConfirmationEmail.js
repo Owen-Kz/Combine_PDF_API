@@ -1,8 +1,16 @@
 // controllers/invitations/sendConfirmationEmail.js
 const sendMail = require("../../../utils/nodeMailer");
+const { LogAction } = require("../../../../Logger");
 
 const sendConfirmationEmail = async (recipientEmail, reviewerEmail, status) => {
   try {
+    if (!recipientEmail || !String(recipientEmail).trim().includes("@")) {
+      LogAction(
+        `sendConfirmationEmail skipped: missing or invalid recipient (recipient: ${recipientEmail}, reviewer: ${reviewerEmail}, status: ${status})`,
+        "WARN"
+      );
+      return { status: "error", message: "Email skipped: missing recipient address" };
+    }
     const currentYear = new Date().getFullYear();
     const statusText = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 
@@ -63,7 +71,7 @@ const sendConfirmationEmail = async (recipientEmail, reviewerEmail, status) => {
     return { status: "success", message: "Confirmation email sent successfully" };
 
   } catch (error) {
-    console.error("Error sending confirmation email:", error);
+    LogAction(`Error sending confirmation email (to: ${recipientEmail}): ${error.message}`, "ERROR");
     return { status: "error", message: error.message };
   }
 };

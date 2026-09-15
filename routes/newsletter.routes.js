@@ -296,7 +296,7 @@ router.post("/send", AuthorLoggedIn, async (req, res) => {
         } else {
             return res.status(400).json({ 
                 status: "error", 
-                error: "No recipients specified" 
+                error: "No recipients specified go news letter" 
             });
         }
 

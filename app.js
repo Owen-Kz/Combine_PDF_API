@@ -1,3 +1,7 @@
+// MUST be required before anything else that creates a DB connection so every
+// mysql2 Connection/Pool gets an error handler and never crashes the process.
+require("./routes/mysqlSafe");
+
 const express = require("express");
 const dotenv = require("dotenv").config();
 const app = express();
@@ -25,6 +29,7 @@ const corsOptions = {
       origin === 'https://portal.asfirj.org' ||
       origin === 'https://asfirj.org' ||
       origin === 'https://process.asfirj.org' ||
+      origin === 'https://mail.asfirj.org' ||
       origin.startsWith('http://localhost') || // All localhost origins (dev)
       origin.match(/^https:\/\/.*\.asfirj\.org$/) || // Any subdomain
       (process.env.NODE_ENV === 'development' && origin === 'http://localhost:3000');
@@ -230,7 +235,8 @@ const uploadDirectories = [
     'figures',
     'supplementary',
     'graphicabstracts',
-    'trackedmanuscripts'
+    'trackedmanuscripts',
+    'editor-images'
 ];
 
 uploadDirectories.forEach(dir => {
@@ -324,9 +330,24 @@ const dbPromise = require("./routes/dbPromise.config");
     } catch (_) {}
 })();
 
+// Global error / rejection handlers — log via LogAction but do not crash the
+// server. This protects against stray 'error' events on DB Connections and
+// unhandled promise rejections from email senders etc.
+process.on("unhandledRejection", (reason) => {
+    LogAction(`Unhandled promise rejection: ${reason?.stack || reason}`, "ERROR");
+});
+process.on("uncaughtException", (error) => {
+    LogAction(`Uncaught exception: ${error?.stack || error}`, "ERROR");
+});
+
 // Start invitation reminder scheduler (checks every 6 hours)
 const { startInvitationReminderScheduler } = require("./controllers/utils/invitationReminderScheduler");
 startInvitationReminderScheduler();
+
+// Email retry scheduler — retries failed emails every 15 minutes and sends
+// support alerts after 3 permanent failures.
+const { startEmailRetryScheduler } = require("./controllers/utils/emailErrorLogger");
+startEmailRetryScheduler();
 
 // Routes
 app.use("/manuscript", require("./routes/submissionRoutes"))
@@ -340,6 +361,10 @@ app.use("/authorsRoutes", require("./routes/authorsRoutes"))
 
 app.use("/reviewer", require("./routes/reviewerRoutes"))
 app.use("/journal/public", require("./routes/externalRoutes"))
+
+// Support dashboard API — placed BEFORE the catch-all "/" pages route
+app.use("/support/api", require("./routes/support.routes"))
+app.use("/api/uploads", require("./routes/uploads.routes"))
 
 
 
