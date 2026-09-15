@@ -94,7 +94,7 @@ const buildResetCodeEmail = (fullname, code, expiresInMinutes) => {
             <p>Dear ${fullname || "Support Team"},</p>
             <p>We received a request to reset the password for your ASFI Research Journal support account.</p>
             <div style="text-align: center;">
-              <div class="code">${codeBlocks}</div>
+              <h3 class="code">${codeBlocks}</h3>
             </div>
             <p>Enter this code on the verification page to choose a new password.</p>
             <div class="warning">

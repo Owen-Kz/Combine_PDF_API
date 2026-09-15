@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS `email_error_logs` (
     KEY `idx_first_failed`     (`first_failed_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Seed support account (password: Asfi@Support#2026)
+-- Seed support account
 INSERT INTO `support_team_credentials`
     (`email`, `password_hash`, `fullname`, `role`, `is_active`)
 VALUES
