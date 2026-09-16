@@ -366,7 +366,7 @@ app.use("/journal/public", require("./routes/externalRoutes"))
 // Support dashboard API — placed BEFORE the catch-all "/" pages route
 app.use("/support/api", require("./routes/support.routes"))
 app.use("/api/uploads", require("./routes/uploads.routes"))
-
+app.use("/api/files", require("./routes/fileRoutes"))
 
 
 app.use("/", require("./routes/pages"));
