@@ -55,7 +55,7 @@ const ArchivedSubmissions = async (req, res) => {
                     a.prefix,
                     ROW_NUMBER() OVER (
                         PARTITION BY s.article_id 
-                        ORDER BY s.revision_id DESC, s.process_start_date DESC
+                        ORDER BY s.id DESC, s.process_start_date DESC
                     ) AS row_num,
                     -- Invitation counts
                     (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND (invitation_status = 'accepted' OR invitation_status = 'review_invitation_accepted' OR invitation_status = 'review_submitted')) as accepted_reviewers,
@@ -109,7 +109,7 @@ const ArchivedSubmissions = async (req, res) => {
             SELECT *
             FROM RankedSubmissions
             WHERE row_num = 1
-            ORDER BY process_start_date DESC
+            ORDER BY id DESC
             LIMIT ? OFFSET ?
         `;
 

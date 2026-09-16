@@ -76,7 +76,7 @@ const myPreviousSubmissions = async (req, res) => {
                         a.prefix,
                         ROW_NUMBER() OVER (
                             PARTITION BY s.revision_id 
-                            ORDER BY s.process_start_date DESC
+                            ORDER BY s.id DESC
                         ) AS row_num,
                         -- Invitation counts for this revision
                         (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND (invitation_status = 'accepted' OR invitation_status = 'review_invitation_accepted' OR invitation_status = 'review_submitted')) as accepted_reviewers,
@@ -100,7 +100,7 @@ const myPreviousSubmissions = async (req, res) => {
                         WHEN revision_id = ? THEN 0 
                         ELSE 1 
                     END,
-                    process_start_date DESC
+                    id DESC
             `;
             
             const [results] = await db.promise().query(query, [articleId, articleId, mainId]);
@@ -240,7 +240,7 @@ const myPreviousSubmissions = async (req, res) => {
                         a.prefix,
                         ROW_NUMBER() OVER (
                             PARTITION BY s.revision_id 
-                            ORDER BY s.process_start_date DESC
+                            ORDER BY s.id DESC
                         ) AS row_num,
                         -- Invitation counts for this revision
                         (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND (invitation_status = 'accepted' OR invitation_status = 'review_invitation_accepted' OR invitation_status = 'review_submitted')) as accepted_reviewers,
@@ -264,7 +264,7 @@ const myPreviousSubmissions = async (req, res) => {
                         WHEN revision_id = ? THEN 0 
                         ELSE 1 
                     END,
-                    process_start_date DESC
+                    id DESC
             `;
 
             const [results] = await db.promise().query(query, [articleIds, mainId]);
