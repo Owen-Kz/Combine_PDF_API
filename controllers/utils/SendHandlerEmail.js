@@ -1,6 +1,7 @@
 const sendMail = require('./nodeMailer');
 const dotenv = require('dotenv');
 const dbPromise = require('../../routes/dbPromise.config');
+const { getDerivedType } = require('./submissionIdUtils');
 
 // Load environment variables
 dotenv.config();
@@ -49,15 +50,13 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         let submissionType = 'New submission';
         let headerText = `A new submission with the title`;
         
-        if (manuscriptId.includes('.')) {
-            const suffix = manuscriptId.split('.').pop().toLowerCase();
-            if (suffix.startsWith('cr')) {
-                submissionType = 'Correction';
-                headerText = `A correction has been submitted for`;
-            } else if (suffix.startsWith('r')) {
-                submissionType = 'Revision';
-                headerText = `A revision has been submitted for`;
-            }
+        const derivedType = getDerivedType(manuscriptId);
+        if (derivedType === 'correction') {
+            submissionType = 'Correction';
+            headerText = `A correction has been submitted for`;
+        } else if (derivedType === 'revision') {
+            submissionType = 'Revision';
+            headerText = `A revision has been submitted for`;
         }
 
         // HTML email template with proper styling

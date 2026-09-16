@@ -1,6 +1,7 @@
 const db = require("../routes/db.config");
 const dbPromise = require("../routes/dbPromise.config");
 const generateArticleId = require("./generateArticleId");
+const { stripDerivedSuffix } = require("./utils/submissionIdUtils");
 const dotenv = require("dotenv").config();
 
 // Retry function with exponential backoff (consistent with upload handler)
@@ -60,7 +61,7 @@ const submitArticleType = async (req, res) => {
         // Extract base article ID for revisions/corrections
         let baseArticleId;
         if (newRevisionID) {
-            baseArticleId = newRevisionID.split('.')[0]; // Get part before dot
+            baseArticleId = stripDerivedSuffix(newRevisionID); // Get part before any suffix
         } else {
             baseArticleId = articleID;
         }

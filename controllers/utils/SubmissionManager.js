@@ -573,6 +573,26 @@ if (type === 'existing-new' && submissionId) {
 
         return data;
     }
+
+    // get revisions count 
+    static async getRevisionsCount(manuscriptId) {
+        const [response] = await dbPromise.query(`SELECT revisions_count FROM submissions WHERE article_id = ? AND status LIKE '%submitted%' LIMIT 1`, [manuscriptId]);
+        if (response.length > 0) {
+            return response[0].revisions_count;
+        }
+        console.log("Could not find revision count")
+        return 0;
+    }
+
+    // get corrections count
+    static async getCorrectionsCount(manuscriptId) {
+        const [response] = await dbPromise.query(`SELECT corrections_count FROM submissions WHERE article_id = ? AND status LIKE '%submitted%' LIMIT 1`, [manuscriptId]);
+        if (response.length > 0) {
+            return response[0].corrections_count;
+        }
+        console.log("Could not find correction count")
+        return 0;
+    }
 }
 
 module.exports = SubmissionManager;

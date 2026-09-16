@@ -153,11 +153,31 @@ router.post("/addAuthorToPaper", getUserData, manuscriptDataMiddleware, AddAutho
 router.post("/addReviewerToPaper", getUserData, manuscriptDataMiddleware, AddReviewerToPaper);
 router.post("/submitDisclosures", getUserData, manuscriptDataMiddleware, SubmitDisclosures);
 // In your routes file
-router.post("/uploadSingleFile/:field", getUserData, manuscriptDataMiddleware, uploadSingleFile);
+router.post("/uploadSingleFile/:field", getUserData, uploadSingleFile);
 router.get("/submission/:articleId/upload-status", getUserData, manuscriptDataMiddleware, uploadSingleFile.checkUploadStatus);
 
 
 // Final step 
 router.get("/delete/session", getUserData, deleteSubmissionSession)
+
+// get revisiosn count
+router.get("/:manuscriptId/revisions/count", getUserData, async (req, res) => {
+    try {
+        const count = await SubmissionManager.getRevisionsCount(req.params.manuscriptId);
+        res.json({ success: true, count });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// get corrections count
+router.get("/:manuscriptId/corrections/count", getUserData, async (req, res) => {
+    try {
+        const count = await SubmissionManager.getCorrectionsCount(req.params.manuscriptId);
+        res.json({ success: true, count });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 module.exports = router;

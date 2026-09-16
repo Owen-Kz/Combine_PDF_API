@@ -4,124 +4,58 @@
 // been split into three focused handlers:
 //
 //   POST /submit-manuscript/draft        JSON only  -> persist metadata
-//   POST /submit-manuscript/files        multipart  -> persist uploaded files
+//   POST /submit-manuscript/files        JSON only  -> persist file URLs
 //   POST /submit-manuscript/finalize     JSON only  -> flip status + send emails
 //
-// The same handlers are reused for revisions and corrections — the `action`
-// field in the request body drives the flow.
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const crypto = require("crypto");
-
-const RandomString = crypto.randomBytes(10).toString('hex');
-
+// No handler here accepts binaries: files are uploaded one at a time through
+// POST /submission/uploadSingleFile/:field and only their URLs reach these
+// endpoints. The same handlers are reused for revisions and corrections — the
+// `action` field in the request body drives the flow.
 const SendNewSubmissionEmail = require("../utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("../utils/SendHandlerEmail");
 const generateArticleId = require("../generateArticleId");
+const {
+    hasDerivedSuffix,
+    stripDerivedSuffix,
+    isDerivedAction,
+} = require("../utils/submissionIdUtils");
 const CoAuthors = require("../CoAuthors");
 const dbPromise = require("../../routes/dbPromise.config");
 const { LogAction } = require("../../Logger");
 
-const FILE_FIELD_COLUMNS = {
-    'manuscript_file': 'manuscript_file',
-    'coverLetter_file': 'cover_letter_file',
-    'tables_file': 'tables',
-    'figures_file': 'figures',
-    'supplementary_file': 'supplementary_material',
-    'graphicAbstract_file': 'graphic_abstract',
-    'trackedManuscript_file': 'tracked_manuscript_file'
+// Columns on `submissions` that hold file URLs, in wizard order. Every entry is
+// written on each draft save, so an omitted key is preserved and a null clears it.
+const FILE_URL_COLUMNS = [
+    'manuscript_file',
+    'cover_letter_file',
+    'tables',
+    'figures',
+    'supplementary_material',
+    'graphic_abstract',
+    'tracked_manuscript_file'
+];
+
+// Wizard file keys (formData.files) -> submissions column
+const WIZARD_FILE_COLUMNS = {
+    manuscript: 'manuscript_file',
+    coverLetter: 'cover_letter_file',
+    tables: 'tables',
+    figures: 'figures',
+    supplementary: 'supplementary_material',
+    graphicAbstract: 'graphic_abstract',
+    trackedManuscript: 'tracked_manuscript_file'
 };
 
-// Helper function to determine file destination folder
-function getFileDestination(fileFieldName) {
-    const destinations = {
-        'manuscript_file': 'manuscripts',
-        'coverLetter_file': 'coverletters',
-        'tables_file': 'tables',
-        'figures_file': 'figures',
-        'supplementary_file': 'supplementary',
-        'graphicAbstract_file': 'graphicabstracts',
-        'trackedManuscript_file': 'trackedmanuscripts'
-    };
-    return destinations[fileFieldName] || 'manuscripts';
-}
-
-// Helper function to get file suffix
-function getFileSuffix(fileFieldName) {
-    const suffixes = {
-        'manuscript_file': '',
-        'coverLetter_file': '_cover_letter',
-        'tables_file': '_tables',
-        'figures_file': '_figures',
-        'supplementary_file': '_supplementary',
-        'graphicAbstract_file': '_graphic_abstract',
-        'trackedManuscript_file': '_tracked'
-    };
-    return suffixes[fileFieldName] || '';
-}
-
-// Configure multer for file uploads with dynamic destinations
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        let fieldName = file.fieldname;
-        const folderType = getFileDestination(fieldName);
-        const uploadDir = path.join(__dirname, `../../useruploads/${folderType}`);
-
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const manuscriptId = req.body?.manuscriptId || req.query?.manuscriptId;
-        const action = req.body?.action || 'new';
-        const uniqueSuffix = Date.now() + '-' + RandomString;
-        const fileExt = path.extname(file.originalname);
-
-        let prefix = '';
-        if (action === 'correction' || action === "correction_saved" || action === "correction_submitted") prefix = 'CORR_';
-        else if (action === 'revision' || action === "revision_saved" || action === "revision_submitted") prefix = 'REV_';
-        else prefix = 'NEW_';
-
-        const suffix = getFileSuffix(file.fieldname);
-        const fileName = `${prefix}${manuscriptId || 'draft'}${suffix}_${uniqueSuffix}${fileExt}`;
-        cb(null, fileName);
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
-    fileFilter: (req, file, cb) => {
-        const allowedMimes = [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'image/jpeg',
-            'image/png'
-        ];
-
-        if (allowedMimes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Invalid file type. Only PDF, Word, Excel, and images are allowed.'));
-        }
-    }
-});
-
-const handleUpload = upload.fields([
-    { name: 'manuscript_file', maxCount: 1 },
-    { name: 'coverLetter_file', maxCount: 1 },
-    { name: 'tables_file', maxCount: 1 },
-    { name: 'figures_file', maxCount: 1 },
-    { name: 'supplementary_file', maxCount: 1 },
-    { name: 'graphicAbstract_file', maxCount: 1 },
-    { name: 'trackedManuscript_file', maxCount: 1 }
-]);
+// Older callers described files with `<key>_url` instead of a `files` map
+const LEGACY_FILE_URL_KEYS = {
+    manuscript_url: 'manuscript_file',
+    coverLetter_url: 'cover_letter_file',
+    tables_url: 'tables',
+    figures_url: 'figures',
+    supplementary_url: 'supplementary_material',
+    graphicAbstract_url: 'graphic_abstract',
+    trackedManuscript_url: 'tracked_manuscript_file'
+};
 
 // Fields may arrive as JSON strings (legacy multipart callers) or as native
 // arrays/objects (new JSON callers). Normalize both.
@@ -137,10 +71,34 @@ const parseField = (value, fallback) => {
     return value;
 };
 
-const getFileUrl = (file, fieldName, baseUrl) => {
-    if (!file) return null;
-    const folderType = getFileDestination(fieldName);
-    return `${baseUrl}/useruploads/${folderType}/${file.filename}`;
+/**
+ * Pull every file URL the client sent, whatever shape it used:
+ *   { files: { manuscript: "https://…/x.pdf", … } }
+ *   { manuscript_file: "https://…/x.pdf" }
+ *   { manuscript_url: "https://…/x.pdf" }        (legacy)
+ * A missing key means "leave the stored URL alone"; an empty value clears it.
+ */
+const collectFileUrls = (body = {}) => {
+    const urls = {};
+
+    const files = parseField(body?.files, null);
+    if (files && typeof files === 'object' && !Array.isArray(files)) {
+        for (const [key, value] of Object.entries(files)) {
+            const column = WIZARD_FILE_COLUMNS[key] ||
+                (FILE_URL_COLUMNS.includes(key) ? key : null);
+            if (column) urls[column] = value || null;
+        }
+    }
+
+    for (const [legacyKey, column] of Object.entries(LEGACY_FILE_URL_KEYS)) {
+        if (body?.[legacyKey] !== undefined) urls[column] = body[legacyKey] || null;
+    }
+
+    for (const column of FILE_URL_COLUMNS) {
+        if (body?.[column] !== undefined) urls[column] = body[column] || null;
+    }
+
+    return urls;
 };
 
 /**
@@ -174,7 +132,11 @@ const saveDraft = async (req, res) => {
             isWomenInScience,
             isBelispointAcademic,
             isKidnappingForRansom,
+    
         } = req.body || {};
+
+        // File URLs already stored under useruploads/ by uploadSingleFile
+        const providedFiles = collectFileUrls(req.body || {});
 
         const parsedKeywords = parseField(keywords, []);
         const parsedAuthors = parseField(authors, []);
@@ -187,14 +149,17 @@ const saveDraft = async (req, res) => {
         connection = await dbPromise.getConnection();
         await connection.beginTransaction();
 
-        // Generate or use provided manuscript ID
+        // Generate or use provided manuscript ID. Revisions/corrections must target a
+        // NEWly suffixed row, so when the provided id is the unsuffixed base (or
+        // missing) we ask generateArticleId to mint the fresh `_R{n}` / `_Cr{n}` id.
+        const derived = isDerivedAction(action);
         let finalManuscriptId = manuscriptId;
-        if (!finalManuscriptId) {
+        if (!finalManuscriptId || (derived && !hasDerivedSuffix(finalManuscriptId))) {
             finalManuscriptId = await generateArticleId({
                 user: req.user,
                 query: {
-                    correct: action === 'correction_saved' || action === 'correction' ? 'true' : undefined,
-                    revise: action === 'revision_saved' || action === 'revision' ? 'true' : undefined,
+                    correct: action === 'correction_saved' || action === 'correction' || action === 'correction_submitted' ? 'true' : undefined,
+                    revise: action === 'revision_saved' || action === 'revision' || action === 'revision_submitted' ? 'true' : undefined,
                     a: previousId
                 }
             });
@@ -203,17 +168,18 @@ const saveDraft = async (req, res) => {
         // Check if submission already exists and capture its file URLs so a
         // metadata-only save never wipes previously uploaded files.
         const [existingSubmission] = await connection.query(
-            `SELECT id FROM submissions WHERE revision_id = ?`,
+            `SELECT id, article_id FROM submissions WHERE revision_id = ?`,
             [finalManuscriptId]
         );
         const existingFiles = {};
-        const existingFileColumns = [
-            'manuscript_file', 'cover_letter_file', 'tables', 'figures',
-            'supplementary_material', 'graphic_abstract', 'tracked_manuscript_file'
-        ];
         if (existingSubmission.length > 0) {
+            // update submission status for last returned manuscript
+            await connection.query(
+                `UPDATE submissions SET status = ? WHERE previous_manuscript_id = ? AND revision_id != ?`,
+                ['revision_started', existingSubmission[0].article_id, finalManuscriptId]
+            );
             const [subData] = await connection.query(
-                `SELECT ${existingFileColumns.join(', ')} FROM submissions WHERE revision_id = ?`,
+                `SELECT ${FILE_URL_COLUMNS.join(', ')} FROM submissions WHERE revision_id = ?`,
                 [finalManuscriptId]
             );
             if (subData.length > 0) Object.assign(existingFiles, subData[0]);
@@ -232,15 +198,19 @@ const saveDraft = async (req, res) => {
             graphic_abstract: existingFiles.graphic_abstract ?? null,
             tracked_manuscript_file: existingFiles.tracked_manuscript_file ?? null,
             corresponding_authors_email: userEmail,
-            article_id: finalManuscriptId,
+            article_id: existingSubmission[0]?.article_id || (derived ? stripDerivedSuffix(finalManuscriptId) : finalManuscriptId),
             revision_id: finalManuscriptId,
             previous_manuscript_id: previousId || null,
-            status: 'draft',
+            status: action,
             is_women_in_contemporary_science: isWomenInScience === 'yes' ? 1 : 0,
             is_belispoint_academic: isBelispointAcademic === 'yes' ? 1 : 0,
             is_kidnapping_for_ransom: isKidnappingForRansom === 'yes' ? 1 : 0,
             last_updated: new Date()
         };
+
+        // URLs echoed back by the client win over whatever is stored — that is how
+        // an upload (or a removal) made since the last save is persisted.
+        Object.assign(submissionData, providedFiles);
 
         if (existingSubmission.length > 0) {
             await connection.query(
@@ -325,51 +295,24 @@ const saveDraft = async (req, res) => {
 /**
  * POST /submit-manuscript/files
  *
- * Multipart-only upload of manuscript / cover letter / figures / etc.
- * Updates the corresponding file columns on the submission row.
+ * JSON-only. Links file URLs (already written to useruploads/ by
+ * POST /submission/uploadSingleFile/:field) to the submission row. No binaries are
+ * accepted here — that is what keeps the submission payload small and retryable.
  */
 const uploadFiles = async (req, res) => {
     try {
-        await new Promise((resolve, reject) => {
-            handleUpload(req, res, (err) => {
-                if (err) {
-                    LogAction("File upload error:", err);
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
-
-        const manuscriptId = req.body?.manuscriptId;
+        const manuscriptId = req.body?.manuscriptId || req.query?.manuscriptId;
         if (!manuscriptId) {
-            return res.status(400).json({ status: "error", message: "manuscriptId is required to upload files" });
+            return res.status(400).json({ status: "error", message: "manuscriptId is required to attach files" });
         }
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const files = req.files || {};
-
-        // Build column -> (newUrl | keepExisting) update pairs
-        const updatePairs = [];
-        const uploadedUrls = {};
-
-        for (const [fieldName, column] of Object.entries(FILE_FIELD_COLUMNS)) {
-            const file = files[fieldName]?.[0];
-            if (file) {
-                const url = getFileUrl(file, fieldName, baseUrl);
-                updatePairs.push({ column, url });
-                uploadedUrls[fieldName.replace('_file', '')] = url;
-            } else {
-                // Preserve any URL explicitly sent as {key}_url (existing files)
-                const urlKey = `${fieldName.replace('_file', '')}_url`;
-                if (req.body?.[urlKey]) {
-                    updatePairs.push({ column, url: req.body[urlKey] });
-                }
-            }
-        }
-
-        if (updatePairs.length === 0) {
-            return res.status(400).json({ status: "error", message: "No files were uploaded" });
+        const fileUrls = collectFileUrls(req.body || {});
+        const columns = Object.keys(fileUrls);
+        if (columns.length === 0) {
+            return res.status(400).json({
+                status: "error",
+                message: "No file URLs were provided. Upload each file to /submission/uploadSingleFile/:field first."
+            });
         }
 
         let connection;
@@ -382,22 +325,22 @@ const uploadFiles = async (req, res) => {
             if (existing.length === 0) {
                 return res.status(400).json({
                     status: "error",
-                    message: "Draft must be saved before uploading files"
+                    message: "Draft must be saved before attaching files"
                 });
             }
 
-            for (const { column, url } of updatePairs) {
+            for (const column of columns) {
                 await connection.query(
-                    `UPDATE submissions SET ?? = ? WHERE revision_id = ?`,
-                    [column, url, manuscriptId]
+                    `UPDATE submissions SET ?? = ?, last_updated = ? WHERE revision_id = ?`,
+                    [column, fileUrls[column], new Date(), manuscriptId]
                 );
             }
         } finally {
             if (connection) connection.release();
         }
 
-        LogAction(`Files uploaded for ${manuscriptId}: ${Object.keys(uploadedUrls).join(', ') || 'preserved'}`);
-        return res.json({ status: "success", manuscriptId, files: uploadedUrls });
+        LogAction(`File URLs attached for ${manuscriptId}: ${columns.join(', ')}`);
+        return res.json({ status: "success", manuscriptId, files: fileUrls });
     } catch (error) {
         LogAction("Error uploading manuscript files:", error);
         return res.status(500).json({
@@ -458,12 +401,14 @@ const finalizeSubmission = async (req, res) => {
                 `UPDATE submissions SET status = 'revision_submitted' WHERE article_id = ? OR previous_manuscript_id = ?`,
                 [submission.previous_manuscript_id, submission.previous_manuscript_id]
             );
+            await connection.query(`UPDATE submissions SET revisions_count = revisions_count + 1 WHERE article_id = ? LIMIT 1`, [submission.previous_manuscript_id]);
         } else if (action === 'correction_submitted') {
             actionMessage = "correction for";
             await connection.query(
                 `UPDATE submissions SET status = 'correction_submitted' WHERE article_id = ? OR previous_manuscript_id = ?`,
                 [submission.previous_manuscript_id, submission.previous_manuscript_id]
             );
+            await connection.query(`UPDATE submissions SET corrections_count = corrections_count + 1 WHERE article_id = ? LIMIT 1`, [submission.previous_manuscript_id]);
         }
 
         await connection.commit();

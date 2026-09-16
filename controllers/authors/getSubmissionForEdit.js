@@ -6,7 +6,9 @@ const getSubmissionForEdit = async (req, res) => {
     try {
         const userEmail = req.user.email;
         const { id } = req.params;
-        console.log("Fetching submission for edit, ID:", id, "User:", userEmail);
+        const {pid} = req.query; // Get the pid from query parameters
+        const lookupId = pid || id; // Use pid if available, otherwise fallback to id
+        console.log("Fetching submission for edit, ID:", id, "User:", userEmail, pid);
 
         if (!id) {
             return res.status(400).json({ 
@@ -15,12 +17,25 @@ const getSubmissionForEdit = async (req, res) => {
             });
         }
 
-        // Get submission data
-        const [submissions] = await dbPromise.query(
+
+const [submissions] = await dbPromise.query(
+    `SELECT * FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ?`,
+    [lookupId, userEmail]
+);
+
+if (submissions.length === 0) {
+    if (pid) {
+        console.log(`Submission for PID ${pid} not found, falling back to main ID: ${id}`);
+        // Optional: retry with the main id as a fallback
+        const [fallback] = await dbPromise.query(
             `SELECT * FROM submissions WHERE revision_id = ? AND corresponding_authors_email = ?`,
             [id, userEmail]
         );
-
+        submissions = fallback;
+    } else {
+        console.log(`Submission for ID ${id} not found`);
+    }
+}
         if (submissions.length === 0) {
             return res.status(404).json({ 
                 status: "error", 
@@ -33,13 +48,13 @@ const getSubmissionForEdit = async (req, res) => {
         // Get keywords
         const [keywords] = await dbPromise.query(
             `SELECT keyword FROM submission_keywords WHERE article_id = ? ORDER BY id`,
-            [id]
+            [lookupId]
         );
 
         // Get authors
         const [authors] = await dbPromise.query(
             `SELECT * FROM submission_authors WHERE submission_id = ? ORDER BY id`,
-            [id]
+            [lookupId]
         );
 
         // Format authors for the form
@@ -62,7 +77,7 @@ const getSubmissionForEdit = async (req, res) => {
         // Get suggested reviewers
         const [reviewers] = await dbPromise.query(
             `SELECT * FROM suggested_reviewers WHERE article_id = ? ORDER BY id`,
-            [id]
+            [lookupId]
         );
 
         const formattedReviewers = reviewers.map(reviewer => ({

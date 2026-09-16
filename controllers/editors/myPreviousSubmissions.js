@@ -1,6 +1,7 @@
 // backend/controllers/editors/myPreviousSubmissions.js
 const db = require("../../routes/db.config");
 const isAdminAccount = require("./isAdminAccount");
+const { stripDerivedSuffix } = require("../utils/submissionIdUtils");
 
 const myPreviousSubmissions = async (req, res) => {
     try {
@@ -15,13 +16,8 @@ const myPreviousSubmissions = async (req, res) => {
             return res.status(400).json({ error: "Invalid Parameters" });
         }
 
-        // Remove part after '.R' in revisionID if present
-        if (revisionID.includes('.R')) {
-            revisionID = revisionID.split('.R')[0];
-        }
-         if (revisionID.includes('.Cr')) {
-            revisionID = revisionID.split('.Cr')[0];
-        }
+        // Strip any revision/correction suffix (dot or underscore) in revisionID if present
+        revisionID = stripDerivedSuffix(revisionID);
         console.log("REVISION ID FOR RANKED PREVIOUS", revisionID)
 
         // First, get the article_id for this revision

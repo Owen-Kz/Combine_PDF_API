@@ -14,6 +14,7 @@ const resetPassword = require("../controllers/auth/authors/resetPassword");
 const getDashboardStats = require("../controllers/authors/getDashboardStats");
 const getRecentSubmissions = require("../controllers/authors/getRecentSubmissions");
 const getAuthorSubmissions = require("../controllers/authors/getAuthorSubmission");
+const getRelatedSubmissions = require("../controllers/authors/getRelatedSubmissions");
 const getCoAuthoredManuscripts = require("../controllers/authors/getCoAuthoredManuscripts");
 const getManuscriptsWithDecisions = require("../controllers/authors/getManuscriptsWIthDescisions");
 const getDecisionLetter = require("../controllers/authors/getDescisionLetterr");
@@ -24,6 +25,7 @@ const getDraft = require("../controllers/authors/getDraft");
 const submitCorrection = require("../controllers/authors/submitCorrection");
 const submitRevision = require("../controllers/authors/submitRevision");
 const { saveDraft, uploadFiles, finalizeSubmission } = require("../controllers/authors/submitManuscriptHandlers");
+const uploadSingleFile = require("../controllers/fileUploads/uploadSingleFiles");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
@@ -92,6 +94,7 @@ router.get("/dashboard/recent", getRecentSubmissions);
 
 // Manuscripts routes
 router.get("/submissions", getAuthorSubmissions);
+router.get("/submissions/:id/related", getRelatedSubmissions);
 router.get("/coauthored", getCoAuthoredManuscripts);
 router.get("/manuscripts/decisions", getManuscriptsWithDecisions);
 
@@ -128,6 +131,11 @@ router.post("/submit-revision/finalize", finalizeSubmission);
 router.post("/submit-correction/draft", saveDraft);
 router.post("/submit-correction/files", uploadFiles);
 router.post("/submit-correction/finalize", finalizeSubmission);
+
+// Per-file upload used by the portal wizard. Files land in
+// useruploads/<destination>/ immediately and only their URL is kept client-side.
+// `destination` is read from the multipart body (or the x-destination header).
+router.post("/submission/uploadSingleFile/:field", uploadSingleFile);
 
 
 // Get submission for editing
