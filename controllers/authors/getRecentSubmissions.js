@@ -20,7 +20,7 @@ const getRecentSubmissions = async (req, res) => {
              WHERE corresponding_authors_email = ? 
              ORDER BY 
                 CASE 
-                    WHEN status = 'draft' OR status = 'saved' OR status = 'drafted' THEN 1
+                    WHEN status IN ('draft', 'saved', 'drafted','revision_saved', 'correction_saved') THEN 1
                     ELSE 2
                 END,
                 id DESC 
