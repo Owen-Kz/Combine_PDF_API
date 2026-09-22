@@ -11,6 +11,7 @@ const submitReview = require("../controllers/reviewers/submitReviews");
 const getReviewDraft = require("../controllers/reviewers/getReviewDraft");
 const getReviewerStats = require("../controllers/reviewers/getReviewerStats");
 const inviteEditorDecision = require("../controllers/reviewers/inviteEditorDecision");
+const uploadReviewFile = require("../controllers/fileUploads/uploadReviewFile");
 const router = express.Router()
 config()
 
@@ -30,7 +31,7 @@ router.get("/overdue-reviews", getOverdueReviews);
 router.get("/stats", getReviewerStats);
 
 
-
+router.post('/upload-review-file/:field', uploadReviewFile);
 // Review submission endpoints
 router.post("/submit-review", submitReview);
 router.get("/review-draft/:manuscriptId", getReviewDraft);
