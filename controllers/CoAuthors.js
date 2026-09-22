@@ -49,7 +49,7 @@ const CoAuthors = async (req, res, articleId) => {
                                                     "INSERT INTO authors_account SET ?",
                                                     [{
                                                         prefix: prefix,
-                                                        email: person.authors_email,
+                                                        email: transformToLowerCase(person.authors_email),
                                                         firstname: firstName,
                                                         lastname: lastName,
                                                         othername: otherNames,

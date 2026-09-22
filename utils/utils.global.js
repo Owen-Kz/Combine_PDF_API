@@ -14,5 +14,6 @@ const decodeSanitizeEmail = (encoded) => {
   }
 };
 
-
-module.exports = {decodeSanitizeEmail}
+const transformToLowerCase = (str) =>
+  typeof str === 'string' ? str.toLowerCase() : str;
+module.exports = {decodeSanitizeEmail, transformToLowerCase}

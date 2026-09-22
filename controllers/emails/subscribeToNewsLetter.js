@@ -1,4 +1,5 @@
 const db = require("../../routes/db.config");
+const { transformToLowerCase } = require("../../utils/utils.global");
 const sanitizeEmail = require("../utils/sanitizeEmail");
 
 const subscribeToNewsLetter = async (req, res) => {
@@ -9,7 +10,7 @@ try{
         return res.status(400).json({ status: "error", message: "Invalid Parameters" });
     }
     const query = "SELECT * FROM `news_letter_subscribers` WHERE `email` = ?";
-    db.query(query, [email], (error, results) => {
+    db.query(query, [transformToLowerCase(email)], (error, results) => {
         if (error) {
             return res.status(500).json({ status: "error", message: error.message });
         }
@@ -18,7 +19,7 @@ try{
             return res.json({ status: "error", message: "You are already subscribed to Our News Letter" });
         } else {
             const query = "INSERT INTO `news_letter_subscribers` (`email`) VALUES(?)";
-            db.query(query, [email], (error, results) => {
+            db.query(query, [transformToLowerCase(email)], (error, results) => {
                 if (error) {
                     return res.status(500).json({ status: "error", message: error.message });
                 }

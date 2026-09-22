@@ -3,6 +3,7 @@ const dbPromise = require("./dbPromise.config");
 const AuthorLoggedIn = require("../controllers/account/AuthorLoggedIn");
 const isEditorInChiefOrAdmin = require("../controllers/editors/isEditorInChiefOrAdmin");
 const { sendNewsletter } = require("../controllers/utils/sendEmail");
+const { transformToLowerCase } = require("../utils/utils.global");
 const router = express.Router();
 
 // Helper function to convert Quill Delta to HTML
@@ -184,7 +185,7 @@ router.post("/subscriber", AuthorLoggedIn, async (req, res) => {
         }
 
         const query = `INSERT INTO news_letter_subscribers (email, date_joined) VALUES (?, NOW())`;
-        const [result] = await dbPromise.query(query, [email]);
+        const [result] = await dbPromise.query(query, [transformToLowerCase(email)]);
 
         return res.json({ 
             status: "success", 

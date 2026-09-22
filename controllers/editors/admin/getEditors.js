@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const NodeCache = require('node-cache');  // npm install node-cache
+const { transformToLowerCase } = require("../../../utils/utils.global");
 
 // Initialize cache with standard TTL (5 minutes)
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
@@ -220,7 +221,7 @@ const addEditor = async (req, res) => {
             const [result] = await dbPromise.query(
                 `INSERT INTO editors_list (prefix, fullname, email, field, discipline, country, photo, bio)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [prefix, fullname, email || null, field, discipline, country, photo, bio]
+                [prefix, fullname, transformToLowerCase(email) || null, field, discipline, country, photo, bio]
             );
 
             // Invalidate all editor-related caches

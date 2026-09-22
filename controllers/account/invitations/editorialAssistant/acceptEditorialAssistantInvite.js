@@ -3,6 +3,7 @@
 // has an authors_account (promotes them to editor). Brand-new invitees are
 // directed to create an account first.
 const dbPromise = require("../../../../routes/dbPromise.config");
+const { transformToLowerCase } = require("../../../../utils/utils.global");
 const { sendEditorWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
 const generateInvitationSession = require("../generateInvitationSession");
 
@@ -106,12 +107,12 @@ const acceptEditorialAssistantInvite = async (req, res) => {
       await connection.query(
         `INSERT INTO editors (email, fullname, editorial_level, editorial_section, password, created_at)
          VALUES (?, ?, ?, ?, ?, NOW())`,
-        [email, fullname, "editorial_assistant", user.discipline || "", user.password]
+        [transformToLowerCase(email), fullname, "editorial_assistant", user.discipline || "", user.password]
       );
     } else {
       await connection.query(
-        "UPDATE editors SET editorial_level = 'editorial_assistant', status = 'active' WHERE email = ?",
-        [email]
+        "UPDATE editors SET editorial_level = 'editorial_assistant', status = 'active' WHERE LOWER(email) = ?",
+        [transformToLowerCase(email)]
       );
     }
 

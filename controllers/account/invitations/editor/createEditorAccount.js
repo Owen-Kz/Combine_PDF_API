@@ -2,6 +2,7 @@
 const db = require("../../../../routes/db.config");
 const bcrypt = require("bcryptjs");
 const acceptEditor = require("./acceptEditor");
+const { transformToLowerCase } = require("../../../../utils/utils.global");
 
 /**
  * Creates an editor account and processes the invitation
@@ -171,7 +172,8 @@ const createEditorAccount = async (req, res) => {
           `INSERT INTO editors (email, fullname, editorial_level, editorial_section, password, created_at) 
            VALUES (?, ?, ?, ?, ?, NOW())`,
           [
-            email,
+            
+           transformToLowerCase(email),
             existingFullname || [prefix, firstName, lastName, otherName].filter(Boolean).join(' ').trim(),
             'sectional_editor',
             finalDiscipline || existingRow.discipline || '',
@@ -277,7 +279,7 @@ const createEditorAccount = async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           prefix || '',
-          email,
+          transformToLowerCase(email),
           orcid || '',
           finalDiscipline,
           firstName,
@@ -305,7 +307,7 @@ const createEditorAccount = async (req, res) => {
          (email, fullname, editorial_level, editorial_section, password, created_at) 
          VALUES (?, ?, ?, ?, ?, NOW())`,
         [
-          email,
+          transformToLowerCase(email),
           fullName,
           'sectional_editor', // Default editorial level for invited editors
           finalDiscipline,

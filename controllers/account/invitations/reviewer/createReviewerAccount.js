@@ -3,6 +3,7 @@ const db = require("../../../../routes/db.config");
 const bcrypt = require("bcryptjs");
 const acceptReviewer = require("./acceptReviewer");
 const { sendEmail } = require("../../../utils/sendEmail");
+const { transformToLowerCase } = require("../../../../utils/utils.global");
 
 /**
  * Creates a reviewer account and processes the invitation
@@ -199,7 +200,7 @@ const createReviewerAccount = async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         prefix || '',
-        email,
+        transformToLowerCase(email),
         orcid || '',
         finalDiscipline,
         firstName,

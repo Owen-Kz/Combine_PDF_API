@@ -1,4 +1,5 @@
 const db = require("../../routes/db.config");
+const { transformToLowerCase } = require("../../utils/utils.global");
 const isAdminAccount = require("./isAdminAccount");
 
 const MigrateAccount = async (req, res) => {
@@ -24,7 +25,7 @@ const MigrateAccount = async (req, res) => {
         };
 
         // Fetch author details
-        const authorRows = await queryAsync("SELECT * FROM authors_account WHERE email = ?", [authorEmail]);
+        const authorRows = await queryAsync("SELECT * FROM authors_account WHERE LOWER(email) = ?", [transformToLowerCase(authorEmail)]);
 
         if (authorRows.length === 0) {
             return res.json({ error: "Account Does Not Exist" });
@@ -41,7 +42,7 @@ const MigrateAccount = async (req, res) => {
         const editorialLevel = "sectional_editor";
 
         // Check if the user is already an editor
-        const editorRows = await queryAsync("SELECT * FROM editors WHERE email = ?", [email]);
+        const editorRows = await queryAsync("SELECT * FROM editors WHERE LOWER(email) = ?", [transformToLowerCase(email)]);
 
         if (editorRows.length > 0) {
             return res.json({ error: "This User is already an Editor" });
@@ -50,7 +51,7 @@ const MigrateAccount = async (req, res) => {
         // Insert into editors table
         await queryAsync(
             "INSERT INTO editors (email, fullname, password, editorial_level) VALUES (?, ?, ?, ?)",
-            [email, fullname, password, editorialLevel]
+            [transformToLowerCase(email), fullname, password, editorialLevel]
         );
 
         // Update author account details

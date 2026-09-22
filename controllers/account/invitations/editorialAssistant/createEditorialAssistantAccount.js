@@ -5,6 +5,7 @@
 const bcrypt = require("bcryptjs");
 const dbPromise = require("../../../../routes/dbPromise.config");
 const acceptEditorialAssistantInvite = require("./acceptEditorialAssistantInvite");
+const { transformToLowerCase } = require("../../../../utils/utils.global");
 
 const createEditorialAssistantAccount = async (req, res) => {
   let connection;
@@ -93,7 +94,7 @@ const createEditorialAssistantAccount = async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           prefix || "",
-          email,
+          transformToLowerCase(email),
           orcid || "",
           finalDiscipline,
           firstName,

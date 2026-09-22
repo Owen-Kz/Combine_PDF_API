@@ -1,4 +1,5 @@
 const db = require("../../routes/db.config")
+const { transformToLowerCase } = require("../../utils/utils.global")
 const hashPassword = require("../utils/hashPassword")
 
 const reviewerSignup = async (req,res) =>{
@@ -26,7 +27,7 @@ const reviewerSignup = async (req,res) =>{
         }else{
             
             const hashedPassword = await hashPassword(password)
-            db.query("INSERT INTO authors_account SET ?", [{prefix, firstname, lastname, affiliations, affiliation_city:affiliations_city, email:email,affiliation_country:affiliations_country, othername, discipline, orcid_id:orcid, account_status:'verified', asfi_membership_id,password:hashedPassword, is_available_for_review:'yes', is_reviewer:'yes', reviewer_invite_status:'accepted'}], async (err, signup) =>{
+            db.query("INSERT INTO authors_account SET ?", [{prefix, firstname, lastname, affiliations, affiliation_city:affiliations_city, email: transformToLowerCase( email),affiliation_country:affiliations_country, othername, discipline, orcid_id:orcid, account_status:'verified', asfi_membership_id,password:hashedPassword, is_available_for_review:'yes', is_reviewer:'yes', reviewer_invite_status:'accepted'}], async (err, signup) =>{
                 if(err){
                     console.log(err)
                     return res.json({error:err})

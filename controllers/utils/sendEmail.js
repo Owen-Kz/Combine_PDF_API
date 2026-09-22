@@ -49,9 +49,9 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
     // Format recipients
     let recipients = [];
     if (Array.isArray(to)) {
-        recipients = to.map(email => ({ email }));
+        recipients = to.map(email => ({ email }).toLowerCase());
     } else if (typeof to === 'string') {
-        recipients = [{ email: to }];
+        recipients = [{ email: to.toLowerCase() }];
     } else {
         return { status: 'error', message: 'Invalid recipients format' };
     }

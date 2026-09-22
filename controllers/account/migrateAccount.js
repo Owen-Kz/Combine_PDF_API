@@ -1,5 +1,6 @@
 const db = require("../../routes/db.config");
 const dbPromise = require("../../routes/dbPromise.config");
+const { transformToLowerCase } = require("../../utils/utils.global");
 const isAdminAccount = require("../editors/isAdminAccount");
 const migrateAccount =  async (req, res) => {
     const { id: authorEmail } = req.body;  // Extracting email from request body
@@ -44,7 +45,7 @@ const migrateAccount =  async (req, res) => {
         // Insert user as editor
         await dbPromise.query(
             "INSERT INTO editors (email, fullname, password, editorial_level) VALUES (?, ?, ?, ?)",
-            [email, fullname, password, editorial_level]
+            [transformToLowerCase(email), fullname, password, editorial_level]
         );
 
         // Update author account to reflect editor status

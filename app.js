@@ -348,6 +348,7 @@ startInvitationReminderScheduler();
 // Email retry scheduler — retries failed emails every 15 minutes and sends
 // support alerts after 3 permanent failures.
 const { startEmailRetryScheduler } = require("./controllers/utils/emailErrorLogger");
+const { transformToLowerCase } = require("./utils/utils.global");
 startEmailRetryScheduler();
 
 // Routes

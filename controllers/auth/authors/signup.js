@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("../../utils/sendEmail");
 const verifyRecaptcha = require("../../../utils/verifyRecaptcha");
+const { transformToLowerCase } = require("../../../utils/utils.global");
 /**
  * Creates a new author account with email verification
  * @param {Object} req - Express request object
@@ -148,7 +149,7 @@ const AuthorSignup = async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         prefix || '',
-        email,
+        transformToLowerCase(email),
         orcid || '',
         discipline,
         firstName,

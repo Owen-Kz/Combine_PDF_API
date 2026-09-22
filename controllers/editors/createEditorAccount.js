@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const db = require('../../routes/db.config');
 const { sendEditorWelcomeEmail } = require('../utils/sendWelcomeEmail');
+const { transformToLowerCase } = require('../../utils/utils.global');
 
 const createEditorAccount = async (req, res) => {
     const {
@@ -34,11 +35,11 @@ const createEditorAccount = async (req, res) => {
                 await db.execute(
                     `INSERT INTO \`authors_account\` (\`prefix\`, \`email\`, \`orcid_id\`, \`discipline\`, \`firstname\`, \`lastname\`, \`othername\`, \`affiliations\`, \`affiliation_country\`, \`affiliation_city\`, \`is_available_for_review\`, \`is_reviewer\`, \`reviewer_invite_status\`, \`is_editor\`, \`editor_invite_status\`, \`account_status\`, \`password\`)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [prefix, email, orcidID, discipline, firstname, lastname, othername, affiliations, affiliations_country, affiliations_city, availableForReview, availableForReview, reviewerInviteStatus, availableForReview, reviewerInviteStatus, accountStatus, hashedPassword]
+                    [prefix, transformToLowerCase(email), orcidID, discipline, firstname, lastname, othername, affiliations, affiliations_country, affiliations_city, availableForReview, availableForReview, reviewerInviteStatus, availableForReview, reviewerInviteStatus, accountStatus, hashedPassword]
                 );
 
                 // Insert into editors table if not exists
-                const [editorResult] = await db.execute('SELECT * FROM `editors` WHERE `email` = ?', [email]);
+                const [editorResult] = await db.execute('SELECT * FROM `editors` WHERE LOWER(`email`) = ?', [transformToLowerCase(email)]);
                 
                 if (editorResult.length === 0) {
                     const fullname = `${prefix} ${firstname} ${othername} ${lastname}`;

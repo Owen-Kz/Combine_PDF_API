@@ -1,4 +1,5 @@
 const db = require("../../routes/db.config")
+const { transformToLowerCase } = require("../../utils/utils.global")
 const hashPassword = require("../utils/hashPassword")
 async function createEditor(email, fullname, password, editoriallevel){
     return new Promise((resolve, reject) =>{
@@ -10,7 +11,7 @@ async function createEditor(email, fullname, password, editoriallevel){
                 console.log("account already exists")
                 resolve(true)
             }else{
-                db.query("INSERT INTO editors SET ?", [{fullname:fullname,email:email, password:password, editorial_level:editoriallevel}], (err, created) =>{
+                db.query("INSERT INTO editors SET ?", [{fullname:fullname,email: transformToLowerCase(email), password:password, editorial_level:editoriallevel}], (err, created) =>{
                     if(err){
                         console.log(err)
                         reject(false)
@@ -78,7 +79,7 @@ const editorSignUp = async (req,res) =>{
                             }
                         }else{
                             // Create author 
-                            db.query("INSERT INTO authors_account SET ?",[{prefix, email, firstname, lastname, othername, orcid_id, discipline, affiliations, affiliation_country, affiliation_city, is_available_for_review:'yes', is_editor:'yes', is_reviewer:'yes', password:hashedPassword, editor_invite_status:'accepted', account_status:'verified', asfi_membership_id}], async(err, data)=>{
+                            db.query("INSERT INTO authors_account SET ?",[{prefix, email: transformToLowerCase(email), firstname, lastname, othername, orcid_id, discipline, affiliations, affiliation_country, affiliation_city, is_available_for_review:'yes', is_editor:'yes', is_reviewer:'yes', password:hashedPassword, editor_invite_status:'accepted', account_status:'verified', asfi_membership_id}], async(err, data)=>{
                                 if(err){
                                     return res.json({error:err})
                                 }
