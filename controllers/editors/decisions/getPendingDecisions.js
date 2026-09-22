@@ -10,6 +10,7 @@ const PENDING_DECISIONS_SELECT = `
     s.revision_id,
     s.title,
     s.article_type,
+    s.corresponding_authors_email,
     s.date_submitted,
     s.status,
     i.invitation_status,
@@ -34,7 +35,7 @@ const PENDING_DECISIONS_SELECT = `
 const PRIMARY_QUERY = `
   ${PENDING_DECISIONS_SELECT}
   WHERE (i.invited_user_name = ?
-    AND i.invitation_status IN ('pending', 'review_submitted')) OR (i.invited_user = ? AND invited_for = 'To Decide' AND i.invitation_status IN('pending','invite_sent'))
+    AND i.invitation_status IN ('pending', 'review_submitted') AND i.invited_user != ?) OR (i.invited_user = ? AND invited_for = 'To Decide' AND i.invitation_status IN('pending','invite_sent'))
   ORDER BY i.id DESC
 `;
 
@@ -65,7 +66,7 @@ const getPendingDecisions = async (req, res) => {
     const { fullname: editorFullname } = editorRows[0];
 
     // 2) Primary: match by invited_user (email).
-    const [primaryRows] = await dbPromise.query(PRIMARY_QUERY, [editorEmail, editorEmail]);
+    const [primaryRows] = await dbPromise.query(PRIMARY_QUERY, [editorEmail, editorEmail, editorEmail]);
     if (primaryRows.length > 0) {
       return res.json({
         status: "success",
