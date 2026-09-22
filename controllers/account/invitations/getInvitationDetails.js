@@ -1,26 +1,29 @@
 const db = require("../../../routes/db.config");
 const dbPromise = require("../../../routes/dbPromise.config");
 const { LogAction } = require("../../../Logger");
+const { decodeSanitizeEmail } = require("../../../utils/utils.global");
 /**
  * Get invitation details for reviewers or editors including submission data
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
+
 const getInvitationDetails = async (req, res) => {
   try {
-    const { articleId, email, token } = req.body;
 
+    const { articleId, email, token } = req.body;
+    const decodedEmail = decodeSanitizeEmail(email)
     // Log incoming request for debugging
     console.log("=== GET INVITATION DETAILS REQUEST ===");
     console.log("Article ID:", articleId);
-    console.log("Email:", email);
+    console.log("Email:", email, decodedEmail);
     console.log("Token:", token);
 
     // Validate required fields
-    if (!articleId || !email || !token) {
+    if (!articleId || !decodedEmail || !token) {
       const missingFields = [];
       if (!articleId) missingFields.push('articleId');
-      if (!email) missingFields.push('email');
+      if (!decodedEmail) missingFields.push('email');
       if (!token) missingFields.push('token');
       
       LogAction(`getInvitationDetails: missing required fields: ${missingFields.join(', ')}`, "WARN");
@@ -111,7 +114,7 @@ const getInvitationDetails = async (req, res) => {
          AND i.invited_user = ? 
          AND (i.invitation_status = 'invite_sent' OR i.invitation_status = 'pending')
          AND i.invited_for = 'Submission Review'`,
-      [articleId, email]
+      [articleId, decodedEmail]
     );
 
     console.log(`Reviewer invitation query returned ${reviewerInvitations.length} results`);
@@ -154,7 +157,7 @@ const getInvitationDetails = async (req, res) => {
          AND i.invited_user = ? 
          AND (i.invitation_status = 'invite_sent' OR i.invitation_status = 'pending')
          AND i.invited_for = 'To Edit'`,
-      [articleId, email]
+      [articleId, decodedEmail]
     );
 
     console.log(`Editor invitation query returned ${editorInvitations.length} results`);
@@ -191,7 +194,7 @@ const getInvitationDetails = async (req, res) => {
       `SELECT invitation_status, invited_for 
        FROM invitations 
        WHERE invitation_link = ? AND invited_user = ?`,
-      [articleId, email]
+      [articleId, decodedEmail]
     );
 
     if (processedInvitations.length > 0) {
@@ -212,7 +215,7 @@ const getInvitationDetails = async (req, res) => {
     LogAction(`getInvitationDetails: no invitation found matching criteria (articleId: ${articleId}, email: ${email})`, "WARN");
     console.log("Search criteria:", {
       invitation_link: articleId,
-      invited_user: email,
+      invited_user: decodedEmail,
       token: token
     });
 
@@ -222,7 +225,7 @@ const getInvitationDetails = async (req, res) => {
       submission: articleData, // Still return submission data even if invitation not found
       debug: process.env.NODE_ENV === 'development' ? {
         articleId,
-        email,
+        decodedEmail,
         token
       } : undefined
     });

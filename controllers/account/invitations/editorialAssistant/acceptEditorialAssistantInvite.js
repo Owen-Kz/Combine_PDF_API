@@ -116,7 +116,7 @@ const acceptEditorialAssistantInvite = async (req, res) => {
     }
 
     await connection.query(
-      `UPDATE invitations SET invitation_status = 'accepted'
+      `UPDATE invitations SET invitation_status = 'accepted', acceptance_date = NOW()
        WHERE invitation_link = ? AND invited_user = ? AND invited_for = ?`,
       [token, email, INVITED_FOR]
     );

@@ -16,7 +16,21 @@ const sendInvitationReminder = async ({ recipientEmail, invitedFor, manuscriptId
     const actionType = invitedFor === "Submission Review" ? "reviewer" : "editor";
     const emailEncoded = encodeURIComponent(recipientEmail);
     const token = `invite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const acceptLink = `${frontendUrl}/invitation/accept?type=${actionType}&id=${manuscriptId}&email=${emailEncoded}&token=${token}`;
+    const isReviewer = roleLabel === "reviewer" ? true : false
+    const role = isReviewer ? 'reviewer' : 'editor';
+    const email = encodeURIComponent(formData.reviewerEmail);
+    const redirectPath = isReviewer ? `reviewerdash/review/${manuscriptId}` : null;
+
+    const params = new URLSearchParams({
+      type: role,
+      id: manuscriptId,
+      email, // already encoded; URLSearchParams will double-encode if you pass the raw value, see note below
+      token,
+      ...(redirectPath ? { url: redirectPath } : {}),
+    });
+
+    const acceptLink = `${frontendUrl}/invitation/accept?${params.toString()}`;
+    // const acceptLink = `${frontendUrl}/invitation/accept?type=${actionType}&id=${manuscriptId}&email=${emailEncoded}&token=${token}`;
     const declineLink = `${frontendUrl}/invitation/decline?type=${actionType}&id=${manuscriptId}&email=${emailEncoded}&token=${token}`;
 
     const htmlContent = `

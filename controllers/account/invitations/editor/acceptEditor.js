@@ -176,7 +176,7 @@ if (existingRecord.length > 0) {
 
     // Update invitation status in invitations table
     await connection.query(
-      "UPDATE invitations SET invitation_status = 'accepted' WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'To Edit'",
+      "UPDATE invitations SET invitation_status = 'accepted', acceptance_date = NOW() WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'To Edit'",
       [articleId, email]
     );
 

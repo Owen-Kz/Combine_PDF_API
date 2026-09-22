@@ -81,7 +81,7 @@ async function sendReviewerWelcomeEmail({ email, firstName, lastName }) {
             <li>Track the status of your reviews</li>
         </ul>
         <div style="text-align: center;">
-            <a href="https://asfirj.org/portal/reviewer/dashboard/" class="button" style="color:#fff;">Go to Reviewer Dashboard</a>
+            <a href="https://asfirj.org/portal/login?returnUrl=/reviewerdash" class="button" style="color:#fff;">Go to Reviewer Dashboard</a>
         </div>
         <p>If you have any questions about the review process, please contact <a href="mailto:editorial@asfirj.org">editorial@asfirj.org</a>.</p>
         <p>Best regards,<br>The ASFIRJ Editorial Team</p>
@@ -107,7 +107,7 @@ async function sendEditorWelcomeEmail({ email, firstName, lastName }) {
             <li>Communicate with authors and reviewers</li>
         </ul>
         <div style="text-align: center;">
-            <a href="https://asfirj.org/portal/editor/dashboard/" class="button" style="color:#fff;">Go to Editorial Dashboard</a>
+            <a href="https://asfirj.org/portal/login?returnUrl=/editors" class="button" style="color:#fff;">Go to Editorial Dashboard</a>
         </div>
         <p>If you need assistance, please reach out to <a href="mailto:editorial@asfirj.org">editorial@asfirj.org</a>.</p>
         <p>Best regards,<br>The ASFIRJ Editorial Team</p>

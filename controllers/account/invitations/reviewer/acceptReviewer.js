@@ -137,7 +137,7 @@ const acceptReviewer = async (req, res) => {
 
     // Update invitation status in invitations table
     await connection.query(
-      "UPDATE invitations SET invitation_status = 'accepted' WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'",
+      "UPDATE invitations SET invitation_status = 'accepted', acceptance_date = NOW() WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'",
       [articleId, email]
     );
 
@@ -179,7 +179,7 @@ const acceptReviewer = async (req, res) => {
       message: "Review invitation accepted successfully",
       token: sessionToken,
       user: sessionUser,
-      redirectTo: `/reviewerdash/review/${articleId}`
+      redirectTo: `/reviewerdash/review/${articleId}&x=${sessionToken}`
     });
 
   } catch (error) {

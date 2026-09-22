@@ -51,7 +51,7 @@ const acceptInvitation = async (req, res) => {
 
         // Update invitation status to 'accepted'
         await db.promise().query(
-            "UPDATE invitations SET invitation_status = 'accepted' WHERE id = ?",
+            "UPDATE invitations SET invitation_status = 'accepted', acceptance_date = NOW() WHERE id = ?",
             [invitationId]
         );
 
