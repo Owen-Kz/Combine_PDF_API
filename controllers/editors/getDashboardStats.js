@@ -103,15 +103,27 @@ const getDashboardStats = async (req, res) => {
             }),
 
             // Pending decisions count (editor awaiting decision on manuscripts)
-            new Promise((resolve) => {
-                const query = isAdmin 
-                    ? `SELECT COUNT(*) AS count FROM invitations WHERE invited_for = 'To Decide' AND invitation_status IN ('pending', 'invite_sent')`
-                    : `SELECT COUNT(*) AS count FROM invitations WHERE invited_for = 'To Decide' AND invitation_status IN ('pending', 'invite_sent') AND invited_user = ?`;
-                db.query(query, isAdmin ? [] : [req.user.email], (err, results) => {
-                    if (err) resolve(0);
-                    else resolve(results[0]?.count || 0);
-                });
-            })
+ // Pending decisions count (editor awaiting decision on manuscripts)
+new Promise((resolve) => {
+    const query = isAdmin
+        ? `SELECT COUNT(DISTINCT invitation_link) AS count
+           FROM invitations
+           WHERE (invited_for = 'To Decide' AND invitation_status IN ('pending', 'invite_sent'))
+              OR (invitation_status IN ('review_submitted'))`
+        : `SELECT COUNT(DISTINCT invitation_link) AS count
+           FROM invitations
+           WHERE (invited_for = 'To Decide' AND invitation_status IN ('pending', 'invite_sent') AND invited_user = ?)
+              OR (invited_user_name = ? AND invitation_status IN ('review_submitted'))`;
+
+    db.query(
+        query,
+        isAdmin ? [] : [req.user.email, req.user.email],
+        (err, results) => {
+            if (err) resolve(0);
+            else resolve(results[0]?.count || 0);
+        }
+    );
+})
         ]);
 
         return res.json({

@@ -1,9 +1,8 @@
-const dbPromise = require("../../../routes/dbPromise.config");
-
 // controllers/editors/getPendingDecisions.js
+const dbPromise = require("../../../routes/dbPromise.config");
+const isAdminAccount = require("../isAdminAccount");
 
-// Shared SELECT body — the only difference between the primary and fallback
-// queries is which column we filter on (email vs. fullname).
+// Shared SELECT body — reused by every variant of the query below.
 const PENDING_DECISIONS_SELECT = `
   SELECT
     s.id,
@@ -18,6 +17,7 @@ const PENDING_DECISIONS_SELECT = `
     i.acceptance_date,
     i.invitation_expiry_date,
     i.invited_user,
+    i.invited_for,
     i.decision_viewed,
     (SELECT COUNT(*) FROM reviews r
       WHERE r.article_id = s.revision_id
@@ -32,28 +32,67 @@ const PENDING_DECISIONS_SELECT = `
    AND s.id = (SELECT MIN(id) FROM submissions WHERE revision_id = i.invitation_link)
 `;
 
-const PRIMARY_QUERY = `
-  ${PENDING_DECISIONS_SELECT}
-  WHERE (i.invited_user_name = ?
-    AND i.invitation_status IN ('pending', 'review_submitted') AND i.invited_user != ?) OR (i.invited_user = ? AND invited_for = 'To Decide' AND i.invitation_status IN('pending','invite_sent'))
-  ORDER BY i.id DESC
+// Pick a single row per invitation_link. Priority:
+//   1. 'To Decide' pending/invite_sent  (the actionable one for the editor)
+//   2. anything else (e.g. review_submitted) as a fallback
+// MySQL 8+ supports ROW_NUMBER(); if you're on 5.7 see the alternative below.
+const DEDUPE_WRAPPER = (innerSql) => `
+  SELECT * FROM (
+    SELECT
+      inner_q.*,
+      ROW_NUMBER() OVER (
+        PARTITION BY inner_q.revision_id
+        ORDER BY
+          CASE
+            WHEN inner_q.invited_for = 'To Decide'
+             AND inner_q.invitation_status IN ('pending','invite_sent') THEN 0
+            WHEN inner_q.invitation_status = 'review_submitted' THEN 1
+            ELSE 2
+          END,
+          inner_q.id DESC
+      ) AS rn
+    FROM (${innerSql}) AS inner_q
+  ) AS ranked
+  WHERE rn = 1
+  ORDER BY id DESC
 `;
 
-const FALLBACK_QUERY = `
+// Admin: all pending decisions + all completed reviews across the platform.
+const ADMIN_QUERY = DEDUPE_WRAPPER(`
+  ${PENDING_DECISIONS_SELECT}
+  WHERE (i.invited_for = 'To Decide'
+         AND i.invitation_status IN ('pending', 'invite_sent'))
+     OR (i.invitation_status IN ('review_submitted'))
+`);
+
+// Non-admin primary: the current user's own actionable "To Decide" invitations.
+const PRIMARY_QUERY = DEDUPE_WRAPPER(`
+  ${PENDING_DECISIONS_SELECT}
+  WHERE i.invited_user = ?
+    AND i.invited_for = 'To Decide'
+    AND i.invitation_status IN ('pending', 'invite_sent')
+`);
+
+// Non-admin fallback: name-based match for the case where invited_user was blank.
+const FALLBACK_QUERY = DEDUPE_WRAPPER(`
   ${PENDING_DECISIONS_SELECT}
   WHERE i.invited_user_name = ?
-  ORDER BY i.id DESC
-`;
+    AND (
+      (i.invited_for = 'To Decide' AND i.invitation_status IN ('pending','invite_sent'))
+      OR i.invitation_status = 'review_submitted'
+    )
+`);
 
 const getPendingDecisions = async (req, res) => {
   try {
     const editorEmail = req.user?.email || "";
+
     if (!editorEmail) {
       return res.status(401).json({ status: "error", message: "Authentication required" });
     }
 
-    // 1) Confirm the caller is a known editor. Also grab fullname so the
-    //    fallback query has something meaningful to match on if needed.
+    // 1) Confirm the caller is a known editor. Also grab fullname for the
+    //    non-admin fallback path.
     const [editorRows] = await dbPromise.query(
       "SELECT email, fullname, editorial_level FROM editors WHERE email = ? LIMIT 1",
       [editorEmail]
@@ -65,22 +104,44 @@ const getPendingDecisions = async (req, res) => {
 
     const { fullname: editorFullname } = editorRows[0];
 
-    // 2) Primary: match by invited_user (email).
-    const [primaryRows] = await dbPromise.query(PRIMARY_QUERY, [editorEmail, editorEmail, editorEmail]);
+    // 2) Determine admin status. Handle sync or async isAdminAccount.
+    let isAdmin = false;
+    try {
+      isAdmin = await Promise.resolve(isAdminAccount(req.user?.id));
+    } catch (adminCheckError) {
+      console.error("Admin check failed, defaulting to non-admin:", adminCheckError);
+      isAdmin = false;
+    }
+
+    // 3) Admin path — everything, deduped per manuscript.
+    if (isAdmin) {
+      const [adminRows] = await dbPromise.query(ADMIN_QUERY);
+      return res.json({
+        status: "success",
+        data: adminRows,
+        matchedBy: "admin",
+        isAdmin: true,
+      });
+    }
+
+    // 4) Non-admin primary — match by invited_user (email).
+    const [primaryRows] = await dbPromise.query(PRIMARY_QUERY, [editorEmail]);
     if (primaryRows.length > 0) {
       return res.json({
         status: "success",
         data: primaryRows,
         matchedBy: "email",
+        isAdmin: false,
       });
     }
 
-    // 3) Fallback: match by invited_user_name. Skip if we have no fullname.
+    // 5) Non-admin fallback — match by invited_user_name.
     if (!editorFullname) {
       return res.json({
         status: "success",
         data: [],
-        matchedBy: "email",
+        matchedBy: "none",
+        isAdmin: false,
       });
     }
 
@@ -90,6 +151,7 @@ const getPendingDecisions = async (req, res) => {
       status: "success",
       data: fallbackRows,
       matchedBy: fallbackRows.length > 0 ? "fullname" : "none",
+      isAdmin: false,
     });
   } catch (error) {
     console.error("Error fetching pending decisions:", error);
