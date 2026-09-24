@@ -18,7 +18,7 @@ const sendInvitationReminder = async ({ recipientEmail, invitedFor, manuscriptId
     const token = `invite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const isReviewer = roleLabel === "reviewer" ? true : false
     const role = isReviewer ? 'reviewer' : 'editor';
-    const email = encodeURIComponent(formData.reviewerEmail);
+    const email = emailEncoded;
     const redirectPath = isReviewer ? `reviewerdash/review/${manuscriptId}` : null;
 
     const params = new URLSearchParams({
