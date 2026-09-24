@@ -101,8 +101,8 @@ const fetchAuthorData = async (id, email) => {
               discipline, affiliations, affiliation_country, affiliation_city,
               is_available_for_review, is_editor, is_reviewer, editor_invite_status,
               reviewer_invite_status, account_status, asfi_membership_id, date_joined
-       FROM authors_account WHERE id = ?`,
-      [id]
+       FROM authors_account WHERE email = ?`,
+      [email]
     );
 
     if (authorResults.length === 0) return null;
@@ -174,7 +174,7 @@ const fetchAuthorData = async (id, email) => {
       ...(editorData && {
         _editor: {
           editorialLevel: editorData.editorialLevel,
-          hasEditorAccess: true,
+          hasEditorAccess: editorData.editorialLevel === "editor_in_chief" || editorData.editorialLevel === "editorial_assistant" ? true : false,
         }
       }),
       
@@ -267,6 +267,7 @@ const AuthorLoggedIn = async (req, res, next) => {
     if (userData._meta?.hasAuthorAccount) {
       console.log(`Associated author account: ${userData._meta.authorAccountId}`);
     }
+ 
     if (userData._meta?.hasEditorAccount) {
       console.log(`Associated editor account: ${userData._meta.editorLevel}`);
     }

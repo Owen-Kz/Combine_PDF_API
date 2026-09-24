@@ -11,7 +11,7 @@ const getAuthorAccount = async (req, res) => {
         }
 
         // Check if user is an admin
-        const isAdmin = await isAdminAccount(req.user.id);
+        const isAdmin = await isAdminAccount(req.user.email);
         if (!isAdmin) {
             return res.status(403).json({ status: "error", message: "Unauthorized Access" });
         }

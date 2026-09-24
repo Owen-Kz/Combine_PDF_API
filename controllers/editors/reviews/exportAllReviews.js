@@ -33,7 +33,7 @@ const buildScoreTable = (fields, review) => {
 const exportAllReviews = async (req, res) => {
     try {
         const { articleId, articleIds, reviewIds, format } = req.body;
-        const userId = req.user.id;
+        const userId = req.user.email;
 
         if (!userId) {
             return res.status(401).json({ error: "Not authenticated" });

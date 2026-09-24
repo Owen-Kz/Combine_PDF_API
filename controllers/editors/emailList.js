@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 const sentEmails = (req, res) => {
   const userEmail = req.user.email;
-  const id = req.user.id
+  const id = req.user.email
 try{
   if (userEmail) {
 

@@ -8,7 +8,7 @@ try{
   if (userEmail) {
 
 
-      if (isAdminAccount(req.user.id)) {
+      if (isAdminAccount(req.user.email)) {
         const query = `
           SELECT * FROM sent_emails
           WHERE sender = ? AND email_for = 'To Edit'

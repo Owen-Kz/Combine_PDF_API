@@ -5,7 +5,7 @@ const isAdminAccount = require("../isAdminAccount");
 const getEditorInvitations = async (req, res) => {
     try {
         const userEmail = req.user.email;
-        const userId = req.user.id;
+        const userId = req.user.email;
 
         // Check if user is admin or editor
         const isAdmin = await isAdminAccount(userId);
@@ -20,54 +20,110 @@ const getEditorInvitations = async (req, res) => {
         const filterStatus = req.query.status || 'all'; // 'all', 'pending', 'accepted', 'declined', 'completed'
 
         // Base query for invitations
-        let query = `
-            SELECT 
-                i.id as invitation_id,
-                i.invited_user,
-                i.invitation_link as manuscript_id,
-                i.invitation_date,
-                i.invitation_status,
-                i.invited_for,
-                i.invitation_expiry_date,
-                i.invited_user_name,
-                -- Get manuscript details from submissions
-                s.title,
-                s.abstract,
-                s.article_type,
-                s.discipline,
-                s.corresponding_authors_email,
-                s.manuscript_file,
-                s.document_file,
-                s.tracked_manuscript_file,
-                s.cover_letter_file,
-                s.tables,
-                s.figures,
-                s.graphic_abstract,
-                s.supplementary_material,
-                -- Get author names
-                (SELECT GROUP_CONCAT(CONCAT_WS(' ', a.prefix, a.firstname, a.lastname) SEPARATOR ';') 
-                 FROM submission_authors sa 
-                 LEFT JOIN authors_account a ON sa.authors_email = a.email 
-                 WHERE sa.submission_id = s.article_id) as authors,
-                -- Get invitation email content
-                se.subject as email_subject,
-                se.body as email_body,
-                se.sender as email_sender,
-                se.sent_at as email_sent_at,
-                -- Get inviter details
-                inviter.fullname as invited_by_name,
-                inviter.email as invited_by_email
-            FROM invitations i
-            LEFT JOIN submissions s ON s.id = (
-                SELECT s2.id FROM submissions s2
-                WHERE s2.revision_id = i.invitation_link OR s2.article_id = i.invitation_link
+ let query = `
+    SELECT
+        i.id AS invitation_id,
+        i.invited_user,
+        i.invitation_link AS manuscript_id,
+        i.invitation_date,
+        i.invitation_status,
+        i.invited_for,
+        i.invitation_expiry_date,
+        i.invited_user_name,
+
+        -- Editor name resolution:
+        --   1. editors.fullname          (canonical, if the account exists there)
+        --   2. authors_account name parts (fallback — no fullname column exists)
+        --   3. invitations.invited_user_name (last-resort snapshot taken at invite time)
+        COALESCE(
+            ed.fullname,
+            NULLIF(TRIM(CONCAT_WS(' ',
+                NULLIF(au.prefix, ''),
+                NULLIF(au.firstname, ''),
+                NULLIF(au.othername, ''),
+                NULLIF(au.lastname, '')
+            )), ''),
+            i.invited_user_name
+        ) AS invited_user_fullname,
+
+        COALESCE(ed.email, au.email) AS invited_user_email,
+        au.affiliations              AS invited_user_affiliations,
+        au.discipline                AS invited_user_discipline,
+        ed.editorial_level           AS invited_user_editorial_level,
+        ed.editorial_section         AS invited_user_editorial_section,
+
+        -- Manuscript details
+        s.title,
+        s.abstract,
+        s.article_type,
+        s.discipline,
+        s.corresponding_authors_email,
+        s.manuscript_file,
+        s.document_file,
+        s.tracked_manuscript_file,
+        s.cover_letter_file,
+        s.tables,
+        s.figures,
+        s.graphic_abstract,
+        s.supplementary_material,
+
+        -- Manuscript authors (denormalized)
+        (SELECT GROUP_CONCAT(
+                    CONCAT_WS(' ', a.prefix, a.firstname, a.lastname)
+                    SEPARATOR ';'
+                )
+           FROM submission_authors sa
+           LEFT JOIN authors_account a ON sa.authors_email = a.email
+          WHERE sa.submission_id = s.article_id
+        ) AS authors,
+
+        -- Invitation email content
+        se.subject AS email_subject,
+        se.body    AS email_body,
+        se.sender  AS email_sender,
+        se.sent_at AS email_sent_at,
+
+        -- Inviter name — resolve from editors first, then authors_account
+        COALESCE(
+            inviter_ed.fullname,
+            NULLIF(TRIM(CONCAT_WS(' ',
+                NULLIF(inviter_au.prefix, ''),
+                NULLIF(inviter_au.firstname, ''),
+                NULLIF(inviter_au.othername, ''),
+                NULLIF(inviter_au.lastname, '')
+            )), '')
+        ) AS invited_by_name,
+        COALESCE(inviter_ed.email, inviter_au.email, se.sender) AS invited_by_email
+
+    FROM invitations i
+
+    -- 1) The invited user — try editors first, then authors_account.
+    LEFT JOIN editors ed          ON ed.email = i.invited_user
+    LEFT JOIN authors_account au  ON au.email = i.invited_user
+
+    -- 2) The manuscript (latest revision for this invitation_link).
+    LEFT JOIN submissions s
+           ON s.id = (
+               SELECT s2.id
+                 FROM submissions s2
+                WHERE s2.revision_id = i.invitation_link
+                   OR s2.article_id  = i.invitation_link
                 ORDER BY (s2.revision_id = i.invitation_link) DESC, s2.id DESC
                 LIMIT 1
-            )
-            LEFT JOIN sent_emails se ON i.invitation_link = se.article_id AND se.email_for = 'To Edit'
-            LEFT JOIN editors inviter ON se.sender = inviter.email
-            WHERE i.invited_user = ? AND i.invited_for = 'To Edit'
-        `;
+           )
+
+    -- 3) The invitation email.
+    LEFT JOIN sent_emails se
+           ON se.article_id = i.invitation_link
+          AND se.email_for = 'To Edit'
+
+    -- 4) The inviter — same dual-resolution pattern.
+    LEFT JOIN editors inviter_ed          ON inviter_ed.email = se.sender
+    LEFT JOIN authors_account inviter_au  ON inviter_au.email = se.sender
+
+    WHERE i.invited_user = ?
+      AND i.invited_for = 'To Edit'
+`;
 
         let countQuery = `
             SELECT COUNT(*) as total 
@@ -156,8 +212,8 @@ const getEditorInvitations = async (req, res) => {
                 manuscriptId: inv.manuscript_id,
                 title: inv.title || 'Manuscript Title',
                 type: inv.article_type || 'Research Article',
-                invitedBy: inv.invited_by_name || 'Editor',
-                invitedByEmail: inv.invited_by_email || inv.email_sender || 'editor@asfirj.org',
+                invitedBy: inv.invited_by_name || 'Editor / Editorial Assistant',
+                invitedByEmail: inv.invited_user_name || inv.email_sender || 'editor@asfirj.org',
                 invitedDate: inv.invitation_date ? new Date(inv.invitation_date).toLocaleDateString('en-GB', {
                     day: 'numeric',
                     month: 'short',

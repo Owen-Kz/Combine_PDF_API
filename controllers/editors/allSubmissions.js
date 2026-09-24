@@ -14,7 +14,7 @@ const allSubmissions = async (req, res) => {
         if (!userId) {
             return res.status(400).json({ error: "Invalid Parameters" });
         }
-        if(!isAdminAccount(userId)){
+        if(!isAdminAccount(userEmail)){
             return res.status(403).json({ error: "Not authorized" });
         }
         // Base query for submissions (only get the latest revision of each article)

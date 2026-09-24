@@ -1,85 +1,122 @@
 // backend/controllers/editors/mySubmissions.js
 const db = require("../../routes/db.config");
 
+// Shared subquery: the set of article_ids the current editor is associated with.
+// Union of:
+//   1. Rows in submitted_for_edit (formal edit assignment)
+//   2. Rows in invitations where the editor was invited to edit
+// UNION dedupes so a manuscript that appears in both tables is counted once.
+const ASSIGNED_ARTICLES_SUBQUERY = `
+  SELECT DISTINCT article_id
+    FROM submitted_for_edit
+   WHERE editor_email = ?
+  UNION
+  SELECT DISTINCT invitation_link AS article_id
+    FROM invitations
+   WHERE invited_user = ?
+     AND invited_for IN ('To Edit', 'To Decide')
+     AND invitation_status NOT IN ('declined', 'canceled', 'expired')
+`;
+
 const mySubmissions = async (req, res) => {
     try {
-        const editorEmail = req.user.email;
-        const editorId = req.user.id;
+        const editorEmail = req.user?.email;
+        const editorId = req.user?.id;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search || '';
         const offset = (page - 1) * limit;
 
         if (!editorEmail || !editorId) {
-            return res.status(400).json({ error: "Invalid Parameters" });
+            return res.status(400).json({ success: false, error: "Invalid Parameters" });
         }
 
-        // First, get all article IDs this editor is assigned to
-        let assignedQuery = `
-            SELECT DISTINCT article_id 
-            FROM submitted_for_edit 
-            WHERE editor_email = ?
-        `;
-        
-        let assignedParams = [editorEmail];
-        let countParams = [editorEmail];
+        // ---------------------------------------------------------------------
+        // Step 1: build the assigned-articles query (with optional search filter)
+        // ---------------------------------------------------------------------
+        const searchPattern = `%${search}%`;
+        const hasSearch = search && search.length >= 2;
 
-        // If search exists, filter the assigned articles
-        if (search && search.length >= 2) {
-            assignedQuery += ` AND article_id IN (
-                SELECT DISTINCT s.article_id 
-                FROM submissions s
+        // Base assigned-articles query, optionally narrowed by search.
+        // When search is present, we filter the UNION result by joining against
+        // submissions and authors — keeping the search logic in one place.
+        const assignedQuery = hasSearch
+            ? `
+              SELECT DISTINCT aa.article_id
+                FROM (${ASSIGNED_ARTICLES_SUBQUERY}) AS aa
+                INNER JOIN submissions s ON s.article_id = aa.article_id
                 LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
-                WHERE s.title != '' AND s.title != 'Draft Submission' AND (
-                    s.title LIKE ? OR 
-                    s.article_id LIKE ? OR 
-                    s.revision_id LIKE ? OR
-                    s.status LIKE ? OR
-                    a.firstname LIKE ? OR
-                    a.lastname LIKE ?
-                )
-            )`;
-            
-            const searchPattern = `%${search}%`;
-            const searchParams = [
-                searchPattern, searchPattern, searchPattern, 
-                searchPattern, searchPattern, searchPattern
-            ];
-            assignedParams.push(...searchParams);
-            countParams.push(...searchParams);
-        }
+               WHERE s.title != '' AND s.title != 'Draft Submission'
+                 AND (
+                       s.title       LIKE ?
+                    OR s.article_id  LIKE ?
+                    OR s.revision_id LIKE ?
+                    OR s.status      LIKE ?
+                    OR a.firstname   LIKE ?
+                    OR a.lastname    LIKE ?
+                 )
+            `
+            : `SELECT DISTINCT article_id FROM (${ASSIGNED_ARTICLES_SUBQUERY}) AS aa`;
 
-        // Get total count for pagination
+        // Parameters for the scoped subquery (2 placeholders: email, invited_user)
+        const scopeParams = [editorEmail, editorEmail];
+
+        // Full param list for the count query (scope + optional search)
+        const countParams = hasSearch
+            ? [...scopeParams, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern]
+            : scopeParams;
+
+        // ---------------------------------------------------------------------
+        // Step 2: total count for pagination
+        // ---------------------------------------------------------------------
         const [countResult] = await db.promise().query(
-            `SELECT COUNT(*) as total FROM (${assignedQuery}) as temp`,
+            `SELECT COUNT(*) AS total FROM (${assignedQuery}) AS temp`,
             countParams
         );
 
-        // Add pagination to the assigned query
-        assignedQuery += ` LIMIT ? OFFSET ?`;
-        assignedParams.push(limit, offset);
-
-        // Get paginated assigned article IDs
-        const [assignedArticles] = await db.promise().query(assignedQuery, assignedParams);
-
-        if (assignedArticles.length === 0) {
+        const total = countResult[0]?.total || 0;
+        if (total === 0) {
             return res.json({
                 success: true,
                 submissions: [],
                 total: 0,
                 totalPages: 0,
                 currentPage: page,
-                limit: limit
+                limit,
             });
         }
 
-        // Get the article IDs array
-        const articleIds = assignedArticles.map(row => row.article_id);
+        // ---------------------------------------------------------------------
+        // Step 3: fetch the paginated page of article_ids
+        // ---------------------------------------------------------------------
+        const pagedParams = hasSearch
+            ? [...countParams, limit, offset]
+            : [...scopeParams, limit, offset];
 
-        // Now get the submissions for these articles (latest revision only)
+        const [assignedArticles] = await db.promise().query(
+            `${assignedQuery} LIMIT ? OFFSET ?`,
+            pagedParams
+        );
+
+        if (assignedArticles.length === 0) {
+            return res.json({
+                success: true,
+                submissions: [],
+                total,
+                totalPages: Math.ceil(total / limit),
+                currentPage: page,
+                limit,
+            });
+        }
+
+        const articleIds = assignedArticles.map((row) => row.article_id);
+
+        // ---------------------------------------------------------------------
+        // Step 4: fetch the latest revision of each assigned manuscript
+        // ---------------------------------------------------------------------
         const submissionsQuery = `
             WITH RankedSubmissions AS (
-                SELECT 
+                SELECT
                     s.id,
                     s.article_id,
                     s.revision_id,
@@ -93,12 +130,11 @@ const mySubmissions = async (req, res) => {
                     s.date_submitted,
                     s.process_start_date,
                     s.last_updated,
-                    s.is_women_in_contemporary_science as is_women_in_science,
-                    s.is_kidnapping_for_ransom as is_kidnapping_for_ransom,
-                    s.is_belispoint_academic as is_belispoint_academic,
-                    s.corresponding_authors_email as corresponding_email,
-                    s.previous_manuscript_id as previous_manuscript_id,
-                    s.corresponding_authors_email as corresponding_email,
+                    s.is_women_in_contemporary_science AS is_women_in_science,
+                    s.is_kidnapping_for_ransom AS is_kidnapping_for_ransom,
+                    s.is_belispoint_academic AS is_belispoint_academic,
+                    s.corresponding_authors_email AS corresponding_email,
+                    s.previous_manuscript_id AS previous_manuscript_id,
                     s.manuscript_file,
                     s.document_file,
                     s.tracked_manuscript_file,
@@ -109,37 +145,75 @@ const mySubmissions = async (req, res) => {
                     s.supplementary_material,
                     a.firstname,
                     a.lastname,
-                    a.email as author_email,
+                    a.email AS author_email,
                     a.orcid_id,
                     a.affiliations,
                     a.prefix,
                     ROW_NUMBER() OVER (
-                        PARTITION BY s.article_id 
+                        PARTITION BY s.article_id
                         ORDER BY s.revision_id DESC, s.process_start_date DESC
                     ) AS row_num,
-                    -- Invitation counts
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND (invitation_status = 'accepted' OR invitation_status = 'review_invitation_accepted' OR invitation_status = 'review_submitted')) as accepted_reviewers,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND invitation_status = 'declined') as declined_reviewers,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'Submission Review' AND invitation_status = 'invite_sent') as pending_reviewers,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND (invitation_status = 'accepted' OR invitation_status = 'edit_invitation_accepted' OR invitation_status = 'edit_submitted')) as accepted_editors,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'declined') as declined_editors,
-                    (SELECT COUNT(*) FROM invitations WHERE invitation_link = s.revision_id AND invited_for = 'To Edit' AND invitation_status = 'invite_sent') as pending_editors,
-                    (SELECT COUNT(*) FROM invitations inv2 WHERE inv2.invitation_link = s.revision_id AND inv2.invited_for = 'To Decide' AND inv2.invitation_status IN ('pending', 'invite_sent') AND inv2.decision_viewed = 0 AND inv2.invited_user = ?) as new_reviews
+
+                    (SELECT COUNT(*) FROM invitations
+                      WHERE invitation_link = s.revision_id
+                        AND invited_for = 'Submission Review'
+                        AND invitation_status IN ('accepted','review_invitation_accepted','review_submitted')
+                    ) AS accepted_reviewers,
+
+                    (SELECT COUNT(*) FROM invitations
+                      WHERE invitation_link = s.revision_id
+                        AND invited_for = 'Submission Review'
+                        AND invitation_status = 'declined'
+                    ) AS declined_reviewers,
+
+                    (SELECT COUNT(*) FROM invitations
+                      WHERE invitation_link = s.revision_id
+                        AND invited_for = 'Submission Review'
+                        AND invitation_status = 'invite_sent'
+                    ) AS pending_reviewers,
+
+                    (SELECT COUNT(*) FROM invitations
+                      WHERE invitation_link = s.revision_id
+                        AND invited_for = 'To Edit'
+                        AND invitation_status IN ('accepted','edit_invitation_accepted','edit_submitted')
+                    ) AS accepted_editors,
+
+                    (SELECT COUNT(*) FROM invitations
+                      WHERE invitation_link = s.revision_id
+                        AND invited_for = 'To Edit'
+                        AND invitation_status = 'declined'
+                    ) AS declined_editors,
+
+                    (SELECT COUNT(*) FROM invitations
+                      WHERE invitation_link = s.revision_id
+                        AND invited_for = 'To Edit'
+                        AND invitation_status = 'invite_sent'
+                    ) AS pending_editors,
+
+                    (SELECT COUNT(*) FROM invitations inv2
+                      WHERE inv2.invitation_link = s.revision_id
+                        AND inv2.invited_for = 'To Decide'
+                        AND inv2.invitation_status IN ('pending','invite_sent')
+                        AND inv2.decision_viewed = 0
+                        AND inv2.invited_user = ?
+                    ) AS new_reviews
+
                 FROM submissions s
                 LEFT JOIN authors_account a ON s.corresponding_authors_email = a.email
                 WHERE s.article_id IN (?)
             )
             SELECT *
-            FROM RankedSubmissions
-            WHERE row_num = 1
-            ORDER BY id DESC
+              FROM RankedSubmissions
+             WHERE row_num = 1
+             ORDER BY id DESC
         `;
 
         const [submissions] = await db.promise().query(submissionsQuery, [editorEmail, articleIds]);
 
-        // Format the results (same formatting as allSubmissions)
-        const formattedSubmissions = submissions.map(row => {
-            // Combine author name
+        // ---------------------------------------------------------------------
+        // Step 5: format results
+        // ---------------------------------------------------------------------
+        const formattedSubmissions = submissions.map((row) => {
             let authorName = 'Unknown';
             if (row.firstname && row.lastname) {
                 authorName = `${row.firstname} ${row.lastname}`;
@@ -148,13 +222,10 @@ const mySubmissions = async (req, res) => {
             } else if (row.lastname) {
                 authorName = row.lastname;
             }
-
-            // Add prefix if available
             if (row.prefix && authorName !== 'Unknown') {
                 authorName = `${row.prefix} ${authorName}`;
             }
 
-            // Collect files
             const files = {};
             if (row.manuscript_file) files.manuscript = row.manuscript_file;
             if (row.document_file) files.document = row.document_file;
@@ -177,19 +248,18 @@ const mySubmissions = async (req, res) => {
                 type: row.article_type,
                 discipline: row.discipline,
                 status: row.status,
-                date: new Date(row.process_start_date).toLocaleDateString('en-GB', { 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric' 
+                date: new Date(row.process_start_date).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
                 }),
-                submittedDate:row.date_submitted || row.process_start_date,
+                submittedDate: row.date_submitted || row.process_start_date,
                 updatedAt: row.last_updated,
                 isWomenInScience: row.is_women_in_science === 'yes' || row.is_women_in_science == 1,
                 isBelispointAcademic: row.is_belispoint_academic === 'yes' || row.is_belispoint_academic == 1,
                 isKidnappingForRansom: row.is_kidnapping_for_ransom === 'yes' || row.is_kidnapping_for_ransom == 1,
                 authors: authorName,
-                correspondingAuthor: `${row.prefix} ${row.firstname} ${row.lastname}` ,
-
+                correspondingAuthor: `${row.prefix || ''} ${row.firstname || ''} ${row.lastname || ''}`.trim(),
                 correspondingEmail: row.corresponding_email,
                 authorEmail: row.author_email,
                 orcidId: row.orcid_id,
@@ -197,30 +267,29 @@ const mySubmissions = async (req, res) => {
                 reviewerInvitations: {
                     accepted: row.accepted_reviewers || 0,
                     declined: row.declined_reviewers || 0,
-                    pending: row.pending_reviewers || 0
+                    pending: row.pending_reviewers || 0,
                 },
                 editorInvitations: {
                     accepted: row.accepted_editors || 0,
                     declined: row.declined_editors || 0,
-                    pending: row.pending_editors || 0
+                    pending: row.pending_editors || 0,
                 },
                 newReviews: row.new_reviews || 0,
-                files: files
+                files,
             };
         });
 
         return res.json({
             success: true,
             submissions: formattedSubmissions,
-            total: countResult[0]?.total || 0,
-            totalPages: Math.ceil((countResult[0]?.total || 0) / limit),
+            total,
+            totalPages: Math.ceil(total / limit),
             currentPage: page,
-            limit: limit
+            limit,
         });
-
     } catch (error) {
         console.error("Error in mySubmissions:", error);
-        return res.status(500).json({ error: "Server error", message: error.message });
+        return res.status(500).json({ success: false, error: "Server error", message: error.message });
     }
 };
 

@@ -5,7 +5,7 @@ const { SECTION1_FIELDS, SECTION2_FIELDS } = require("./scoreFields");
 const getReviewsByArticle = async (req, res) => {
     try {
         const { articleId } = req.body;
-        const userId = req.user.id;
+        const userId = req.user.email;
 
         if (!userId) {
             return res.status(401).json({ success: false, message: "Not authenticated" });

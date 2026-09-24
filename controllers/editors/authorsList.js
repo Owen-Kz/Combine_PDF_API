@@ -5,7 +5,7 @@ const isAdminAccount = require("./isAdminAccount");
 const getAllAuthors = async (req, res) => {
     try {
         // Get user ID from session
-        const userId = req.user?.id;
+        const userId = req.user?.email;
         if (!userId) {
             return res.status(400).json({ status: "error", message: "Invalid Parameters" });
         }

@@ -5,7 +5,16 @@ const isAdminAccount = require("./isAdminAccount");
 const archiveSubmission = async (req, res) => {
     try {
         const { submissionId } = req.body;
+     // Get user ID from session
+        const userId = req.user?.email;
+        if (!userId) {
+            return res.status(400).json({ status: "error", message: "Invalid Parameters" });
+        }
 
+        // Check if the user is an admin
+        if (!(await isAdminAccount(userId))) {
+            return res.status(403).json({ status: "error", message: "Unauthorized Access" });
+        }
         if (!submissionId) {
             return res.status(400).json({ error: "Submission ID is not set" });
         }

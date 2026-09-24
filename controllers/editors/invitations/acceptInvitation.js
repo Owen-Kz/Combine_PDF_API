@@ -5,7 +5,7 @@ const { LogAction } = require("../../../Logger");
 const acceptInvitation = async (req, res) => {
     try {
         const userEmail = req.user.email;
-        const userId = req.user.id;
+        const userId = req.user.email;
         const { invitationId, manuscriptId } = req.body;
 
         if (!invitationId || !manuscriptId) {

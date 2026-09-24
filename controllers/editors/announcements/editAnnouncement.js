@@ -10,7 +10,7 @@ const editAnnouncement = async (req, res) => {
                 message: "All fields are required"
             });
         }
-     if (!req.user || !await isAdminAccount(req.user.id)) {
+     if (!req.user || !await isAdminAccount(req.user.email)) {
             return res.status(403).json({
                 status: "error",
                 message: "Unauthorized Access"

@@ -4,7 +4,7 @@ const isAdminAccount = require("../editors/isAdminAccount");
 const NewsLetterSubscribers = async (req,res) =>{
 try{
     
-    const userId = req.user.id;
+    const userId = req.user.email;
     if (!userId) {
         return res.json({ status:"error", error: "Invalid Parameters" });
     }

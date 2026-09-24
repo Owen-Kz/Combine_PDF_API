@@ -4,7 +4,7 @@ const isAdminAccount = require("../isAdminAccount");
 const declineInvitation = async (req, res) => {
     try {
         const userEmail = req.user.email;
-        const userId = req.user.id;
+        const userId = req.user.email;
         const { invitationId, manuscriptId, reason } = req.body;
 
         if (!invitationId || !manuscriptId) {

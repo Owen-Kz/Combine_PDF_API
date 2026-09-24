@@ -13,7 +13,7 @@ const uploadAnnouncement = async (req, res) => {
         }
 
         // Verify admin code (you might want to implement proper verification)
-         if (!req.user || !await isAdminAccount(req.user.id)) {
+         if (!req.user || !await isAdminAccount(req.user.email)) {
             return res.status(403).json({
                 status: "error",
                 message: "Unauthorized Access"

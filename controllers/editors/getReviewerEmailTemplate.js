@@ -2,7 +2,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 const reviewerEmailTemplate =  (req, res) => {
   const { emailFor } = req.body;
-const user = req.user.id
+const user = req.user.email
 
   if (user) {
     isAdminAccount(user, (err, isAdmin) => {

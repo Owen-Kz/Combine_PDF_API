@@ -6,7 +6,7 @@ const { stripDerivedSuffix } = require("../utils/submissionIdUtils");
 const myPreviousSubmissions = async (req, res) => {
     try {
         const editorEmail = req.user.email;
-        const editorId = req.user.id;
+        const editorId = req.user.email;
         const { revision_id, item_id } = req.body;
         
         let revisionID = revision_id || item_id;

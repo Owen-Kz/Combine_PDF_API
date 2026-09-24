@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 // API route to fetch sent email by ID
 const emailContent =  (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.email;
   const emailId = req.query.emailId;
 
   if (userId && emailId) {

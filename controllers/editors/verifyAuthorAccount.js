@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount")
 const VerifyAuthorAccount = async(req,res) =>{
     try{
         const {id, admin} = req.body 
-        if(await isAdminAccount(req.user.id)){
+        if(await isAdminAccount(req.user.email)){
         db.query("UPDATE authors_account SET account_status = 'verified' WHERE email = ?", [id], (err, data) =>{
             if(err){
                 return res.json({error:err.message})

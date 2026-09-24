@@ -5,6 +5,7 @@ const isAdminAccount = require("../editors/isAdminAccount");
 const migrateAccount =  async (req, res) => {
     const { id: authorEmail } = req.body;  // Extracting email from request body
     const admin = req.user.id;  // Admin's user ID from session
+    const adminEmail = req.user.email
 
     if (!admin || !authorEmail) {
         return res.status(400).json({ error: "Invalid parameters" });
@@ -12,7 +13,7 @@ const migrateAccount =  async (req, res) => {
 
     try {
         // Check if admin account is valid
-        const isAdmin = await isAdminAccount(admin);
+        const isAdmin = await isAdminAccount(adminEmail);
         if (!isAdmin) {
             return res.status(403).json({ error: "You are not an Admin" });
         }

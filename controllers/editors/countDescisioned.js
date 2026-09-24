@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 const countDecisioned = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.email;
 
         if (!userId) {
             return res.json({ error: "Invalid Parameters" });

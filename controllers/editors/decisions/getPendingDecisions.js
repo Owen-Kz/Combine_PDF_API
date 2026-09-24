@@ -107,7 +107,7 @@ const getPendingDecisions = async (req, res) => {
     // 2) Determine admin status. Handle sync or async isAdminAccount.
     let isAdmin = false;
     try {
-      isAdmin = await Promise.resolve(isAdminAccount(req.user?.id));
+      isAdmin = await Promise.resolve(isAdminAccount(req.user?.email));
     } catch (adminCheckError) {
       console.error("Admin check failed, defaulting to non-admin:", adminCheckError);
       isAdmin = false;

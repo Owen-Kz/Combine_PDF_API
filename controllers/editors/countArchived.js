@@ -3,7 +3,7 @@ const db = require("../../routes/db.config");
 
 const countArchived = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.email;
 
         if (!userId) {
             return res.json({ error: "Invalid Parameters" });

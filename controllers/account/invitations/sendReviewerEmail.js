@@ -46,7 +46,7 @@ const inviteReviewerEmail = async (req, res) => {
     }
 
     // Check admin privileges
-    const editorId = req.user.id;
+    const editorId = req.user.email;
     if (!(await isAdminAccount(editorId))) {
       return res.status(403).json({ 
         status: "error", 

@@ -3,7 +3,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 const deleteAuthorAccount = async (req, res) => {
     const { id: authorEmail } = req.body;
-    const admin = req.session.user_id;
+    const admin = req.user.email ||  req.session.user_id;
 
     if (await isAdminAccount(admin) && authorEmail) {
         try {

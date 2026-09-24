@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount")
 const DeleteAuthorAccount = async(req,res) =>{
     try{
         const {id, admin} = req.body 
-        if(await isAdminAccount(req.user.id)){
+        if(await isAdminAccount(req.user.email)){
         db.query("DELETE FROM authors_account WHERE email = ?", [id], (err, data) =>{
             if(err){
                 return res.json({error:err.message})

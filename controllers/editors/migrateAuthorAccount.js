@@ -4,7 +4,7 @@ const isAdminAccount = require("./isAdminAccount");
 
 const MigrateAccount = async (req, res) => {
     const { id: authorEmail } = req.body;
-    const admin = req.user.id;
+    const admin = req.user.email;
 
     if (!isAdminAccount(admin) || !authorEmail) {
         return res.json({ error: "Could Not Migrate Account, You are not an Admin" });

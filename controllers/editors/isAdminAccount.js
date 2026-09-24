@@ -3,8 +3,9 @@ const dbPromise = require("../../routes/dbPromise.config")
 
 const isAdminAccount = async (id) =>{
     try{
+
         return new Promise((resolve, reject) =>{
-            db.query("SELECT * FROM editors WHERE id = ? AND (editorial_level = 'editor_in_chief' OR editorial_level = 'editorial_assistant')",[id], async(error, data)=>{
+            db.query("SELECT * FROM editors WHERE email = ? AND (editorial_level = 'editor_in_chief' OR editorial_level = 'editorial_assistant')",[id], async(error, data)=>{
                 if(error){
                     console.log(error)
                     reject(false)
