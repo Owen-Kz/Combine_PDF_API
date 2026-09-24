@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const db = require('../routes/db.config');
 const CreatePassword = require("./utils/createPassword");
 const sendCoAuthorEmail = require('./utils/sendCOAuthorEmail');
+const { transformToLowerCase } = require("../utils/utils.global");
+
 const CoAuthors = async (req, res, articleId) => {
     try {
         const currentUser = req.user.email;

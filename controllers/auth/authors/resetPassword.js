@@ -2,6 +2,7 @@
 const db = require("../../../routes/db.config");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { sendEmail } = require("../../utils/sendEmail");
 
 /**
  * Resets author's password using valid token
