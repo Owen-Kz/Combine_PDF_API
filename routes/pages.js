@@ -192,10 +192,10 @@ router.post("/auth/logout", logout);
 
 router.get("/editors/all-submissions", AuthorLoggedIn, allSubmissions)
 router.get("/editors/archivedSubmissions", AuthorLoggedIn, requireEditorInChiefOrAdmin, ArchivedSubmissions)
-router.post("/editors/allPreviousSubmissions", AuthorLoggedIn, myPreviousSubmissions)
+router.post("/editors/allPreviousSubmissions/:manuscriptId", AuthorLoggedIn, myPreviousSubmissions)
 
 router.get("/editors/my-submissions", AuthorLoggedIn, mySubmissions)
-router.post("/editors/myPreviousSubmissions", AuthorLoggedIn,myPreviousSubmissions)
+router.post("/editors/myPreviousSubmissions/:manuscriptId", AuthorLoggedIn,myPreviousSubmissions)
 
 
 

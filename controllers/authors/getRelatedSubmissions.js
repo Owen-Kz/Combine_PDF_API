@@ -1,15 +1,9 @@
 // controllers/authors/getRelatedSubmissions.js
 const db = require("../../routes/db.config");
-
-// Normalize a title for comparison in JS. Must mirror the SQL normalization
-// exactly: lowercase, strip everything but a-z0-9 and spaces, collapse
-// whitespace, trim.
-const normalizeTitle = (title) =>
-  (title || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+const {
+  getFamilyCache,
+  getFamilyArticleIds,
+} = require("../editors/familyMap");
 
 const getRelatedSubmissions = async (req, res) => {
   try {
@@ -21,10 +15,8 @@ const getRelatedSubmissions = async (req, res) => {
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // 1) Locate the seed row from ANY identifier the caller might have passed.
-    //    A submission can be addressed by revision_id, article_id, or id —
-    //    handling all three here means the endpoint works uniformly whether
-    //    the caller has the revision ID (usual) or a base article ID.
+    // 1) Resolve the seed row from any identifier the caller provided
+    //    (revision_id, article_id, or the numeric id).
     // ────────────────────────────────────────────────────────────────────────
     const [seedRows] = await db.promise().query(
       `SELECT id, article_id, revision_id, previous_manuscript_id, title
@@ -32,47 +24,42 @@ const getRelatedSubmissions = async (req, res) => {
         WHERE revision_id = ?
            OR article_id = ?
            OR id = ?
-           OR previous_manuscript_id = ?
         ORDER BY (revision_id = ?) DESC, id DESC
         LIMIT 1`,
-      [id, id, id, id, id]
+      [id, id, id, id]
     );
 
     if (seedRows.length === 0) {
-      return res.json({ status: "success", submissions: [], message: "No submissions found" });
+      return res.json({
+        status: "success",
+        submissions: [],
+        message: "No submissions found",
+      });
     }
 
     const seed = seedRows[0];
 
     // ────────────────────────────────────────────────────────────────────────
-    // 2) Resolve the family's base article_id. If the seed is itself a revision
-    //    (has a previous_manuscript_id), find its parent; otherwise use its own
-    //    article_id.
+    // 2) Look up the seed's family via the cached family map. This is the
+    //    same union-find result used by every other controller, so the family
+    //    here is guaranteed to be identical to what the editor/admin sees.
     // ────────────────────────────────────────────────────────────────────────
-    let baseArticleId = seed.article_id;
+    const { map: familyMap, familyMembers } = await getFamilyCache();
 
-    if (seed.previous_manuscript_id) {
-      const [parentRows] = await db.promise().query(
-        `SELECT article_id FROM submissions
-          WHERE revision_id = ? OR article_id = ?
-          LIMIT 1`,
-        [seed.previous_manuscript_id, seed.previous_manuscript_id]
-      );
-      if (parentRows.length > 0 && parentRows[0].article_id) {
-        baseArticleId = parentRows[0].article_id;
-      }
+    const familyId = familyMap.get(seed.article_id) || seed.article_id;
+    const familyArticleIds = getFamilyArticleIds(familyId, familyMembers);
+
+    if (familyArticleIds.length === 0) {
+      return res.json({ status: "success", submissions: [] });
     }
-
-    // Normalized title for the punctuation/whitespace-tolerant match.
-    const normalizedSeedTitle = normalizeTitle(seed.title);
 
     // ────────────────────────────────────────────────────────────────────────
     // 3) Fetch every submission in the family, scoped to this author.
-    //    Match conditions (OR'd):
-    //      - same article_id
-    //      - previous_manuscript_id points at the base article_id (revisions)
-    //      - base article_id points at this row (parent of the seed)
-    //      - normalized title equality (catches "Nigeria." vs "Nigeria")
+    //
+    //    Scoping by email is intentionally kept — "related submissions" from
+    //    the author's perspective means "my versions of this paper." The
+    //    family gives us the shape; the author filter gives us the subset
+    //    that actually belongs to this user.
     // ────────────────────────────────────────────────────────────────────────
     const [submissions] = await db.promise().query(
       `SELECT *
@@ -80,17 +67,9 @@ const getRelatedSubmissions = async (req, res) => {
         WHERE corresponding_authors_email = ?
           AND title != ''
           AND title != 'Draft Submission'
-          AND (
-               article_id = ?
-            OR previous_manuscript_id = ?
-            OR ? = revision_id
-            OR REGEXP_REPLACE(
-                 REGEXP_REPLACE(LOWER(title), '[^a-z0-9 ]+', ''),
-                 ' +', ' '
-               ) = ?
-          )
+          AND article_id IN (?)
         ORDER BY process_start_date ASC, id ASC`,
-      [userEmail, baseArticleId, baseArticleId, baseArticleId, normalizedSeedTitle]
+      [userEmail, familyArticleIds]
     );
 
     if (submissions.length === 0) {
@@ -98,21 +77,24 @@ const getRelatedSubmissions = async (req, res) => {
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // 4) Batch-fetch keywords and authors for ALL related submissions in
-    //    two queries instead of 2N. Previously: 1 query per submission per
-    //    table (2N round trips). Now: 2 round trips total.
+    // 4) Batch-fetch keywords and authors in two queries.
+    //
+    //    The schema uses `submission_keywords.article_id` to mean the
+    //    submission's revision_id, so we key by revision_id here. Same for
+    //    submission_authors.submission_id — this endpoint's existing
+    //    contract expects revision_id there. (If that ever changes, adjust
+    //    both sides consistently.)
     // ────────────────────────────────────────────────────────────────────────
     const submissionKeys = submissions.map((s) => s.revision_id || s.id);
 
-    const [allKeywords, allAuthors] = await Promise.all([
+    const [[allKeywords], [allAuthors]] = await Promise.all([
       db.promise().query(
         `SELECT article_id, keyword
            FROM submission_keywords
           WHERE article_id IN (?)
           ORDER BY id ASC`,
         [submissionKeys]
-      ).then(([rows]) => rows),
-
+      ),
       db.promise().query(
         `SELECT submission_id,
                 authors_fullname AS name,
@@ -120,32 +102,35 @@ const getRelatedSubmissions = async (req, res) => {
            FROM submission_authors
           WHERE submission_id IN (?)`,
         [submissionKeys]
-      ).then(([rows]) => rows),
+      ),
     ]);
 
-    // Group keywords and authors by submission key so the map below is O(n).
-    const keywordsByKey = allKeywords.reduce((acc, row) => {
-      (acc[row.article_id] = acc[row.article_id] || []).push(row.keyword);
-      return acc;
-    }, {});
+    // Group results by key for O(1) lookup per submission.
+    const keywordsByKey = new Map();
+    for (const row of allKeywords) {
+      if (!keywordsByKey.has(row.article_id)) keywordsByKey.set(row.article_id, []);
+      keywordsByKey.get(row.article_id).push(row.keyword);
+    }
 
-    const authorsByKey = allAuthors.reduce((acc, row) => {
-      (acc[row.submission_id] = acc[row.submission_id] || []).push({
+    const authorsByKey = new Map();
+    for (const row of allAuthors) {
+      if (!authorsByKey.has(row.submission_id)) authorsByKey.set(row.submission_id, []);
+      authorsByKey.get(row.submission_id).push({
         name: row.name,
         email: row.email,
       });
-      return acc;
-    }, {});
+    }
 
     // ────────────────────────────────────────────────────────────────────────
-    // 5) Shape the response the same way the previous version did.
+    // 5) Shape the response — same contract as before, plus family_id.
     // ────────────────────────────────────────────────────────────────────────
     const submissionsWithDetails = submissions.map((submission) => {
       const key = submission.revision_id || submission.id;
       return {
         ...submission,
-        keywords: keywordsByKey[key] || [],
-        authors_list: authorsByKey[key] || [],
+        family_id: familyMap.get(submission.article_id) || submission.article_id,
+        keywords: keywordsByKey.get(key) || [],
+        authors_list: authorsByKey.get(key) || [],
       };
     });
 
