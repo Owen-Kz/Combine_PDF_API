@@ -1,6 +1,22 @@
 // controllers/invitations/declineReviewer.js
 const db = require("../../../../routes/db.config");
 const sendConfirmationEmail = require("./sendConfirmationEmail");
+const { LogAction } = require("../../../../Logger");
+
+// Terminal statuses that mean the invitation can no longer be declined.
+// Centralized so adding a new status means one line, not scattered ifs.
+const TERMINAL_STATUS_MESSAGES = {
+  accepted: "This invitation has already been accepted and cannot be declined",
+  rejected: "You have already declined this invitation",
+  declined: "You have already declined this invitation",
+  expired: "This invitation has already expired",
+  canceled: "This invitation has been canceled",
+  completed: "This invitation is already complete",
+  review_submitted: "A review has already been submitted for this invitation",
+};
+
+// Statuses from which a decline is valid.
+const DECLINABLE_STATUSES = ['invite_sent', 'pending'];
 
 const declineReviewer = async (req, res) => {
   let connection;
@@ -8,128 +24,103 @@ const declineReviewer = async (req, res) => {
     const { articleId, email, token } = req.body;
 
     if (!articleId || !email || !token) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Missing required fields" 
+      return res.status(400).json({
+        status: "error",
+        message: "Missing required fields",
       });
     }
 
     connection = await db.promise();
     await connection.beginTransaction();
 
-    // First check if invitation exists and get its status from invitations table
-    const [invitationRecord] = await connection.query(
-      `SELECT * FROM invitations 
-       WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'`,
+    // ───────────────────────────────────────────────────────────────────────
+    // Single source of truth: the invitations table.
+    // FOR UPDATE locks the row so a concurrent accept can't race.
+    // ───────────────────────────────────────────────────────────────────────
+    const [invitationRows] = await connection.query(
+      `SELECT id, invitation_status, invited_user_name
+         FROM invitations
+        WHERE invitation_link = ?
+          AND invited_user = ?
+          AND invited_for = 'Submission Review'
+        LIMIT 1
+        FOR UPDATE`,
       [articleId, email]
     );
 
-    if (invitationRecord.length > 0) {
-      const status = invitationRecord[0].invitation_status;
-      
-      // Check if already accepted
-      if (status === 'accepted') {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "This invitation has already been accepted and cannot be declined" 
-        });
-      }
-      
-      // Check if already declined
-      if (status === 'rejected') {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "You have already declined this invitation" 
-        });
-      }
-      
-      // Check if expired
-      if (status === 'expired') {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "This invitation has already expired" 
-        });
-      }
-    }
-
-    // Find the invitation in submitted_for_review table
-    const [invitation] = await connection.query(
-      `SELECT * FROM submitted_for_review 
-       WHERE article_id = ? AND reviewer_email = ? AND status = 'submitted_for_review'`,
-      [articleId, email]
-    );
-
-    if (invitation.length === 0) {
-      // Check if there's a record with different status to give appropriate message
-      const [existingRecord] = await connection.query(
-        `SELECT status FROM submitted_for_review 
-         WHERE article_id = ? AND reviewer_email = ?`,
-        [articleId, email]
-      );
-
-      if (existingRecord.length > 0) {
-        const currentStatus = existingRecord[0].status;
-        
-        if (currentStatus === 'review_invitation_accepted') {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "You have already accepted this invitation and cannot decline it now" 
-          });
-        } else if (currentStatus === 'review_request_rejected') {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "You have already declined this invitation" 
-          });
-        } else if (currentStatus === 'review_submitted') {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "A review has already been submitted for this invitation" 
-          });
-        }
-      }
-      
-      return res.status(404).json({ 
-        status: "error", 
-        message: "Invitation not found" 
+    if (invitationRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        status: "error",
+        message: "Invitation not found",
       });
     }
 
-    const editor_email = invitation[0].submitted_by;
+    const invitation = invitationRows[0];
 
-    // Update submission status
+    // Reject terminal statuses with the appropriate message.
+    const terminalMessage = TERMINAL_STATUS_MESSAGES[invitation.invitation_status];
+    if (terminalMessage) {
+      await connection.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: terminalMessage,
+      });
+    }
+
+    // Only explicitly-declinable statuses proceed.
+    if (!DECLINABLE_STATUSES.includes(invitation.invitation_status)) {
+      await connection.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: `This invitation cannot be declined because its status is "${invitation.invitation_status}"`,
+      });
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Update the invitation + the manuscript row.
+    // ───────────────────────────────────────────────────────────────────────
     await connection.query(
-      "UPDATE submissions SET status = 'review_request_rejected' WHERE revision_id = ?",
+      `UPDATE invitations
+          SET invitation_status = 'rejected',
+              response_date = NOW()
+        WHERE id = ?`,
+      [invitation.id]
+    );
+
+    await connection.query(
+      `UPDATE submissions
+          SET status = 'review_request_rejected'
+        WHERE revision_id = ?`,
       [articleId]
-    );
-
-    // Update invitation status in submitted_for_review
-    await connection.query(
-      "UPDATE submitted_for_review SET status = 'review_request_rejected' WHERE article_id = ? AND reviewer_email = ?",
-      [articleId, email]
-    );
-
-    // Update invitation status in invitations table
-    await connection.query(
-      "UPDATE invitations SET invitation_status = 'rejected' WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'",
-      [articleId, email]
     );
 
     await connection.commit();
 
-    // Send confirmation email
-    await sendConfirmationEmail(editor_email, email, "rejected");
+    // ───────────────────────────────────────────────────────────────────────
+    // Post-commit side effects — best-effort, never fail the decline.
+    // ───────────────────────────────────────────────────────────────────────
+    try {
+      const editorEmail = invitation.invited_user_name || null;
+      if (editorEmail) {
+        await sendConfirmationEmail(editorEmail, email, "rejected");
+      }
+    } catch (emailError) {
+      LogAction(`Confirmation email failed (decline reviewer): ${emailError.message}`, "ERROR");
+    }
 
-    return res.json({ 
-      status: "success", 
-      message: "Review invitation declined successfully"
+    return res.json({
+      status: "success",
+      message: "Review invitation declined successfully",
     });
-
   } catch (error) {
-    if (connection) await connection.rollback();
-    console.error("Error declining review invitation:", error);
-    return res.status(500).json({ 
-      status: "error", 
-      message: error.message 
+    if (connection) {
+      try { await connection.rollback(); } catch (_) { /* swallow */ }
+    }
+    LogAction(`Error declining review invitation: ${error.message}`, "ERROR");
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to decline invitation",
     });
   }
 };

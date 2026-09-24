@@ -5,189 +5,189 @@ const { sendReviewerWelcomeEmail } = require("../../../utils/sendWelcomeEmail");
 const generateInvitationSession = require("../generateInvitationSession");
 const { LogAction } = require("../../../../Logger");
 
+// Terminal statuses that mean the invitation can no longer be accepted.
+const BLOCKING_STATUS_MESSAGES = {
+  accepted: "This invitation has already been accepted",
+  rejected: "This invitation was previously declined and can no longer be accepted",
+  declined: "This invitation was previously declined and can no longer be accepted",
+  expired: "This invitation has expired and can no longer be accepted",
+  canceled: "This invitation has been canceled",
+  completed: "This invitation is already complete",
+  review_submitted: "A review has already been submitted for this invitation",
+};
+
 const acceptReviewer = async (req, res) => {
   let connection;
+  let responseSent = false;
+
   try {
     const { articleId, email, token } = req.body;
 
     if (!articleId || !email || !token) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Missing required fields" 
+      return res.status(400).json({
+        status: "error",
+        message: "Missing required fields",
       });
     }
 
     connection = await db.promise();
     await connection.beginTransaction();
 
-    // First check if invitation exists and get its status from invitations table
-    const [invitationRecord] = await connection.query(
-      `SELECT * FROM invitations 
-       WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'`,
+    // ───────────────────────────────────────────────────────────────────────
+    // Single source of truth: the invitations table.
+    // FOR UPDATE locks the row so a concurrent accept/decline can't race.
+    // ───────────────────────────────────────────────────────────────────────
+    const [invitationRows] = await connection.query(
+      `SELECT id, invitation_status, invited_user_name
+         FROM invitations
+        WHERE invitation_link = ?
+          AND invited_user = ?
+          AND invited_for = 'Submission Review'
+        LIMIT 1
+        FOR UPDATE`,
       [articleId, email]
     );
 
-    if (invitationRecord.length > 0) {
-      const status = invitationRecord[0].invitation_status;
-      
-      // Check if already accepted
-      if (status === 'accepted') {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "This invitation has already been accepted and cannot be accepted again" 
-        });
-      }
-      
-      // Check if already declined
-      if (status === 'rejected') {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "This invitation was previously declined and can no longer be accepted" 
-        });
-      }
-      
-      // Check if expired
-      if (status === 'expired') {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "This invitation has expired and can no longer be accepted" 
-        });
-      }
-    }
-
-    // Find the invitation in invitations table
-    const [invitation] = await connection.query(
-      `SELECT * FROM invitations 
-       WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'`,
-      [articleId, email]
-    );
-
-    if (invitation.length === 0) {
-      // Check if there's a record with different status to give appropriate message
-      const [existingRecord] = await connection.query(
-        `SELECT invitation_status FROM invitations 
-         WHERE invitation_link = ? AND invited_user = ?`,
-        [articleId, email]
-      );
-
-      if (existingRecord.length > 0) {
-        const currentStatus = existingRecord[0].status;
-        
-        if (currentStatus === 'review_invitation_accepted') {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "You have already accepted this invitation" 
-          });
-        } else if (currentStatus === 'review_request_rejected') {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "You have already declined this invitation" 
-          });
-        } else if (currentStatus === 'review_submitted') {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "A review has already been submitted for this invitation" 
-          });
-        }
-      }
-      
-      return res.status(404).json({ 
-        status: "error", 
-        message: "Invitation not found" 
+    if (invitationRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        status: "error",
+        message: "Invitation not found",
       });
     }
 
-    const editor_email = invitation[0].submitted_by;
+    const invitation = invitationRows[0];
 
-    // Check if reviewer exists in authors_account
-    const [existingReviewer] = await connection.query(
-      "SELECT * FROM authors_account WHERE email = ?",
+    // Block already-resolved invitations with a specific message.
+    const blockMessage = BLOCKING_STATUS_MESSAGES[invitation.invitation_status];
+    if (blockMessage) {
+      await connection.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: blockMessage,
+      });
+    }
+
+    const ACCEPTABLE = ['invite_sent', 'pending'];
+    if (!ACCEPTABLE.includes(invitation.invitation_status)) {
+      await connection.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: `This invitation cannot be accepted because its status is "${invitation.invitation_status}"`,
+      });
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Reviewer account check + promotion
+    // ───────────────────────────────────────────────────────────────────────
+    const [reviewerRows] = await connection.query(
+      `SELECT * FROM authors_account WHERE email = ? LIMIT 1`,
       [email]
     );
 
-    if (existingReviewer.length === 0) {
-      // Reviewer doesn't have an account yet
+    if (reviewerRows.length === 0) {
+      await connection.rollback();
       return res.status(200).json({
         status: "info",
         message: "Please create an account first",
-        requiresAccount: true
+        requiresAccount: true,
       });
     }
 
-    // Ensure is_reviewer is set to 'yes' (promote existing user if needed)
-    const isAlreadyReviewer = existingReviewer[0].is_reviewer === 'yes';
-    if (!isAlreadyReviewer) {
+    const reviewer = reviewerRows[0];
+
+    if (reviewer.is_reviewer !== 'yes') {
       await connection.query(
-        "UPDATE authors_account SET is_reviewer = 'yes', is_available_for_review = 'yes' WHERE email = ?",
+        `UPDATE authors_account
+            SET is_reviewer = 'yes',
+                is_available_for_review = 'yes'
+          WHERE email = ?`,
         [email]
       );
     }
 
-    // Update submission status
+    // ───────────────────────────────────────────────────────────────────────
+    // Update the invitation + the manuscript row.
+    // ───────────────────────────────────────────────────────────────────────
     await connection.query(
-      "UPDATE submissions SET status = 'review_invitation_accepted' WHERE revision_id = ?",
+      `UPDATE invitations
+          SET invitation_status = 'accepted',
+              acceptance_date = NOW()
+        WHERE id = ?`,
+      [invitation.id]
+    );
+
+    await connection.query(
+      `UPDATE submissions
+          SET status = 'review_invitation_accepted'
+        WHERE revision_id = ?`,
       [articleId]
-    );
-
-    // Update invitation status in submitted_for_review
-    await connection.query(
-      "UPDATE submitted_for_review SET status = 'review_invitation_accepted' WHERE article_id = ? AND reviewer_email = ?",
-      [articleId, email]
-    );
-
-    // Update invitation status in invitations table
-    await connection.query(
-      "UPDATE invitations SET invitation_status = 'accepted', acceptance_date = NOW() WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'Submission Review'",
-      [articleId, email]
     );
 
     await connection.commit();
 
-    // Re-fetch the (now-updated) reviewer record so the session reflects the
-    // promoted is_reviewer flag
-    const [updatedReviewer] = await connection.query(
-      "SELECT * FROM authors_account WHERE email = ?",
+    // ───────────────────────────────────────────────────────────────────────
+    // Post-commit: session, emails
+    // ───────────────────────────────────────────────────────────────────────
+    const [updatedReviewerRows] = await connection.query(
+      `SELECT * FROM authors_account WHERE email = ? LIMIT 1`,
       [email]
     );
-    const reviewerRow = updatedReviewer[0] || existingReviewer[0];
+    const reviewerRow = updatedReviewerRows[0] || reviewer;
 
-    // Generate a login session so the reviewer lands logged-in on the paper
-    const { token: sessionToken, user: sessionUser } = await generateInvitationSession(
-      req,
-      res,
-      reviewerRow,
-      (sql, params) => connection.query(sql, params)
-    );
-
-    // Send confirmation email to editor (never blocks the acceptance itself)
+    let sessionToken = null;
+    let sessionUser = null;
     try {
-      await sendConfirmationEmail(editor_email, email, "accepted");
-    } catch (emailError) {
-      LogAction(`Confirmation email to editor failed (accept reviewer): ${emailError.message}`, "ERROR");
+      const session = await generateInvitationSession(
+        req,
+        res,
+        reviewerRow,
+        (sql, params) => connection.query(sql, params)
+      );
+      sessionToken = session?.token || null;
+      sessionUser = session?.user || null;
+    } catch (sessionError) {
+      LogAction(`Session generation failed (accept reviewer): ${sessionError.message}`, "ERROR");
     }
 
-    // Send welcome email to the reviewer
-    const reviewerName = existingReviewer[0];
+    // Confirmation email to the inviter — never blocks the acceptance itself.
+    try {
+      const editorEmail = invitation.invited_user_name || null;
+      if (editorEmail) {
+        await sendConfirmationEmail(editorEmail, email, "accepted");
+      }
+    } catch (emailError) {
+      LogAction(`Confirmation email failed (accept reviewer): ${emailError.message}`, "ERROR");
+    }
+
+    // Welcome email to the reviewer — fire and forget.
     sendReviewerWelcomeEmail({
       email,
-      firstName: reviewerName.firstname || '',
-      lastName: reviewerName.lastname || ''
-    }).catch(err => LogAction(`Failed to send reviewer welcome email: ${err.message}`, "ERROR"));
+      firstName: reviewer.firstname || '',
+      lastName: reviewer.lastname || '',
+    }).catch((err) =>
+      LogAction(`Failed to send reviewer welcome email: ${err.message}`, "ERROR")
+    );
 
-    return res.json({ 
-      status: "success", 
+    responseSent = true;
+
+    return res.json({
+      status: "success",
       message: "Review invitation accepted successfully",
       token: sessionToken,
       user: sessionUser,
-      redirectTo: `/reviewerdash/review/${articleId}&x=${sessionToken}`
+      redirectTo: `/reviewerdash/review/${articleId}&x=${sessionToken || ''}`,
     });
-
   } catch (error) {
-    if (connection) await connection.rollback();
+    if (connection) {
+      try { await connection.rollback(); } catch (_) { /* swallow */ }
+    }
     LogAction(`Error accepting review invitation: ${error.message}`, "ERROR");
-    return res.status(500).json({ 
-      status: "error", 
-      message: error.message 
+
+    if (responseSent) return;
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to accept invitation",
     });
   }
 };
