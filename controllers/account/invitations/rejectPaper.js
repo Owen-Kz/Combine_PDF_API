@@ -41,8 +41,8 @@ const RejectPaper = async (req, res) => {
 
     // Validate editor's role
     const [editorRows] = await connection.execute(
-      "SELECT email FROM editors WHERE email = ? AND (editorial_level IN (?, ?, ?))",
-      [editor, "editor_in_chief", "associate_editor", "editorial_assistant"]
+      "SELECT email FROM editors WHERE email = ? AND (editorial_level IN (?, ?, ?, ?))",
+      [editor, "editor_in_chief", "associate_editor", "editorial_assistant", "sectional_editor"]
     );
 
     if (editorRows.length === 0) {

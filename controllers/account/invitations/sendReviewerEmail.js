@@ -1,5 +1,4 @@
-const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
+// backend/controllers/editors/email/inviteReviewerEmail.js
 const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
@@ -11,197 +10,106 @@ const convertQUILLTOHTML = require("./convertHTML");
 
 dotenv.config();
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Configure multer for file uploads
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 3 // Max 3 attachments
-  }
-});
-
-// Promisify database queries
 const dbQuery = promisify(db.query).bind(db);
 
-/**
- * Sends an invitation email to a reviewer
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
 const inviteReviewerEmail = async (req, res) => {
   try {
-    // Validate user authentication
     if (!req.user) {
-      return res.status(401).json({ 
-        status: "error", 
-        message: "Authentication required" 
-      });
+      return res.status(401).json({ status: "error", message: "Authentication required" });
     }
 
-    // Check admin privileges
-    const editorId = req.user.email;
-    if (!(await isAdminAccount(editorId))) {
-      return res.status(403).json({ 
-        status: "error", 
-        message: "Admin privileges required" 
-      });
-    }
-
-    // Process file uploads
-    await new Promise((resolve, reject) => {
-      upload.array("attachments[]", 3)(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Extract and validate request data
-    const { 
-      articleId, 
-      reviewerEmail, 
-      subject, 
-      message, 
-      ccEmail, 
-      bccEmail, 
-      handlingEditorEmail 
+    const {
+      articleId,
+      reviewerEmail,
+      subject,
+      message,
+      ccEmail,
+      bccEmail,
+      handlingEditorEmail,
+      attachments: attachmentInput = [],
     } = req.body;
 
     if (!articleId || !reviewerEmail || !subject || !message) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Missing required fields" 
-      });
+      return res.status(400).json({ status: "error", message: "Missing required fields" });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(reviewerEmail)) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Invalid reviewer email format" 
-      });
+      return res.status(400).json({ status: "error", message: "Invalid reviewer email format" });
     }
 
-    // Process attachments
-    let attachments = [];
-    if (req.files?.length > 0) {
-      try {
-        attachments = await Promise.all(
-          req.files.map(file => {
-            return new Promise((resolve, reject) => {
-              cloudinary.uploader.upload_stream(
-                { 
-                  resource_type: "auto",
-                  folder: "asfirj/review_attachments"
-                },
-                (error, result) => {
-                  if (error) reject(error);
-                  else resolve({ 
-                    name: escapeHtml(file.originalname), 
-                    url: result.secure_url 
-                  });
-                }
-              ).end(file.buffer);
-            });
-          })
-        );
-      } catch (err) {
-        console.error("Cloudinary upload error:", err);
-        return res.status(500).json({ 
-          status: "error", 
-          message: "File upload failed" 
-        });
-      }
-    }
+    // Attachments arrive as [{ url, name, size }] from the upload endpoint.
+    // Normalise and sanitize the display name. Reject any entry without a URL.
+    const attachments = Array.isArray(attachmentInput)
+      ? attachmentInput
+          .filter((a) => a && typeof a.url === "string" && a.url.trim())
+          .map((a) => ({
+            url: a.url.trim(),
+            name: escapeHtml(a.name || a.url.split("/").pop() || "attachment"),
+            size: typeof a.size === "number" ? a.size : null,
+          }))
+      : [];
 
     // Get editor details
     const editorData = await dbQuery(
-      `SELECT email FROM editors 
-       WHERE email = ? AND editorial_level IN (?, ?, ?)`,
-      [req.user.email, "editor_in_chief", "associate_editor", "editorial_assistant"]
+      `SELECT email FROM editors
+       WHERE email = ? AND editorial_level IN (?, ?, ?, ?)`,
+      [req.user.email, "editor_in_chief", "associate_editor", "editorial_assistant", "sectional_editor"]
     );
 
     if (!editorData.length) {
-      return res.status(403).json({ 
-        status: "error", 
-        message: "Unauthorized account" 
-      });
+      return res.status(403).json({ status: "error", message: "Unauthorized account" });
     }
 
-    // Determine the handling editor (who receives all correspondence)
-    // Defaults to the logged-in user; an explicit handling editor email is
-    // used instead when provided (the person sending the invitation may not
-    // be the handling editor).
+    // Determine the handling editor
     let editorEmail = editorData[0].email;
     if (handlingEditorEmail && handlingEditorEmail.trim()) {
-      const normalizedHandlingEditor = handlingEditorEmail.trim();
-      if (!emailRegex.test(normalizedHandlingEditor)) {
-        return res.status(400).json({ 
-          status: "error", 
-          message: "Invalid handling editor email format" 
-        });
+      const normalized = handlingEditorEmail.trim();
+      if (!emailRegex.test(normalized)) {
+        return res.status(400).json({ status: "error", message: "Invalid handling editor email format" });
       }
-      if (normalizedHandlingEditor.toLowerCase() !== editorEmail.toLowerCase()) {
-        const handlingEditorData = await dbQuery(
-          `SELECT email FROM editors WHERE email = ?`,
-          [normalizedHandlingEditor]
-        );
+      if (normalized.toLowerCase() !== editorEmail.toLowerCase()) {
+        const handlingEditorData = await dbQuery(`SELECT email FROM editors WHERE email = ?`, [normalized]);
         if (!handlingEditorData.length) {
-          return res.status(400).json({ 
-            status: "error", 
-            message: "Handling editor email is not a registered editor account" 
+          return res.status(400).json({
+            status: "error",
+            message: "Handling editor email is not a registered editor account",
           });
         }
         editorEmail = handlingEditorData[0].email;
       }
     }
 
-    // Check if reviewer is an author
+    // Reviewer cannot be an author of the manuscript
     const isAuthor = await dbQuery(
-      `SELECT 1 FROM submission_authors 
-       WHERE authors_email = ? AND submission_id = ?`,
+      `SELECT 1 FROM submission_authors WHERE authors_email = ? AND submission_id = ?`,
       [reviewerEmail, articleId]
     );
-
     if (isAuthor.length > 0) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Reviewer cannot be an author of this article" 
-      });
+      return res.status(400).json({ status: "error", message: "Reviewer cannot be an author of this article" });
     }
 
-    // Check for existing invitations
+    // Avoid duplicate invitations
     const existingInvitation = await dbQuery(
-      `SELECT 1 FROM submitted_for_review 
-       WHERE article_id = ? AND reviewer_email = ? 
-       AND status IN (?, ?, ?)`,
-      [articleId, reviewerEmail, "submitted_for_review", 
-       "review_invitation_accepted", "review_submitted"]
+      `SELECT 1 FROM submitted_for_review
+       WHERE article_id = ? AND reviewer_email = ?
+         AND status IN (?, ?, ?)`,
+      [articleId, reviewerEmail, "submitted_for_review", "review_invitation_accepted", "review_submitted"]
     );
-
     if (existingInvitation.length > 0) {
-      return res.status(200).json({ 
-        status: "success", 
-        message: `Invitation already sent to ${reviewerEmail}` 
+      return res.status(200).json({
+        status: "success",
+        message: `Invitation already sent to ${reviewerEmail}`,
       });
     }
 
-    // Update submission status
     await dbQuery(
-      `UPDATE submissions SET status = 'submitted_for_review' 
-       WHERE revision_id = ?`,
+      `UPDATE submissions SET status = 'submitted_for_review' WHERE revision_id = ?`,
       [articleId]
     );
 
-    // Save email details
     const invitedFor = "Submission Review";
+
     saveEmailDetails(
       reviewerEmail,
       escapeHtml(subject),
@@ -214,83 +122,63 @@ const inviteReviewerEmail = async (req, res) => {
       invitedFor
     );
 
-    // Prepare email data
     const emailData = {
-      sender: { 
+      sender: {
         email: process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL,
-        name: "ASFI Research Journal" 
+        name: "ASFI Research Journal",
       },
       to: [{ email: reviewerEmail }],
       subject: escapeHtml(subject),
       htmlContent: convertQUILLTOHTML(JSON.parse(message)),
       headers: {
         'List-Unsubscribe': `<https://asfirj.org/unsubscribe?email=${encodeURIComponent(reviewerEmail)}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
-      ...(ccEmail && { 
-        cc: ccEmail.split(",")
-          .filter(Boolean)
-          .map(email => ({ email: email.trim() })) 
+      ...(ccEmail && {
+        cc: ccEmail.split(",").filter(Boolean).map((email) => ({ email: email.trim() })),
       }),
-      ...(bccEmail && { 
-        bcc: bccEmail.split(",")
-          .filter(Boolean)
-          .map(email => ({ email: email.trim() })) 
+      ...(bccEmail && {
+        bcc: bccEmail.split(",").filter(Boolean).map((email) => ({ email: email.trim() })),
       }),
+      // Brevo/Sendinblue accepts remote URLs directly — no need to re-upload
       ...(attachments.length > 0 && {
-        attachment: attachments.map(file => ({
-          url: file.url,
-          name: file.name
-        }))
-      })
+        attachment: attachments.map((file) => ({ url: file.url, name: file.name })),
+      }),
     };
 
-    // Send email
     await sendMail(emailData);
 
-    // Record the invitation
     await dbQuery(
-      `INSERT INTO submitted_for_review 
-       (article_id, reviewer_email, submitted_by) 
-       VALUES (?, ?, ?)`,
+      `INSERT INTO submitted_for_review (article_id, reviewer_email, submitted_by) VALUES (?, ?, ?)`,
       [articleId, reviewerEmail, editorEmail]
     );
 
-    // Create invitation record
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 3);
-    
+
     await dbQuery(
-      `INSERT INTO invitations 
-       (invited_user, invitation_link, invitation_expiry_date, invited_for, invited_user_name) 
+      `INSERT INTO invitations
+       (invited_user, invitation_link, invitation_expiry_date, invited_for, invited_user_name)
        VALUES (?, ?, ?, ?, ?)`,
-      [
-        reviewerEmail, 
-        articleId, 
-        expiryDate.toISOString().split("T")[0], 
-        invitedFor, 
-        editorEmail
-      ]
+      [reviewerEmail, articleId, expiryDate.toISOString().split("T")[0], invitedFor, editorEmail]
     );
 
-    return res.json({ 
-      status: "success", 
+    return res.json({
+      status: "success",
       message: "Review invitation sent successfully",
       data: {
         reviewerEmail,
         articleId,
-        expiryDate: expiryDate.toISOString()
-      }
+        expiryDate: expiryDate.toISOString(),
+        attachments: attachments.length,
+      },
     });
-
   } catch (error) {
     console.error("Error in inviteReviewerEmail:", error);
-    return res.status(500).json({ 
-      status: "error", 
+    return res.status(500).json({
+      status: "error",
       message: "Internal server error",
-      ...(process.env.NODE_ENV === "development" && { 
-        error: error.message 
-      })
+      ...(process.env.NODE_ENV === "development" && { error: error.message }),
     });
   }
 };

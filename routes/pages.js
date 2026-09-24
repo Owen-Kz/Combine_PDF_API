@@ -107,6 +107,7 @@ const updateEditorLevel = require("../controllers/editors/management/updateEdito
 const setEditorStatus = require("../controllers/editors/management/setEditorStatus");
 const deleteEditorAccount = require("../controllers/editors/management/deleteEditorAccount");
 const inviteEditorialAssistant = require("../controllers/editors/management/inviteEditorialAssistant");
+const uploadInvitationAttachment = require("../controllers/account/invitations/uploadInvitationAttachment");
 
 
 
@@ -276,7 +277,7 @@ router.post("/editors/getReviewerEmailTemplate", AuthorLoggedIn, reviewerEmailTe
 router.get("/editors/listOfAuthorsForSuggestions", AuthorLoggedIn, listOfAuthorsForSuggestions)
 router.post("/editors/listOfReviewerEmails", AuthorLoggedIn, listOfReviewerEmails)
 router.post("/editors/listOfEditorEmails", AuthorLoggedIn, listofEditorEmails)
-
+router.post('/editors/upload-invitation-attachment', AuthorLoggedIn, uploadInvitationAttachment);
 router.post("/editors/email/inviteEditor", AuthorLoggedIn, inviteEditorEMail)
 router.post("/editors/email/InviteReviewer", AuthorLoggedIn, inviteReviewerEmail)
 // RESEND INVITATION
