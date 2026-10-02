@@ -1,5 +1,4 @@
 const dbPromise = require("../../../routes/journal.db");
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const NodeCache = require('node-cache');  // npm install node-cache
@@ -8,29 +7,33 @@ const { transformToLowerCase } = require("../../../utils/utils.global");
 // Initialize cache with standard TTL (5 minutes)
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 
-// Configure multer for file uploads (optimized)
+// Directory where editor photos are stored (uploaded via /api/uploads/editor-image)
 const uploadDir = path.join(__dirname, '../../useruploads/editors');
-// Ensure directory exists at startup (not per request)
-fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'editor-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// The upload route (/api/uploads/editor-image) saves files to useruploads/editor-images/,
+// but editor photos are stored under useruploads/editors/.
+// We normalize whatever URL/filename the client sends us to just the filename
+// so the DB continues to store a bare filename (consistent with existing records).
+const normalizePhotoValue = (photoValue) => {
+    if (!photoValue || typeof photoValue !== 'string') return null;
+    const trimmed = photoValue.trim();
+    if (!trimmed) return null;
 
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif|webp/;
-        const isValid = allowedTypes.test(path.extname(file.originalname).toLowerCase()) &&
-                        allowedTypes.test(file.mimetype);
-        isValid ? cb(null, true) : cb(new Error('Only image files are allowed'));
+    // If it's a full URL, extract the last path segment (filename)
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+        try {
+            const withoutQuery = trimmed.split('?')[0].split('#')[0];
+            const parts = withoutQuery.split('/').filter(Boolean);
+            const filename = parts[parts.length - 1];
+            return filename ? decodeURIComponent(filename) : null;
+        } catch (_) {
+            return null;
+        }
     }
-}).single('photo');
+
+    // Bare filename – return as-is
+    return trimmed;
+};
 
 // ---------- Helper: Fetch fields with counts ----------
 async function getFieldsWithCounts() {
@@ -85,9 +88,6 @@ const getEditorsPage = async (req, res) => {
     try {
         const fields = await getFieldsWithCounts();
         const firstEditors = await getFirstEditorsForFields(fields, 6);
-        
-        // console.log('Fields with counts:', fields);
-        // console.log('First editors:', firstEditors);
 
         res.render("editors", {
             fields,
@@ -161,7 +161,7 @@ const getEditorsByFields = async (req, res) => {
             const cacheKey = `field:${field}:offset${offset}:limit${limit}`;
             let data = cache.get(cacheKey);
             if (!data) {
-        const query = "SELECT id, prefix, fullname, email, discipline, photo, bio, field, country, is_old_editor FROM editors_list WHERE field = ? ORDER BY id ASC LIMIT ? OFFSET ?";
+                const query = "SELECT id, prefix, fullname, email, discipline, photo, bio, field, country, is_old_editor FROM editors_list WHERE field = ? ORDER BY id ASC LIMIT ? OFFSET ?";
                 const [editors] = await dbPromise.query(query, [field, limit, offset]);
                 const countQuery = "SELECT COUNT(*) as total FROM editors_list WHERE field = ?";
                 const [[{ total }]] = await dbPromise.query(countQuery, [field]);
@@ -206,82 +206,101 @@ const getEditorById = async (req, res) => {
 };
 
 // ---------- POST: Add editor ----------
+// Expects `photo` in the body as either a bare filename or a full URL
+// (the client already uploaded the image via /api/uploads/editor-image).
 const addEditor = async (req, res) => {
-    upload(req, res, async (err) => {
-        if (err) return res.status(400).json({ status: "error", message: err.message });
+    try {
+        const { prefix, fullname, email, field, discipline, country, bio, photo } = req.body;
 
-        try {
-            const { prefix, fullname, email, field, discipline, country, bio } = req.body;
-            if (!prefix || !fullname || !field || !discipline) {
-                return res.status(400).json({ status: "error", message: "Required fields are missing" });
-            }
-
-            const photo = req.file ? req.file.filename : null;
-
-            const [result] = await dbPromise.query(
-                `INSERT INTO editors_list (prefix, fullname, email, field, discipline, country, photo, bio)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [prefix, fullname, transformToLowerCase(email) || null, field, discipline, country, photo, bio]
-            );
-
-            // Invalidate all editor-related caches
-            const keysToDelete = cache.keys().filter(k =>
-                k.startsWith('field:') || k.startsWith('disciplines:')
-            );
-            keysToDelete.push('fields:withCounts');
-            cache.del(keysToDelete);
-
-            res.json({ status: "success", message: "Editor added successfully", editorId: result.insertId });
-        } catch (error) {
-            console.error("Error adding editor:", error);
-            res.status(500).json({ status: "error", message: error.message });
+        if (!prefix || !fullname || !field || !discipline) {
+            return res.status(400).json({ status: "error", message: "Required fields are missing" });
         }
-    });
+
+        const photoFilename = normalizePhotoValue(photo);
+
+        const [result] = await dbPromise.query(
+            `INSERT INTO editors_list (prefix, fullname, email, field, discipline, country, photo, bio)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [prefix, fullname, transformToLowerCase(email) || null, field, discipline, country, photoFilename, bio]
+        );
+
+        // Invalidate all editor-related caches
+        const keysToDelete = cache.keys().filter(k =>
+            k.startsWith('field:') || k.startsWith('disciplines:')
+        );
+        keysToDelete.push('fields:withCounts');
+        cache.del(keysToDelete);
+
+        res.json({ status: "success", message: "Editor added successfully", editorId: result.insertId });
+    } catch (error) {
+        console.error("Error adding editor:", error);
+        res.status(500).json({ status: "error", message: error.message });
+    }
 };
 
 // ---------- POST: Update editor ----------
+// Expects `photo` in the body as either a bare filename or a full URL.
+// If the photo value differs from the existing one, the old local file is removed.
 const updateEditor = async (req, res) => {
-    upload(req, res, async (err) => {
-        if (err) return res.status(400).json({ status: "error", message: err.message });
+    try {
+        const { id, prefix, fullname, email, field, discipline, country, bio, photo, is_old_editor } = req.body;
 
-        try {
-            const { id, prefix, fullname, email, field, discipline, country, bio } = req.body;
-            if (!id) return res.status(400).json({ status: "error", message: "Editor ID is required" });
+        if (!id) return res.status(400).json({ status: "error", message: "Editor ID is required" });
 
-            const [existing] = await dbPromise.query("SELECT photo, is_old_editor FROM editors_list WHERE id = ?", [id]);
-            if (existing.length === 0) return res.status(404).json({ status: "error", message: "Editor not found" });
+        const [existing] = await dbPromise.query(
+            "SELECT photo, is_old_editor FROM editors_list WHERE id = ?",
+            [id]
+        );
+        if (existing.length === 0) {
+            return res.status(404).json({ status: "error", message: "Editor not found" });
+        }
 
-            let photo = existing[0].photo;
-            let isOldEditor = existing[0].is_old_editor || 'no';
-            if (req.file) {
-                photo = req.file.filename;
-                isOldEditor = 'no';
-                if (existing[0].photo) {
-                    try {
-                        await fs.unlink(path.join(uploadDir, existing[0].photo));
-                    } catch (e) { /* ignore */ }
+        const existingPhoto = existing[0].photo;
+        const existingIsOld = existing[0].is_old_editor || 'no';
+
+        // Normalize incoming photo (may be a URL or filename)
+        const incomingPhotoFilename = normalizePhotoValue(photo);
+
+        let finalPhoto = existingPhoto;
+        let finalIsOld = existingIsOld;
+
+        // Photo changed (or a new photo was provided)
+        if (incomingPhotoFilename && incomingPhotoFilename !== existingPhoto) {
+            finalPhoto = incomingPhotoFilename;
+            // Newly uploaded photos are never "old editors"
+            finalIsOld = 'no';
+
+            // Delete the previously stored local file (skip external/legacy URLs)
+            if (existingPhoto && existingIsOld !== 'yes') {
+                try {
+                    await fs.unlink(path.join(uploadDir, existingPhoto));
+                } catch (e) {
+                    // File may not exist locally; ignore
                 }
             }
-
-            await dbPromise.query(
-                `UPDATE editors_list SET prefix=?, fullname=?, email=?, field=?, discipline=?, country=?, photo=?, bio=?, is_old_editor=?
-                 WHERE id=?`,
-                [prefix, fullname, email || null, field, discipline, country, photo, bio, isOldEditor, id]
-            );
-
-            // Invalidate all editor-related caches
-            const keysToDelete = cache.keys().filter(k =>
-                k.startsWith('field:') || k.startsWith('editor:') || k.startsWith('disciplines:')
-            );
-            keysToDelete.push('fields:withCounts');
-            cache.del(keysToDelete);
-
-            res.json({ status: "success", message: "Editor updated successfully" });
-        } catch (error) {
-            console.error("Error updating editor:", error);
-            res.status(500).json({ status: "error", message: error.message });
+        } else if (is_old_editor !== undefined) {
+            // Client explicitly sent is_old_editor; honour it
+            finalIsOld = is_old_editor;
         }
-    });
+
+        await dbPromise.query(
+            `UPDATE editors_list SET prefix=?, fullname=?, email=?, field=?, discipline=?, country=?, photo=?, bio=?, is_old_editor=?
+             WHERE id=?`,
+            [prefix, fullname, email || null, field, discipline, country, finalPhoto, bio, finalIsOld, id]
+        );
+
+        // Invalidate all editor-related caches
+        const keysToDelete = cache.keys().filter(k =>
+            k.startsWith('field:') || k.startsWith('editor:') || k.startsWith('disciplines:')
+        );
+        keysToDelete.push('fields:withCounts');
+        cache.del(keysToDelete);
+
+        res.json({ status: "success", message: "Editor updated successfully" });
+    } catch (error) {
+        console.error("Error updating editor:", error);
+        res.status(500).json({ status: "error", message: error.message });
+    }
 };
 
 // ---------- DELETE: Editor ----------
@@ -295,18 +314,21 @@ const deleteEditor = async (req, res) => {
 
         await dbPromise.query("DELETE FROM editors_list WHERE id = ?", [id]);
 
-        if (editor[0].photo) {
+        // Only try to delete the local file for non-legacy editors
+        if (editor[0].photo && editor[0].is_old_editor !== 'yes') {
             try {
                 await fs.unlink(path.join(uploadDir, editor[0].photo));
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+                // File may not exist locally; ignore
+            }
         }
 
         // Invalidate all editor-related caches
-            const keysToDelete = cache.keys().filter(k =>
-                k.startsWith('field:') || k.startsWith('editor:') || k.startsWith('disciplines:')
-            );
-            keysToDelete.push('fields:withCounts');
-            cache.del(keysToDelete);
+        const keysToDelete = cache.keys().filter(k =>
+            k.startsWith('field:') || k.startsWith('editor:') || k.startsWith('disciplines:')
+        );
+        keysToDelete.push('fields:withCounts');
+        cache.del(keysToDelete);
 
         res.json({ status: "success", message: "Editor deleted successfully" });
     } catch (error) {
@@ -341,7 +363,6 @@ const getDisciplinesByField = async (req, res) => {
 const getAllFields = async (req, res) => {
     try {
         const fields = await getFieldsWithCounts();
-        console.log(fields); // Debugging line to check the fields fetched
         res.json({ status: "success", fields: fields.map(f => ({ field: f.field })) });
     } catch (error) {
         console.error("Error fetching fields:", error);

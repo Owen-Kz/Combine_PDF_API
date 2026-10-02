@@ -10,7 +10,6 @@ const requireEditorialManager = (req, res, next) => {
       message: "Authentication required"
     });
   }
-  console.log("user:", user);
 
   const isAllowed =
     user.isEditorialAssistant === true ||
