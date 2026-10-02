@@ -11,7 +11,6 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { LogAction } = require("../Logger");
-const dbPromise = require("./dbPromise.config");
 
 const router = express.Router();
 
@@ -61,7 +60,6 @@ const uploadSingleImage = multer({
 
 router.post("/editor-image", (req, res) => {
     uploadSingleImage.single("image")(req, res, async (err) => {
-        const {id} = req.body;
         if (err) {
             const message =
                 err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE"
@@ -79,9 +77,7 @@ router.post("/editor-image", (req, res) => {
 
         const domain = (process.env.CURRENT_DOMAIN || `${req.protocol}://${req.get("host")}`).replace(/\/+$/, "");
         const url = `${domain}/useruploads/editor-images/${req.file.filename}`;
-        if(id){
-            await dbPromise(`UPDATE editors SET photo = ? WHERE id = ?`, [req.file.filename, id]);
-        }
+ 
         LogAction(`Editor image uploaded: ${req.file.filename}`);
         return res.status(200).json({ status: "success", url });
     });

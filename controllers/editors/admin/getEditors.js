@@ -244,7 +244,6 @@ const addEditor = async (req, res) => {
 const updateEditor = async (req, res) => {
     try {
         const { id, prefix, fullname, email, field, discipline, country, bio, photo, is_old_editor } = req.body;
-
         if (!id) return res.status(400).json({ status: "error", message: "Editor ID is required" });
 
         const [existing] = await dbPromise.query(

@@ -15,7 +15,7 @@ const createEditorAccount = async (req, res) => {
   try {
     // Log incoming request for debugging
     console.log("=== CREATE EDITOR ACCOUNT REQUEST ===");
-    console.log("Request body:", JSON.stringify(req.body, null, 2));
+    // console.log("Request body:", JSON.stringify(req.body, null, 2));
     
     // Extract fields from request body (matching frontend field names)
     const {
