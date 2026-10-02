@@ -219,9 +219,9 @@ const addEditor = async (req, res) => {
         const photoFilename = normalizePhotoValue(photo);
 
         const [result] = await dbPromise.query(
-            `INSERT INTO editors_list (prefix, fullname, email, field, discipline, country, photo, bio)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [prefix, fullname, transformToLowerCase(email) || null, field, discipline, country, photoFilename, bio]
+            `INSERT INTO editors_list (prefix, fullname, email, field, discipline, country, photo, bio, is_old_editor)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [prefix, fullname, transformToLowerCase(email) || null, field, discipline, country, photoFilename, bio, 'no']
         );
 
         // Invalidate all editor-related caches
