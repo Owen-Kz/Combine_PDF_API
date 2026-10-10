@@ -1,8 +1,9 @@
-// controllers/uploads/uploadSingleFile.js
+// backend/controllers/uploads/uploadSingleFile.js
 require("dotenv").config();
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const SubmissionManager = require("../utils/SubmissionManager");
 const dbPromise = require("../../routes/dbPromise.config");
@@ -37,85 +38,50 @@ const FILE_CONFIG = {
 
 // ============================================
 // DESTINATION MAP
-// Maps a `destination` param from the request to a subfolder under useruploads/
-// and to a URL path prefix. Add/rename entries to match your structure.
 // ============================================
 const DESTINATION_MAP = {
-    manuscripts: {
-        dir: 'manuscripts',
-        url: '/useruploads/manuscripts'
-    },
-    article_images: {
-        dir: 'article_images',
-        url: '/useruploads/article_images'
-    },
-    cover_letters: {
-        dir: 'cover_letters',
-        url: '/useruploads/cover_letters'
-    },
-    tables: {
-        dir: 'tables',
-        url: '/useruploads/tables'
-    },
-    figures: {
-        dir: 'figures',
-        url: '/useruploads/figures'
-    },
-    supplementary: {
-        dir: 'supplementary',
-        url: '/useruploads/supplementary'
-    },
-    tracked_manuscripts: {
-        dir: 'tracked_manuscripts',
-        url: '/useruploads/tracked_manuscripts'
-    },
-    graphic_abstracts: {
-        dir: 'graphic_abstracts',
-        url: '/useruploads/graphic_abstracts'
-    },
-    misc: {
-        dir: 'misc',
-        url: '/useruploads/misc'
-    }
+    manuscripts:         { dir: 'manuscripts',         url: '/useruploads/manuscripts' },
+    article_images:      { dir: 'article_images',      url: '/useruploads/article_images' },
+    cover_letters:       { dir: 'cover_letters',       url: '/useruploads/cover_letters' },
+    tables:              { dir: 'tables',              url: '/useruploads/tables' },
+    figures:             { dir: 'figures',             url: '/useruploads/figures' },
+    supplementary:       { dir: 'supplementary',       url: '/useruploads/supplementary' },
+    tracked_manuscripts: { dir: 'tracked_manuscripts', url: '/useruploads/tracked_manuscripts' },
+    graphic_abstracts:   { dir: 'graphic_abstracts',   url: '/useruploads/graphic_abstracts' },
+    misc:                { dir: 'misc',                url: '/useruploads/misc' },
 };
 
-// Resolve a destination key to its dir + url. Falls back to `misc`.
 const resolveDestination = (key) => {
     const normalized = (key || '').toString().trim().toLowerCase();
     return DESTINATION_MAP[normalized] || DESTINATION_MAP.misc;
 };
 
-// Multer field name -> submissions column. Fields that are accepted but have no
-// column (e.g. manuscriptCover) are still stored, they just aren't linked to a row.
+// Multer field name -> submissions column
 const FILE_FIELD_COLUMNS = {
-    manuscript_file: 'manuscript_file',
-    cover_letter_file: 'cover_letter_file',
-    tables: 'tables',
-    figures: 'figures',
-    graphic_abstract: 'graphic_abstract',
+    manuscript_file:        'manuscript_file',
+    cover_letter_file:      'cover_letter_file',
+    tables:                 'tables',
+    figures:                'figures',
+    graphic_abstract:       'graphic_abstract',
     supplementary_material: 'supplementary_material',
-    tracked_manuscript_file: 'tracked_manuscript_file'
+    tracked_manuscript_file:'tracked_manuscript_file',
 };
 
-// Row statuses that may still be edited by an in-progress upload. A file must never
-// overwrite a manuscript that has already gone to the editorial office.
+// Row statuses that may still be edited by an in-progress upload.
 const EDITABLE_STATUSES = [
     'draft', 'saved', 'saved_for_later',
     'revision_draft', 'revision_saved', 'returned_for_revision',
     'correction_draft', 'correction_saved', 'returned_for_correction'
 ];
 
-// Base useruploads directory — must match the `/useruploads` static mount in app.js
 const UPLOADS_ROOT = path.join(__dirname, '..', '..', 'useruploads');
 
-// Ensure a directory exists, creating it recursively if needed
 const ensureDir = (dirPath) => {
     if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
     }
 };
 
-// Sanitize a filename to prevent path traversal and weird characters
 const sanitizeFilename = (name) => {
     const ext = path.extname(name).toLowerCase();
     const base = path.basename(name, ext)
@@ -124,21 +90,31 @@ const sanitizeFilename = (name) => {
     return { base: base || 'file', ext };
 };
 
-// Build the final unique filename
-const buildFilename = (originalName) => {
+// ── Unique filename construction ────────────────────────────────────────────
+// Pattern:  <revisionId>__<field>__<base36-ms>__<hex8>__<originalBase><ext>
+// Example:  ASFIRJ-2024-000123_R1__manuscript_file__lq3k9a__a4f9c1b2e8d3f407__paper.pdf
+const shortRandom = () => crypto.randomBytes(8).toString('hex'); // 16 hex chars
+const shortTime   = () => Date.now().toString(36);
+
+const buildFilename = (originalName, { revisionId, fieldName } = {}) => {
     const { base, ext } = sanitizeFilename(originalName);
-    const uniqueSuffix = Date.now() + '_' + Math.round(Math.random() * 1e9);
-    return `${base}_${uniqueSuffix}${ext}`;
+
+    const safeRev = String(revisionId || 'unknown')
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .slice(0, 60);
+    const safeField = String(fieldName || 'file')
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .slice(0, 40);
+    const safeBase = (base || 'file').slice(0, 40);
+
+    return `${safeRev}__${safeField}__${shortTime()}__${shortRandom()}__${safeBase}${ext}`;
 };
 
 // ============================================
 // Multer — dynamic disk storage
-// The destination is read from req.body.destination (set via multipart form field)
-// or from a custom header (x-destination) as a fallback.
 // ============================================
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // Read destination from form field, query, or header
         const destinationKey =
             req.body?.destination ||
             req.query?.destination ||
@@ -150,7 +126,6 @@ const storage = multer.diskStorage({
 
         try {
             ensureDir(uploadPath);
-            // Stash the resolved destination on the request for the handler
             req._resolvedDestination = { ...resolveDestination(destinationKey), path: uploadPath };
             cb(null, uploadPath);
         } catch (err) {
@@ -158,7 +133,20 @@ const storage = multer.diskStorage({
         }
     },
     filename: function (req, file, cb) {
-        cb(null, buildFilename(file.originalname));
+        const revisionId =
+            req.body?.manuscriptId ||
+            req.body?.articleId ||
+            req.body?.revisionId ||
+            req.query?.manuscriptId ||
+            req.query?.articleId ||
+            req.submissionData?.articleId ||
+            req.articleId ||
+            'draft';
+
+        cb(null, buildFilename(file.originalname, {
+            revisionId,
+            fieldName: file.fieldname,
+        }));
     }
 });
 
@@ -174,7 +162,6 @@ const upload = multer({
     }
 });
 
-// Cleanup helper (only used on failure paths now)
 const cleanUpLocalFile = (filePath) => {
     if (filePath && fs.existsSync(filePath)) {
         try {
@@ -185,15 +172,12 @@ const cleanUpLocalFile = (filePath) => {
     }
 };
 
-// Build the public URL for a saved file. Falls back to the request host when
-// CURRENT_DOMAIN is not configured so the client always gets an absolute URL.
 const buildFileUrl = (destination, filename, fallbackDomain = '') => {
     const { url } = resolveDestination(destination);
     const domain = process.env.CURRENT_DOMAIN || fallbackDomain;
     return `${domain}${url}/${filename}`;
 };
 
-// Validate manuscript requirements
 const validateManuscriptRequirements = (submissionData) => {
     const errors = [];
     if (!submissionData.manuscript_file) {
@@ -206,7 +190,7 @@ const validateManuscriptRequirements = (submissionData) => {
 // Main upload handler
 // ============================================
 const uploadSingleFile = async (req, res) => {
-    console.log("upload started")
+    console.log("upload started");
     const fileField = req.params.field;
 
     if (!FILE_CONFIG.VALID_FIELDS.includes(fileField)) {
@@ -221,7 +205,6 @@ const uploadSingleFile = async (req, res) => {
             let localFilePath = req.file?.path;
 
             try {
-                // Handle multer errors
                 if (err) {
                     cleanUpLocalFile(localFilePath);
 
@@ -244,8 +227,6 @@ const uploadSingleFile = async (req, res) => {
                     return res.status(400).json({ error: "No file uploaded" });
                 }
 
-                // Get the manuscript this upload belongs to. The portal wizard sends
-                // `manuscriptId` in the body; legacy callers used `articleId` in the query.
                 const articleId =
                     req.body?.manuscriptId ||
                     req.body?.articleId ||
@@ -262,7 +243,6 @@ const uploadSingleFile = async (req, res) => {
                     });
                 }
 
-                // Determine the destination used and build the URL
                 const destinationKey =
                     req.body?.destination ||
                     req.query?.destination ||
@@ -280,9 +260,6 @@ const uploadSingleFile = async (req, res) => {
                     `Saved ${fileField} → ${resolved.dir}/${req.file.filename} for article ${articleId}`
                 );
 
-                // Link the URL to the draft row. This is best-effort: the wizard replays
-                // every URL with its next draft save, so a row that does not exist yet
-                // must not cost the author their upload.
                 const column = FILE_FIELD_COLUMNS[fileField];
                 let savedToDraft = false;
                 try {
@@ -311,7 +288,6 @@ const uploadSingleFile = async (req, res) => {
                     console.error("Database update failed (URL still returned to client):", dbError);
                 }
 
-                // Fetch updated submission data
                 let submissionData;
                 try {
                     submissionData = await SubmissionManager.getSubmissionData(articleId, req.user.email);
@@ -376,7 +352,7 @@ const uploadSingleFile = async (req, res) => {
 };
 
 // ============================================
-// Check upload status (unchanged behavior)
+// Check upload status
 // ============================================
 uploadSingleFile.checkUploadStatus = async (req, res) => {
     try {

@@ -1,10 +1,4 @@
-// controllers/authors/submitDerivedSubmission.js
-//
-// Shared implementation for revision and correction submissions. The legacy
-// POST /submit-revision and POST /submit-correction controllers were near
-// identical copies; the divergent bits are now driven by a single `type`
-// option ("revision" | "correction") so each file stays a thin wrapper.
-
+// backend/controllers/authors/submitDerivedSubmission.js
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -15,6 +9,7 @@ const RandomString = crypto.randomBytes(10).toString('hex');
 const SendNewSubmissionEmail = require("../utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("../utils/SendHandlerEmail");
 const generateArticleId = require("../generateArticleId");
+const { invalidateFamilyCache } = require("../editors/familyMap");
 const {
     hasDerivedSuffix,
     stripDerivedSuffix,
@@ -24,7 +19,6 @@ const CoAuthors = require("../CoAuthors");
 const dbPromise = require("../../routes/dbPromise.config");
 const { LogAction } = require("../../Logger");
 
-// Helper function to determine file type and destination
 function getFileDestination(fileFieldName) {
     const destinations = {
         'manuscript_file': 'manuscripts',
@@ -38,7 +32,6 @@ function getFileDestination(fileFieldName) {
     return destinations[fileFieldName] || 'manuscripts';
 }
 
-// Helper function to get file suffix
 function getFileSuffix(fileFieldName) {
     const suffixes = {
         'manuscript_file': '',
@@ -52,45 +45,41 @@ function getFileSuffix(fileFieldName) {
     return suffixes[fileFieldName] || '';
 }
 
-// Configure multer for file uploads with dynamic destinations
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // Get the field name to determine destination
         const fieldName = file.fieldname;
-        
+
         const folderType = getFileDestination(fieldName);
         const uploadDir = path.join(__dirname, `../../useruploads/${folderType}`);
-        
-        // Create directory if it doesn't exist
+
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
-        
+
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         const { manuscriptId, action } = req.body;
-        const uniqueSuffix = Date.now() + '-' + RandomString;
+        // Unique-per-file suffix: high-res time + crypto random
+        const uniqueSuffix = `${Date.now().toString(36)}-${crypto.randomBytes(8).toString('hex')}`;
         const fileExt = path.extname(file.originalname);
 
-        // Determine file prefix based on action
         let prefix = '';
         if (action === 'correction' || action === "correction_saved" || action === "correction_submitted") prefix = 'CORR_';
         else if (action === 'revision' || action === "revision_saved" || action === "revision_submitted") prefix = 'REV_';
         else prefix = 'NEW_';
 
-        // Get the suffix based on file type
         const suffix = getFileSuffix(file.fieldname);
-        
-        // Create filename with suffix
-        const fileName = `${prefix}${manuscriptId || 'draft'}${suffix}_${uniqueSuffix}${fileExt}`;
+        const safeManuscriptId = String(manuscriptId || 'draft').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
+
+        const fileName = `${prefix}${safeManuscriptId}${suffix}_${uniqueSuffix}${fileExt}`;
         cb(null, fileName);
     }
 });
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const allowedMimes = [
             'application/pdf',
@@ -123,7 +112,6 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
         LogAction(`Received submission ${typeLabel} data:`, JSON.stringify(req.body));
         LogAction("Received files:", req.files);
 
-        // Handle file uploads
         await new Promise((resolve, reject) => {
             upload.fields([
                 { name: 'manuscript_file', maxCount: 1 },
@@ -160,7 +148,6 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
             isKidnappingForRansom
         } = req.body;
 
-        // Parse JSON strings
         let parsedKeywords = [];
         let parsedAuthors = [];
         let parsedReviewers = [];
@@ -185,9 +172,6 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
         connection = await dbPromise.getConnection();
         await connection.beginTransaction();
 
-        // Generate or use provided manuscript ID. Revisions/corrections must land on a
-        // NEWLY suffixed row, so when the id is missing or still the unsuffixed base
-        // we mint a fresh `_R{n}` / `_Cr{n}` id via generateArticleId.
         const derived = isDerivedAction(action);
         let finalManuscriptId = manuscriptId;
         LogAction(`Initial manuscript ${typeLabel} ID:`, manuscriptId, "Action:", action, "Previous ID:", previousId);
@@ -205,9 +189,8 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
 
         LogAction("Final manuscript ID to be used:", finalManuscriptId);
 
-        // Helper function to get file URL based on its type
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        
+
         const getFileUrl = (file, fieldName) => {
             if (!file) return null;
             const folderType = getFileDestination(fieldName);
@@ -242,18 +225,16 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
             ? getFileUrl(req.files.trackedManuscript_file[0], 'trackedManuscript_file')
             : null;
 
-        // Check if submission already exists
         const [existingSubmission] = await connection.query(
             `SELECT id, article_id FROM submissions WHERE revision_id = ?`,
             [finalManuscriptId]
         );
 
-        // Get existing files if any (to preserve them if not overwritten)
         let existingFiles = {};
         if (existingSubmission.length > 0) {
             const [subData] = await connection.query(
-                `SELECT manuscript_file, cover_letter_file, tables, figures, 
-                        supplementary_material, graphic_abstract, tracked_manuscript_file 
+                `SELECT manuscript_file, cover_letter_file, tables, figures,
+                        supplementary_material, graphic_abstract, tracked_manuscript_file
                  FROM submissions WHERE revision_id = ?`,
                 [finalManuscriptId]
             );
@@ -289,14 +270,11 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
 
         let result;
         if (existingSubmission.length > 0) {
-            // Update existing submission
             [result] = await connection.query(
                 `UPDATE submissions SET ? WHERE revision_id = ?`,
                 [submissionData, finalManuscriptId]
             );
 
-            // When the revision/correction is finalized, mark the article family as
-            // resubmitted and bump the matching counter on the base row.
             if (action === submittedAction) {
                 await connection.query(
                     `UPDATE submissions SET status = ? WHERE article_id = ? OR previous_manuscript_id = ?`,
@@ -311,32 +289,25 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
                 LogAction(`${action} updated for ${submissionData.previous_manuscript_id}.`);
             }
 
-            // Delete existing keywords
             await connection.query(
                 `DELETE FROM submission_keywords WHERE article_id = ?`,
                 [finalManuscriptId]
             );
-
-            // Delete existing authors
             await connection.query(
                 `DELETE FROM submission_authors WHERE submission_id = ?`,
                 [finalManuscriptId]
             );
-
-            // Delete existing reviewers
             await connection.query(
                 `DELETE FROM suggested_reviewers WHERE article_id = ?`,
                 [finalManuscriptId]
             );
         } else {
-            // Insert new submission
             [result] = await connection.query(
                 `INSERT INTO submissions SET ?`,
                 [submissionData]
             );
         }
 
-        // Insert keywords
         if (parsedKeywords && parsedKeywords.length > 0) {
             const keywordValues = parsedKeywords
                 .filter(k => k && typeof k === 'string' && k.trim() !== '')
@@ -350,7 +321,6 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
             }
         }
 
-        // Insert authors
         if (parsedAuthors && parsedAuthors.length > 0) {
             const authorValues = parsedAuthors.map(author => [
                 finalManuscriptId,
@@ -364,15 +334,14 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
             ]);
 
             await connection.query(
-                `INSERT INTO submission_authors 
-                 (submission_id, authors_fullname, authors_email, orcid_id, asfi_membership_id, 
-                  affiliations, affiliation_country, affiliation_city) 
+                `INSERT INTO submission_authors
+                 (submission_id, authors_fullname, authors_email, orcid_id, asfi_membership_id,
+                  affiliations, affiliation_country, affiliation_city)
                  VALUES ?`,
                 [authorValues]
             );
         }
 
-        // Insert suggested reviewers
         if (parsedReviewers && parsedReviewers.length > 0) {
             const reviewerValues = parsedReviewers.map(reviewer => [
                 finalManuscriptId,
@@ -384,17 +353,17 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
             ]);
 
             await connection.query(
-                `INSERT INTO suggested_reviewers 
-                 (article_id, fullname, email, affiliation, affiliation_country, affiliation_city) 
+                `INSERT INTO suggested_reviewers
+                 (article_id, fullname, email, affiliation, affiliation_country, affiliation_city)
                  VALUES ?`,
                 [reviewerValues]
             );
         }
 
         await connection.commit();
+        invalidateFamilyCache();
         LogAction("ACTION", action);
-        
-        // Send emails only if this is a final submission (not a draft)
+
         if (action === submittedAction) {
             try {
                 await connection.query(
@@ -411,10 +380,9 @@ const submitDerivedSubmission = async (req, res, options = {}) => {
                 LogAction('Email results:', emailResults);
             } catch (emailError) {
                 LogAction('Error sending emails:', emailError);
-                // Don't fail the submission if emails fail
             }
         }
-        
+
         return res.json({
             status: "success",
             message: action === submittedAction

@@ -1,16 +1,4 @@
-// controllers/authors/submitManuscriptHandlers.js
-//
-// Split submission endpoints. The single monolithic submit-manuscript POST has
-// been split into three focused handlers:
-//
-//   POST /submit-manuscript/draft        JSON only  -> persist metadata
-//   POST /submit-manuscript/files        JSON only  -> persist file URLs
-//   POST /submit-manuscript/finalize     JSON only  -> flip status + send emails
-//
-// No handler here accepts binaries: files are uploaded one at a time through
-// POST /submission/uploadSingleFile/:field and only their URLs reach these
-// endpoints. The same handlers are reused for revisions and corrections — the
-// `action` field in the request body drives the flow.
+// backend/controllers/authors/submitManuscriptHandlers.js
 const SendNewSubmissionEmail = require("../utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("../utils/SendHandlerEmail");
 const generateArticleId = require("../generateArticleId");
@@ -21,10 +9,9 @@ const {
 } = require("../utils/submissionIdUtils");
 const CoAuthors = require("../CoAuthors");
 const dbPromise = require("../../routes/dbPromise.config");
+const { invalidateFamilyCache } = require("../editors/familyMap");
 const { LogAction } = require("../../Logger");
 
-// Columns on `submissions` that hold file URLs, in wizard order. Every entry is
-// written on each draft save, so an omitted key is preserved and a null clears it.
 const FILE_URL_COLUMNS = [
     'manuscript_file',
     'cover_letter_file',
@@ -35,7 +22,6 @@ const FILE_URL_COLUMNS = [
     'tracked_manuscript_file'
 ];
 
-// Wizard file keys (formData.files) -> submissions column
 const WIZARD_FILE_COLUMNS = {
     manuscript: 'manuscript_file',
     coverLetter: 'cover_letter_file',
@@ -46,7 +32,6 @@ const WIZARD_FILE_COLUMNS = {
     trackedManuscript: 'tracked_manuscript_file'
 };
 
-// Older callers described files with `<key>_url` instead of a `files` map
 const LEGACY_FILE_URL_KEYS = {
     manuscript_url: 'manuscript_file',
     coverLetter_url: 'cover_letter_file',
@@ -57,8 +42,6 @@ const LEGACY_FILE_URL_KEYS = {
     trackedManuscript_url: 'tracked_manuscript_file'
 };
 
-// Fields may arrive as JSON strings (legacy multipart callers) or as native
-// arrays/objects (new JSON callers). Normalize both.
 const parseField = (value, fallback) => {
     if (value === undefined || value === null || value === '') return fallback;
     if (typeof value === 'string') {
@@ -71,13 +54,6 @@ const parseField = (value, fallback) => {
     return value;
 };
 
-/**
- * Pull every file URL the client sent, whatever shape it used:
- *   { files: { manuscript: "https://…/x.pdf", … } }
- *   { manuscript_file: "https://…/x.pdf" }
- *   { manuscript_url: "https://…/x.pdf" }        (legacy)
- * A missing key means "leave the stored URL alone"; an empty value clears it.
- */
 const collectFileUrls = (body = {}) => {
     const urls = {};
 
@@ -101,12 +77,6 @@ const collectFileUrls = (body = {}) => {
     return urls;
 };
 
-/**
- * POST /submit-manuscript/draft
- *
- * JSON-only metadata save. Creates the submission row if needed (via
- * generateArticleId) and replaces keywords / authors / reviewers.
- */
 const saveDraft = async (req, res) => {
     let connection;
 
@@ -132,10 +102,8 @@ const saveDraft = async (req, res) => {
             isWomenInScience,
             isBelispointAcademic,
             isKidnappingForRansom,
-    
         } = req.body || {};
 
-        // File URLs already stored under useruploads/ by uploadSingleFile
         const providedFiles = collectFileUrls(req.body || {});
 
         const parsedKeywords = parseField(keywords, []);
@@ -149,9 +117,6 @@ const saveDraft = async (req, res) => {
         connection = await dbPromise.getConnection();
         await connection.beginTransaction();
 
-        // Generate or use provided manuscript ID. Revisions/corrections must target a
-        // NEWly suffixed row, so when the provided id is the unsuffixed base (or
-        // missing) we ask generateArticleId to mint the fresh `_R{n}` / `_Cr{n}` id.
         const derived = isDerivedAction(action);
         let finalManuscriptId = manuscriptId;
         if (!finalManuscriptId || (derived && !hasDerivedSuffix(finalManuscriptId))) {
@@ -165,15 +130,12 @@ const saveDraft = async (req, res) => {
             });
         }
 
-        // Check if submission already exists and capture its file URLs so a
-        // metadata-only save never wipes previously uploaded files.
         const [existingSubmission] = await connection.query(
             `SELECT id, article_id FROM submissions WHERE revision_id = ?`,
             [finalManuscriptId]
         );
         const existingFiles = {};
         if (existingSubmission.length > 0) {
-            // update submission status for last returned manuscript
             await connection.query(
                 `UPDATE submissions SET status = ? WHERE previous_manuscript_id = ? AND revision_id != ?`,
                 ['revision_started', existingSubmission[0].article_id, finalManuscriptId]
@@ -208,8 +170,6 @@ const saveDraft = async (req, res) => {
             last_updated: new Date()
         };
 
-        // URLs echoed back by the client win over whatever is stored — that is how
-        // an upload (or a removal) made since the last save is persisted.
         Object.assign(submissionData, providedFiles);
 
         if (existingSubmission.length > 0) {
@@ -218,7 +178,6 @@ const saveDraft = async (req, res) => {
                 [submissionData, finalManuscriptId]
             );
 
-            // Replace keywords / authors / reviewers
             await connection.query(`DELETE FROM submission_keywords WHERE article_id = ?`, [finalManuscriptId]);
             await connection.query(`DELETE FROM submission_authors WHERE submission_id = ?`, [finalManuscriptId]);
             await connection.query(`DELETE FROM suggested_reviewers WHERE article_id = ?`, [finalManuscriptId]);
@@ -276,6 +235,7 @@ const saveDraft = async (req, res) => {
         }
 
         await connection.commit();
+        invalidateFamilyCache();
         LogAction(`Draft saved for ${finalManuscriptId} by ${userEmail} (action: ${action || 'draft'})`);
 
         return res.json({ status: "success", manuscriptId: finalManuscriptId });
@@ -292,13 +252,6 @@ const saveDraft = async (req, res) => {
     }
 };
 
-/**
- * POST /submit-manuscript/files
- *
- * JSON-only. Links file URLs (already written to useruploads/ by
- * POST /submission/uploadSingleFile/:field) to the submission row. No binaries are
- * accepted here — that is what keeps the submission payload small and retryable.
- */
 const uploadFiles = async (req, res) => {
     try {
         const manuscriptId = req.body?.manuscriptId || req.query?.manuscriptId;
@@ -351,13 +304,6 @@ const uploadFiles = async (req, res) => {
     }
 };
 
-/**
- * POST /submit-manuscript/finalize
- *
- * JSON-only. Flips the submission status to 'submitted', stamps date_submitted,
- * updates the original article for revisions/corrections, then fires the three
- * submission emails.
- */
 const finalizeSubmission = async (req, res) => {
     let connection;
 
@@ -412,6 +358,7 @@ const finalizeSubmission = async (req, res) => {
         }
 
         await connection.commit();
+        invalidateFamilyCache();
 
         const userEmail = submission.corresponding_authors_email || req.user?.email;
         const userFullname = req.user?.fullname ||
@@ -419,7 +366,6 @@ const finalizeSubmission = async (req, res) => {
             submission.corresponding_author || '';
         const title = submission.title;
 
-        // Emails are awaited but isolated — failures are logged, never returned.
         try {
             const emailResults = await Promise.allSettled([
                 userEmail ? SendNewSubmissionEmail(userEmail, title, manuscriptId, actionMessage) : Promise.resolve(),

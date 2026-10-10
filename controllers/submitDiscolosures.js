@@ -4,6 +4,7 @@ const SendNewSubmissionEmail = require("./utils/sendNewSubmissionEmail");
 const sendEmailToHandler = require("./utils/SendHandlerEmail");
 const CoAuthors = require("./CoAuthors");
 const dbPromise = require("../routes/dbPromise.config");
+const {invalidateFamilyCache} = require("./editors/familyMap");
 
 const SubmissionManager = require("./utils/SubmissionManager.js");
 const { retryOperation } = require("./generateArticleId.js");
@@ -239,7 +240,9 @@ const SubmitDisclosures = async (req, res) => {
 
                         await connection.commit();
                         console.log(`Submission committed successfully for: ${articleId}`);
-
+// Family cache must be rebuilt so the dashboard immediately sees
+// the new revision / correction as the latest row for this article.
+invalidateFamilyCache();
                         // CLEAR SESSION DATA TO PREVENT RELOADING THE SAME SUBMISSION
                         if (req.session) {
                             console.log("Clearing session data for completed submission:", articleId);
@@ -301,6 +304,9 @@ const SubmitDisclosures = async (req, res) => {
                     } else {
                         // Saved only - commit transaction
                         await connection.commit();
+                        // Family cache must be rebuilt so the dashboard immediately sees
+// the new revision / correction as the latest row for this article.
+invalidateFamilyCache();
                         console.log(`Manuscript saved successfully for: ${articleId}`);
                         
                         return res.json({

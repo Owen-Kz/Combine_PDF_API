@@ -11,6 +11,7 @@ const sendEmailToHandler = require("../utils/SendHandlerEmail");
 const generateArticleId = require("../generateArticleId");
 const CoAuthors = require("../CoAuthors");
 const dbPromise = require("../../routes/dbPromise.config");
+const { invalidateFamilyCache } = require("../editors/familyMap");
 const { LogAction } = require("../../Logger");
 
 // Helper function to determine file type and destination
@@ -44,7 +45,6 @@ function getFileSuffix(fileFieldName) {
 // Configure multer for file uploads with dynamic destinations
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // Get the field name to determine destination
         let fieldName = '';
         for (const key in req.body) {
             if (file.fieldname === key) {
@@ -52,52 +52,46 @@ const storage = multer.diskStorage({
                 break;
             }
         }
-        
-        // If not found in body, check if it's one of the known fields
+
         if (!fieldName) {
-            const knownFields = ['manuscript_file', 'coverLetter_file', 'tables_file', 'figures_file', 
+            const knownFields = ['manuscript_file', 'coverLetter_file', 'tables_file', 'figures_file',
                                 'supplementary_file', 'graphicAbstract_file', 'trackedManuscript_file'];
             if (knownFields.includes(file.fieldname)) {
                 fieldName = file.fieldname;
             }
         }
-        
+
         const folderType = getFileDestination(fieldName);
         const uploadDir = path.join(__dirname, `../../useruploads/${folderType}`);
-        
-        // Create directory if it doesn't exist
+
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
-        
+
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         const { manuscriptId, action } = req.body;
-        const uniqueSuffix = Date.now() + '-' + RandomString;
+        // Unique-per-file suffix: high-res time + crypto random
+        const uniqueSuffix = `${Date.now().toString(36)}-${crypto.randomBytes(8).toString('hex')}`;
         const fileExt = path.extname(file.originalname);
-        
-        // Get the base filename without extension for cleaner naming
-        const originalBaseName = path.basename(file.originalname, fileExt);
-        
-        // Determine file prefix based on action
+
         let prefix = '';
         if (action === 'correction' || action === "correction_saved" || action === "correction_submitted") prefix = 'CORR_';
         else if (action === 'revision' || action === "revision_saved" || action === "revision_submitted") prefix = 'REV_';
         else prefix = 'NEW_';
-        
-        // Get the suffix based on file type
+
         const suffix = getFileSuffix(file.fieldname);
-        
-        // Create filename with suffix
-        const fileName = `${prefix}${manuscriptId || 'draft'}${suffix}_${uniqueSuffix}${fileExt}`;
+        const safeManuscriptId = String(manuscriptId || 'draft').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
+
+        const fileName = `${prefix}${safeManuscriptId}${suffix}_${uniqueSuffix}${fileExt}`;
         cb(null, fileName);
     }
 });
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const allowedMimes = [
             'application/pdf',
@@ -117,7 +111,6 @@ const upload = multer({
     }
 });
 
-// Create a middleware that handles both files and form fields
 const handleUpload = upload.fields([
     { name: 'manuscript_file', maxCount: 1 },
     { name: 'coverLetter_file', maxCount: 1 },
@@ -132,7 +125,6 @@ const submitManuscript = async (req, res) => {
     let connection;
 
     try {
-        // First, handle file uploads
         await new Promise((resolve, reject) => {
             handleUpload(req, res, (err) => {
                 if (err) {
@@ -169,7 +161,6 @@ const submitManuscript = async (req, res) => {
             isKidnappingForRansom,
         } = req.body;
 
-        // Parse JSON strings
         let parsedKeywords = [];
         let parsedAuthors = [];
         let parsedReviewers = [];
@@ -194,12 +185,10 @@ const submitManuscript = async (req, res) => {
         connection = await dbPromise.getConnection();
         await connection.beginTransaction();
 
-        // Generate or use provided manuscript ID
         let finalManuscriptId = manuscriptId;
         LogAction("Initial manuscript ID:", manuscriptId, "Action:", action, "Previous ID:", previousId);
-        
+
         if (!finalManuscriptId || action === 'new') {
-            // Generate new ID using the generateArticleId function
             finalManuscriptId = await generateArticleId({
                 user: req.user,
                 query: {
@@ -211,16 +200,14 @@ const submitManuscript = async (req, res) => {
         }
         LogAction("Final manuscript ID to be used:", finalManuscriptId);
 
-        // Helper function to get file URL based on its type
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+
         const getFileUrl = (file, fieldName) => {
             if (!file) return null;
             const folderType = getFileDestination(fieldName);
             return `${baseUrl}/useruploads/${folderType}/${file.filename}`;
         };
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-        // Process each file with its specific folder
         const manuscriptFile = req.files?.manuscript_file?.[0]
             ? getFileUrl(req.files.manuscript_file[0], 'manuscript_file')
             : null;
@@ -249,18 +236,16 @@ const submitManuscript = async (req, res) => {
             ? getFileUrl(req.files.trackedManuscript_file[0], 'trackedManuscript_file')
             : null;
 
-        // Check if submission already exists
         const [existingSubmission] = await connection.query(
             `SELECT id FROM submissions WHERE revision_id = ?`,
             [finalManuscriptId]
         );
 
-        // Get existing files if any (to preserve them if not overwritten)
         let existingFiles = {};
         if (existingSubmission.length > 0) {
             const [subData] = await connection.query(
-                `SELECT manuscript_file, cover_letter_file, tables, figures, 
-                        supplementary_material, graphic_abstract, tracked_manuscript_file 
+                `SELECT manuscript_file, cover_letter_file, tables, figures,
+                        supplementary_material, graphic_abstract, tracked_manuscript_file
                  FROM submissions WHERE revision_id = ?`,
                 [finalManuscriptId]
             );
@@ -286,7 +271,7 @@ const submitManuscript = async (req, res) => {
             revision_id: finalManuscriptId,
             previous_manuscript_id: previousId || null,
             status: action === 'submit' || action === "revision_submitted" || action === "correction_submitted" ? 'submitted' : 'draft',
-            is_women_in_contemporary_science: isWomenInScience === 'yes' ? 1 : 0, 
+            is_women_in_contemporary_science: isWomenInScience === 'yes' ? 1 : 0,
             is_belispoint_academic: isBelispointAcademic === 'yes' ? 1 : 0,
             is_kidnapping_for_ransom: isKidnappingForRansom === 'yes' ? 1 : 0,
             last_updated: new Date()
@@ -294,48 +279,40 @@ const submitManuscript = async (req, res) => {
 
         let result;
         if (existingSubmission.length > 0) {
-            // Update existing submission
             [result] = await connection.query(
                 `UPDATE submissions SET ? WHERE revision_id = ?`,
                 [submissionData, finalManuscriptId]
             );
-            
-            if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correction_submitted" || action === "correction" || action === "correction_saved") {
+
+            if (action === 'revision_submitted' || action === "revision_saved" || action === "correction_saved" || action === "correction_submitted" || action === "correction") {
                 await connection.query(
                     `UPDATE submissions SET status = ? WHERE article_id = ? OR previous_manuscript_id = ?`,
-                    [action === 'revision_submitted' ? 'revision_submitted' : 'correction_submitted', 
-                     submissionData.previous_manuscript_id, 
+                    [action === 'revision_submitted' ? 'revision_submitted' : 'correction_submitted',
+                     submissionData.previous_manuscript_id,
                      submissionData.previous_manuscript_id]
                 );
                 LogAction(`${action} updated for ${submissionData.previous_manuscript_id}.`);
             }
 
-            // Delete existing keywords
             await connection.query(
                 `DELETE FROM submission_keywords WHERE article_id = ?`,
                 [finalManuscriptId]
             );
-
-            // Delete existing authors
             await connection.query(
                 `DELETE FROM submission_authors WHERE submission_id = ?`,
                 [finalManuscriptId]
             );
-
-            // Delete existing reviewers
             await connection.query(
                 `DELETE FROM suggested_reviewers WHERE article_id = ?`,
                 [finalManuscriptId]
             );
         } else {
-            // Insert new submission
             [result] = await connection.query(
                 `INSERT INTO submissions SET ?`,
                 [submissionData]
             );
         }
 
-        // Insert keywords
         if (parsedKeywords && parsedKeywords.length > 0) {
             const keywordValues = parsedKeywords
                 .filter(k => k && typeof k === 'string' && k.trim() !== '')
@@ -349,7 +326,6 @@ const submitManuscript = async (req, res) => {
             }
         }
 
-        // Insert authors
         if (parsedAuthors && parsedAuthors.length > 0) {
             const authorValues = parsedAuthors.map(author => [
                 finalManuscriptId,
@@ -363,15 +339,14 @@ const submitManuscript = async (req, res) => {
             ]);
 
             await connection.query(
-                `INSERT INTO submission_authors 
-                 (submission_id, authors_fullname, authors_email, orcid_id, asfi_membership_id, 
-                  affiliations, affiliation_country, affiliation_city) 
+                `INSERT INTO submission_authors
+                 (submission_id, authors_fullname, authors_email, orcid_id, asfi_membership_id,
+                  affiliations, affiliation_country, affiliation_city)
                  VALUES ?`,
                 [authorValues]
             );
         }
 
-        // Insert suggested reviewers
         if (parsedReviewers && parsedReviewers.length > 0) {
             const reviewerValues = parsedReviewers.map(reviewer => [
                 finalManuscriptId,
@@ -383,20 +358,19 @@ const submitManuscript = async (req, res) => {
             ]);
 
             await connection.query(
-                `INSERT INTO suggested_reviewers 
-                 (article_id, fullname, email, affiliation, affiliation_country, affiliation_city) 
+                `INSERT INTO suggested_reviewers
+                 (article_id, fullname, email, affiliation, affiliation_country, affiliation_city)
                  VALUES ?`,
                 [reviewerValues]
             );
         }
 
         await connection.commit();
+        invalidateFamilyCache();
         LogAction("ACTION", action);
-        
-        // Send emails only if this is a final submission (not draft)
+
         if (action === 'submit' || action === 'correction_submitted' || action === 'revision_submitted') {
             try {
-                // update submissionDate 
                 await connection.query(
                     `UPDATE submissions SET date_submitted = ? WHERE revision_id = ?`,
                     [new Date(), finalManuscriptId]
@@ -411,14 +385,13 @@ const submitManuscript = async (req, res) => {
                 LogAction('Email results:', emailResults);
             } catch (emailError) {
                 LogAction('Error sending emails:', emailError);
-                // Don't fail the submission if emails fail
             }
         }
-        
-        const responseMessage = action === "submit" ? "Manuscript" : 
-                               action === "correction_submitted" || action === "correction_saved" || action === "correction" ? "Manuscript Correction" : 
+
+        const responseMessage = action === "submit" ? "Manuscript" :
+                               action === "correction_submitted" || action === "correction_saved" || action === "correction" ? "Manuscript Correction" :
                                action === "revision_saved" || action === "revision_submitted" || action === "revision" ? "Manuscript Revision" : "";
-        
+
         return res.json({
             status: "success",
             message: action === 'submit' || action === "revision_submitted" || action === "correction_submitted"

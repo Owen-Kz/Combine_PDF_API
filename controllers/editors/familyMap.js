@@ -26,6 +26,9 @@ let cache = null;
 let cacheBuiltAt = 0;
 let buildPromise = null; // dedupe concurrent rebuilds
 
+// Debounced invalidation — coalesces bursts from autosave-style writers.
+let pendingInvalidationTimer = null;
+
 const normalizeTitle = (t) =>
   String(t || "")
     .toLowerCase()
@@ -33,20 +36,17 @@ const normalizeTitle = (t) =>
     .replace(/\s+/g, " ")
     .trim();
 
-async function buildFamilyMap() {
-  const [rows] = await db.promise().query(`
-    SELECT article_id, revision_id, previous_manuscript_id, title
-      FROM submissions
-     WHERE title != '' AND title != 'Draft Submission'
-  `);
-
-  // Lookups for resolving previous_manuscript_id (which may be either an
-  // article_id or a revision_id).
+function buildFamilyMapFromRows(rows) {
   const byArticle = new Map();
+  // revision_id may not be unique; hold a Set so we don't drop candidates.
   const byRevision = new Map();
+
   for (const r of rows) {
     byArticle.set(r.article_id, r);
-    if (r.revision_id) byRevision.set(r.revision_id, r);
+    if (r.revision_id) {
+      if (!byRevision.has(r.revision_id)) byRevision.set(r.revision_id, new Set());
+      byRevision.get(r.revision_id).add(r.article_id);
+    }
   }
 
   // Union-find with path compression
@@ -69,7 +69,6 @@ async function buildFamilyMap() {
     if (ra !== rb) parent.set(ra, rb);
   };
 
-  // Make sure every article_id is its own family initially
   for (const r of rows) {
     if (!parent.has(r.article_id)) parent.set(r.article_id, r.article_id);
   }
@@ -77,10 +76,16 @@ async function buildFamilyMap() {
   // Pass 1 — chain via previous_manuscript_id
   for (const r of rows) {
     if (!r.previous_manuscript_id) continue;
-    const parentRow =
-      byArticle.get(r.previous_manuscript_id) ||
-      byRevision.get(r.previous_manuscript_id);
-    if (parentRow) union(r.article_id, parentRow.article_id);
+
+    const parentRow = byArticle.get(r.previous_manuscript_id);
+    if (parentRow) {
+      union(r.article_id, parentRow.article_id);
+      continue;
+    }
+    const candidates = byRevision.get(r.previous_manuscript_id);
+    if (candidates) {
+      for (const aid of candidates) union(r.article_id, aid);
+    }
   }
 
   // Pass 2 — merge by normalized title
@@ -115,42 +120,18 @@ async function buildFamilyMap() {
     for (const aid of members) map.set(aid, familyId);
   }
 
-  return { map, familyMembers, builtAt: Date.now(), rowCount: rows.length };
-}
-
-function buildFamilyMapFromRows(rows) {
-  // ... (identical logic as before, operating on `rows` array)
   return { map, familyMembers };
 }
 
-async function getFamilyCacheForTable(tableName) {
-  const key = `__familyCache_${tableName}`;
-  const ttlKey = `__familyCacheBuiltAt_${tableName}`;
-  const inFlightKey = `__familyCachePromise_${tableName}`;
+async function buildFamilyMap() {
+  const [rows] = await db.promise().query(`
+    SELECT article_id, revision_id, previous_manuscript_id, title
+      FROM submissions
+     WHERE title != '' AND title != 'Draft Submission'
+  `);
 
-  if (
-    moduleExports[key] &&
-    Date.now() - moduleExports[ttlKey] < FAMILY_CACHE_TTL_MS
-  ) {
-    return moduleExports[key];
-  }
-  if (moduleExports[inFlightKey]) return moduleExports[inFlightKey];
-
-  moduleExports[inFlightKey] = (async () => {
-    const [rows] = await db.promise().query(`
-      SELECT article_id, revision_id, previous_manuscript_id, title
-        FROM \`${tableName}\`
-       WHERE title != '' AND title != 'Draft Submission'
-    `);
-    const built = buildFamilyMapFromRows(rows);
-    moduleExports[key] = built;
-    moduleExports[ttlKey] = Date.now();
-    return built;
-  })().finally(() => {
-    moduleExports[inFlightKey] = null;
-  });
-
-  return moduleExports[inFlightKey];
+  const { map, familyMembers } = buildFamilyMapFromRows(rows);
+  return { map, familyMembers, builtAt: Date.now(), rowCount: rows.length };
 }
 
 async function getFamilyCache() {
@@ -177,6 +158,18 @@ function invalidateFamilyCache() {
   cacheBuiltAt = 0;
 }
 
+/**
+ * Debounced invalidation for high-frequency writers (draft autosave).
+ * Coalesces N invalidations within `ms` into a single cache drop.
+ */
+function invalidateFamilyCacheDebounced(ms = 1000) {
+  if (pendingInvalidationTimer) return;
+  pendingInvalidationTimer = setTimeout(() => {
+    pendingInvalidationTimer = null;
+    invalidateFamilyCache();
+  }, ms);
+}
+
 // Given a set of article_ids (or family_ids), return the set of family_ids
 // they resolve to.
 function resolveToFamilyIds(articleIds, familyMap) {
@@ -193,11 +186,40 @@ function getFamilyArticleIds(familyId, familyMembers) {
   return members ? [...members] : [familyId];
 }
 
+// Table-parameterized family cache — kept for future use. Uses module-scoped
+// Maps so hot-reloads can't leak stale cache across code versions.
+const tableCache = new Map();     // tableName → { value, builtAt }
+const tableInflight = new Map();  // tableName → Promise
+
+async function getFamilyCacheForTable(tableName) {
+  const cached = tableCache.get(tableName);
+  if (cached && Date.now() - cached.builtAt < FAMILY_CACHE_TTL_MS) {
+    return cached.value;
+  }
+  if (tableInflight.has(tableName)) return tableInflight.get(tableName);
+
+  const p = (async () => {
+    const [rows] = await db.promise().query(`
+      SELECT article_id, revision_id, previous_manuscript_id, title
+        FROM \`${tableName}\`
+       WHERE title != '' AND title != 'Draft Submission'
+    `);
+    const built = buildFamilyMapFromRows(rows);
+    built.builtAt = Date.now();
+    tableCache.set(tableName, { value: built, builtAt: built.builtAt });
+    return built;
+  })().finally(() => tableInflight.delete(tableName));
+
+  tableInflight.set(tableName, p);
+  return p;
+}
+
 module.exports = {
   getFamilyCache,
   invalidateFamilyCache,
+  invalidateFamilyCacheDebounced,
   resolveToFamilyIds,
   getFamilyArticleIds,
   normalizeTitle,
-  getFamilyCacheForTable
+  getFamilyCacheForTable,
 };
