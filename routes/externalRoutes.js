@@ -255,7 +255,7 @@ LogAction(error)
 // FEtch Citations from OpenCitations API 
 router.post("/fetch-citations", require("../controllers/utils/submissions/fetchCitations"));
 
-const EDITOR_IMAGE_DIR = path.join(__dirname, "../useruploads/editors");
+const EDITOR_IMAGE_DIR = path.join(__dirname, "../../useruploads/editors");
 
 fs.mkdirSync(EDITOR_IMAGE_DIR, { recursive: true });
 

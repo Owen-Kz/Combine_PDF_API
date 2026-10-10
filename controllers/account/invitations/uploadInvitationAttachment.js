@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-const UPLOADS_ROOT = path.join(__dirname, '..', '..', 'useruploads', 'invitation-attachments');
+const UPLOADS_ROOT = path.join(__dirname, '..', '..', '..', 'useruploads', 'invitation-attachments');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 if (!fs.existsSync(UPLOADS_ROOT)) {
