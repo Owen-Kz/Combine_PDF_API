@@ -111,7 +111,7 @@ function buildFamilyMapFromRows(rows) {
     groups.get(root).add(r.article_id);
   }
 
-  const map = new Map();          // article_id → family_id
+  const map = new Map();           // article_id → family_id
   const familyMembers = new Map(); // family_id  → Set<article_id>
   for (const [, members] of groups) {
     const familyId = [...members].sort()[0];
@@ -186,10 +186,15 @@ function getFamilyArticleIds(familyId, familyMembers) {
   return members ? [...members] : [familyId];
 }
 
-// Table-parameterized family cache — kept for future use. Uses module-scoped
-// Maps so hot-reloads can't leak stale cache across code versions.
+// ---------------------------------------------------------------------------
+// Table-parameterized family cache.
+//
+// Uses module-scoped Maps (not module.exports) so a hot-reload / require-cache
+// reset cannot leak a stale cache from a previous code version, and so this
+// function never depends on any binding called `moduleExports`.
+// ---------------------------------------------------------------------------
 const tableCache = new Map();     // tableName → { value, builtAt }
-const tableInflight = new Map();  // tableName → Promise
+const tableInflight = new Map();  // tableName → Promise<value>
 
 async function getFamilyCacheForTable(tableName) {
   const cached = tableCache.get(tableName);
@@ -214,10 +219,20 @@ async function getFamilyCacheForTable(tableName) {
   return p;
 }
 
+/** Invalidate a single table's cache (or all of them). */
+function invalidateFamilyCacheForTable(tableName) {
+  if (!tableName) {
+    tableCache.clear();
+    return;
+  }
+  tableCache.delete(tableName);
+}
+
 module.exports = {
   getFamilyCache,
   invalidateFamilyCache,
   invalidateFamilyCacheDebounced,
+  invalidateFamilyCacheForTable,
   resolveToFamilyIds,
   getFamilyArticleIds,
   normalizeTitle,

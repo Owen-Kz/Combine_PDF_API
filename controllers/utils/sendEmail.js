@@ -9,8 +9,6 @@ dotenv.config();
 
 /**
  * Helper function to escape HTML special characters
- * @param {string} text - The text to escape
- * @returns {string} - Escaped text
  */
 function escapeHtml(text) {
     if (!text) return '';
@@ -23,14 +21,32 @@ function escapeHtml(text) {
 }
 
 /**
+ * Normalize a single recipient value into a lowercased email string,
+ * or null if it isn't a usable address.
+ *
+ * Accepts:
+ *   - "user@example.com"
+ *   - { email: "user@example.com" }
+ *   - { address: "user@example.com" }
+ *   - { to: "user@example.com" }
+ */
+function normalizeRecipient(entry) {
+    let raw = null;
+
+    if (typeof entry === 'string') {
+        raw = entry;
+    } else if (entry && typeof entry === 'object') {
+        raw = entry.email || entry.address || entry.to || null;
+    }
+
+    if (!raw || typeof raw !== 'string') return null;
+
+    const trimmed = raw.trim().toLowerCase();
+    return trimmed ? { email: trimmed } : null;
+}
+
+/**
  * Sends an email using SMTP (nodemailer)
- * @param {Object} options - Email options
- * @param {string|string[]} options.to - Recipient email address(es)
- * @param {string} options.subject - Email subject
- * @param {string} options.htmlContent - HTML content of the email
- * @param {string} [options.fromName] - Sender name (defaults to 'ASFI Research Journal')
- * @param {Object} [options.attachments] - Optional attachments
- * @returns {Promise<Object>} - Status object with success/error information
  */
 async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research Journal', attachments = null }) {
     // Input validation
@@ -46,14 +62,18 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
         return { status: 'error', message: 'Invalid email content' };
     }
 
-    // Format recipients
+    // Format recipients — normalize each entry to { email: 'lowercased@addr' }
     let recipients = [];
+
     if (Array.isArray(to)) {
-        recipients = to.map(email => ({ email }).toLowerCase());
-    } else if (typeof to === 'string') {
-        recipients = [{ email: to.toLowerCase() }];
+        recipients = to.map(normalizeRecipient).filter(Boolean);
     } else {
-        return { status: 'error', message: 'Invalid recipients format' };
+        const single = normalizeRecipient(to);
+        if (single) recipients = [single];
+    }
+
+    if (recipients.length === 0) {
+        return { status: 'error', message: 'No valid recipients specified' };
     }
 
     // Validate email formats
@@ -65,14 +85,12 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
     }
 
     try {
-        // Sender email from environment variables
         const senderEmail = process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL;
         if (!senderEmail) throw new Error('NODE_MAILER_SENDER_EMAIL is not configured');
 
-        // Prepare email data
         const emailData = {
-            sender: { 
-                email: senderEmail, 
+            sender: {
+                email: senderEmail,
                 name: fromName
             },
             to: recipients,
@@ -84,15 +102,12 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
             }
         };
 
-        // Add attachments if provided
         if (attachments) {
             emailData.attachment = attachments;
         }
 
-        // Send email
         const response = await sendMail(emailData);
-        
-        // Log the email in database with content
+
         await logEmailToDatabase({
             recipientCount: recipients.length,
             recipients: recipients.map(r => r.email),
@@ -102,8 +117,8 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
             messageId: response.messageId
         });
 
-        return { 
-            status: 'success', 
+        return {
+            status: 'success',
             message: `Email sent successfully to ${recipients.length} recipient(s)`,
             data: {
                 recipients: recipients.map(r => r.email),
@@ -113,8 +128,7 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
         };
     } catch (error) {
         console.error('Error sending email:', error);
-        
-        // Log the failed email with content
+
         await logEmailToDatabase({
             recipientCount: recipients.length,
             recipients: recipients.map(r => r.email),
@@ -124,8 +138,8 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
             errorMessage: error.message
         });
 
-        return { 
-            status: 'error', 
+        return {
+            status: 'error',
             message: 'Failed to send email',
             error: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
@@ -135,45 +149,37 @@ async function sendEmail({ to, subject, htmlContent, fromName = 'ASFI Research J
 
 /**
  * Log email to database with content
- * @param {Object} logData - Email log data
  */
 async function logEmailToDatabase({ recipientCount, recipients, subject, content, status, messageId, errorMessage }) {
     try {
         const query = `
-            INSERT INTO email_logs 
-            (recipient_count, recipients_list, subject, content, status, message_id, error_message, sent_at) 
+            INSERT INTO email_logs
+            (recipient_count, recipients_list, subject, content, status, message_id, error_message, sent_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         `;
-        
+
         await dbPromise.query(query, [
             recipientCount,
             JSON.stringify(recipients),
             subject,
-            content, // Store the email content
+            content,
             status,
             messageId || null,
             errorMessage || null
         ]);
     } catch (dbError) {
         console.error('Error logging email to database:', dbError);
-        // Don't throw - logging failure shouldn't affect email sending
     }
 }
 
 /**
  * Sends a newsletter to multiple recipients
- * @param {string[]} recipients - Array of recipient email addresses
- * @param {string} subject - Newsletter subject
- * @param {string} htmlContent - Newsletter HTML content
- * @param {string} [fromName] - Sender name
- * @returns {Promise<Object>} - Status object with success/error information
  */
 async function sendNewsletter(recipients, subject, htmlContent, fromName = 'ASFI Research Journal') {
     if (!Array.isArray(recipients) || recipients.length === 0) {
         return { status: 'error', message: `No recipients specified ${recipients}` };
     }
 
-    // Split into batches of 100 to avoid API limits
     const batchSize = 100;
     const batches = [];
     for (let i = 0; i < recipients.length; i += batchSize) {
@@ -199,7 +205,6 @@ async function sendNewsletter(recipients, subject, htmlContent, fromName = 'ASFI
             failCount += batch.length;
         }
 
-        // Small delay between batches to avoid rate limiting
         if (batches.length > 1) {
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
@@ -218,14 +223,8 @@ async function sendNewsletter(recipients, subject, htmlContent, fromName = 'ASFI
 
 /**
  * Sends an email notification to editorial handler
- * @param {string} recipientEmail - The recipient's email address
- * @param {string} manuscriptTitle - The title of the manuscript
- * @param {string} manuscriptId - The manuscript ID
- * @param {string} userFullname - The name of the submitting author
- * @returns {Promise<Object>} - Status object with success/error information
  */
 async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId, userFullname) {
-    // Input validation
     if (!recipientEmail || typeof recipientEmail !== 'string') {
         return { status: 'error', message: 'Invalid recipient email' };
     }
@@ -242,10 +241,9 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         return { status: 'error', message: 'Invalid user fullname' };
     }
 
-    // Determine submission type based on manuscript ID suffix
     let submissionType = 'New submission';
     let headerText = `A new submission with the title`;
-    
+
     const derivedType = getDerivedType(manuscriptId);
     if (derivedType === 'correction') {
         submissionType = 'Correction';
@@ -261,7 +259,6 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         day: 'numeric'
     });
 
-    // HTML email template
     const emailContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -312,27 +309,27 @@ async function sendEmailToHandler(recipientEmail, manuscriptTitle, manuscriptId,
         <h2>ASFI Research Journal - ${submissionType} Notification</h2>
         <p>${currentDate}</p>
     </div>
-    
+
     <p>Dear Editorial Team,</p>
-    
+
     <div class="highlight">
         <p>${headerText} <strong>${escapeHtml(manuscriptTitle)}</strong> by <strong>${escapeHtml(userFullname)}</strong>.</p>
         <p>Manuscript ID: <span class="manuscript-id">${escapeHtml(manuscriptId)}</span></p>
     </div>
-    
+
     <p>Please log in to the editorial dashboard to process this ${submissionType.toLowerCase()}.</p>
-    
+
     <p><a href="https://asfirj.org/portal/editor/dashboard">Access Editorial Dashboard</a></p>
-    
+
     <div class="footer">
         <p><strong>ASFIRJ Editorial Office</strong><br>
         <a href="mailto:submissions@asfirj.org">submissions@asfirj.org</a></p>
-        
+
         <p>ASFI Research Journal<br>
         "Raising the bar of scientific publishing in Africa"</p>
-        
+
         <p style="margin-top: 20px;">
-            <a href="https://asfirj.org/">Website</a> | 
+            <a href="https://asfirj.org/">Website</a> |
             <a href="https://asfirj.org/contact.html">Contact Us</a>
         </p>
     </div>
