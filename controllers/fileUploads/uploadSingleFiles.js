@@ -58,13 +58,13 @@ const resolveDestination = (key) => {
 
 // Multer field name -> submissions column
 const FILE_FIELD_COLUMNS = {
-    manuscript_file:        'manuscript_file',
-    cover_letter_file:      'cover_letter_file',
-    tables:                 'tables',
-    figures:                'figures',
-    graphic_abstract:       'graphic_abstract',
-    supplementary_material: 'supplementary_material',
-    tracked_manuscript_file:'tracked_manuscript_file',
+    manuscript_file:         'manuscript_file',
+    cover_letter_file:       'cover_letter_file',
+    tables:                  'tables',
+    figures:                 'figures',
+    graphic_abstract:        'graphic_abstract',
+    supplementary_material:  'supplementary_material',
+    tracked_manuscript_file: 'tracked_manuscript_file',
 };
 
 // Row statuses that may still be edited by an in-progress upload.
@@ -90,10 +90,16 @@ const sanitizeFilename = (name) => {
     return { base: base || 'file', ext };
 };
 
+// ⬅️ NEW: true for ASFIRJ-2026-000044.Cr1, ASFIRJ-2026-000044.R1, etc.
+// These are "fresh" correction/revision article IDs whose DB row
+// may not exist yet at upload time.
+const isFreshCorrectionOrRevision = (articleId) =>
+    /\.(Cr|R)\d+$/i.test(articleId || '');
+
 // ── Unique filename construction ────────────────────────────────────────────
 // Pattern:  <revisionId>__<field>__<base36-ms>__<hex8>__<originalBase><ext>
 // Example:  ASFIRJ-2024-000123_R1__manuscript_file__lq3k9a__a4f9c1b2e8d3f407__paper.pdf
-const shortRandom = () => crypto.randomBytes(8).toString('hex'); // 16 hex chars
+const shortRandom = () => crypto.randomBytes(8).toString('hex');
 const shortTime   = () => Date.now().toString(36);
 
 const buildFilename = (originalName, { revisionId, fieldName } = {}) => {
@@ -180,7 +186,7 @@ const buildFileUrl = (destination, filename, fallbackDomain = '') => {
 
 const validateManuscriptRequirements = (submissionData) => {
     const errors = [];
-    if (!submissionData.manuscript_file) {
+    if (!submissionData || !submissionData.manuscript_file) {
         errors.push('Manuscript file is required');
     }
     return errors;
@@ -205,6 +211,7 @@ const uploadSingleFile = async (req, res) => {
             let localFilePath = req.file?.path;
 
             try {
+                // ── Multer errors ────────────────────────────────────────────
                 if (err) {
                     cleanUpLocalFile(localFilePath);
 
@@ -227,6 +234,7 @@ const uploadSingleFile = async (req, res) => {
                     return res.status(400).json({ error: "No file uploaded" });
                 }
 
+                // ── Resolve article ID ──────────────────────────────────────
                 const articleId =
                     req.body?.manuscriptId ||
                     req.body?.articleId ||
@@ -240,6 +248,16 @@ const uploadSingleFile = async (req, res) => {
                     return res.status(400).json({
                         error: "No active submission found",
                         message: "Please start a new submission or reload the page"
+                    });
+                }
+
+                // ⬅️ NEW: Auth guard — must have a user email to proceed
+                const userEmail = req.user?.email;
+                if (!userEmail) {
+                    cleanUpLocalFile(localFilePath);
+                    return res.status(401).json({
+                        error: 'Authentication required',
+                        message: 'Please log in again'
                     });
                 }
 
@@ -260,11 +278,15 @@ const uploadSingleFile = async (req, res) => {
                     `Saved ${fileField} → ${resolved.dir}/${req.file.filename} for article ${articleId}`
                 );
 
+                // ── DB write (optional — row may not exist yet) ──────────────
+                // For a fresh correction/revision (.Cr1 / .R1), the row may
+                // not exist. We skip the UPDATE and return the URL to the
+                // client; the submission init step will persist it later.
                 const column = FILE_FIELD_COLUMNS[fileField];
                 let savedToDraft = false;
+
                 try {
-                    const userEmail = req.user?.email;
-                    if (column && userEmail) {
+                    if (column) {
                         const [rows] = await dbPromise.query(
                             `SELECT status FROM submissions
                              WHERE revision_id = ? AND corresponding_authors_email = ? LIMIT 1`,
@@ -278,6 +300,12 @@ const uploadSingleFile = async (req, res) => {
                             );
                             savedToDraft = true;
                             console.log(`File ${fileField} saved to database for submission: ${articleId}`);
+                        } else if (isFreshCorrectionOrRevision(articleId)) {
+                            // ⬅️ NEW: explicit deferral path for .Cr{n} / .R{n}
+                            console.log(
+                                `Fresh correction/revision ${articleId}: no editable row yet — ` +
+                                `deferring DB write. URL will be persisted by submission initialization.`
+                            );
                         } else {
                             console.log(
                                 `Skipped DB write for ${fileField}: ${articleId} is not an editable draft — URL returned to client only`
@@ -285,20 +313,27 @@ const uploadSingleFile = async (req, res) => {
                         }
                     }
                 } catch (dbError) {
+                    // Non-fatal — the file is on disk and URL is valid.
                     console.error("Database update failed (URL still returned to client):", dbError);
                 }
 
-                let submissionData;
+                // ── Fetch submission data (defensive) ───────────────────────
+                // getSubmissionData returns null (doesn't throw) when no row
+                // exists. We MUST normalize to {} before reading fields.
+                let submissionData = null;
                 try {
-                    submissionData = await SubmissionManager.getSubmissionData(articleId, req.user.email);
+                    submissionData = await SubmissionManager.getSubmissionData(articleId, userEmail);
                 } catch (fetchError) {
                     console.error("Failed to fetch submission data:", fetchError);
-                    submissionData = {};
+                    submissionData = null;
                 }
 
-                const hasManuscript = !!submissionData.manuscript_file;
-                const hasCoverLetter = !!submissionData.cover_letter_file;
-                const requirementErrors = validateManuscriptRequirements(submissionData);
+                // ⬅️ FIX: normalize null -> {} so field access never throws
+                const submission = submissionData || {};
+
+                const hasManuscript     = !!submission.manuscript_file;
+                const hasCoverLetter    = !!submission.cover_letter_file;
+                const requirementErrors = validateManuscriptRequirements(submission);
 
                 const response = {
                     success: true,
@@ -361,7 +396,12 @@ uploadSingleFile.checkUploadStatus = async (req, res) => {
             return res.status(400).json({ success: false, error: "No article ID provided" });
         }
 
-        const submission = await SubmissionManager.getSubmissionData(articleId, req.user.email);
+        const userEmail = req.user?.email;
+        if (!userEmail) {
+            return res.status(401).json({ success: false, error: "Authentication required" });
+        }
+
+        const submission = await SubmissionManager.getSubmissionData(articleId, userEmail);
         if (!submission) {
             return res.status(404).json({ success: false, error: "Submission not found" });
         }
@@ -403,3 +443,4 @@ module.exports = uploadSingleFile;
 module.exports.validateManuscriptRequirements = validateManuscriptRequirements;
 module.exports.FILE_CONFIG = FILE_CONFIG;
 module.exports.DESTINATION_MAP = DESTINATION_MAP;
+module.exports.isFreshCorrectionOrRevision = isFreshCorrectionOrRevision;

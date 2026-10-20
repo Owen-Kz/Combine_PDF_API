@@ -2,52 +2,65 @@ const dbPromise = require("../../routes/dbPromise.config");
 const generateArticleId = require("../generateArticleId");
 
 class SubmissionManager {
+    // ⬅️ NEW: detect fresh correction/revision IDs (e.g. .Cr1, .R2)
+    // These may not have a DB row yet at upload time.
+    static isFreshCorrectionOrRevision(articleId) {
+        return /\.(Cr|R)\d+$/i.test(articleId || '');
+    }
+
     static async initializeSubmission(req, type = 'new', submissionId = null) {
         try {
             const userId = req.user.id;
             const userEmail = req.user.email;
 
             console.log("Initializing submission:", { type, submissionId });
-if (type === 'existing-new' && submissionId) {
-            // Check if this is a correction or revision
-            console.log("INGLOROUTI", req.query)
-            const hasAnswer = Boolean(req.query.a);
-            const correctionFlag = req.query.correct || req.query.correction;
-            const revisionFlag = req.query.revise || req.query.revision;
 
-            const isCorrection = hasAnswer && (correctionFlag === 'true' || correctionFlag === 'correction');
-            const isRevision = hasAnswer && revisionFlag === 'true';
-            const originalArticleId = req.query.a;
+            if (type === 'existing-new' && submissionId) {
+                // Check if this is a correction or revision
+                console.log("INGLOROUTI", req.query);
+                const hasAnswer = Boolean(req.query.a);
+                const correctionFlag = req.query.correct || req.query.correction;
+                const revisionFlag = req.query.revise || req.query.revision;
 
-            // For corrections and revisions, let generateArticleId handle the database creation
-            if (isCorrection || isRevision) {
-                console.log(`Processing ${isCorrection ? 'correction' : 'revision'} for article:`, originalArticleId);
+                const isCorrection = hasAnswer && (correctionFlag === 'true' || correctionFlag === 'correction');
+                const isRevision = hasAnswer && revisionFlag === 'true';
+                const originalArticleId = req.query.a;
 
-                // This will create the database record and return the new ID
-                const newArticleId = await generateArticleId(req);
+                // For corrections and revisions, let generateArticleId handle the database creation
+                if (isCorrection || isRevision) {
+                    console.log(`Processing ${isCorrection ? 'correction' : 'revision'} for article:`, originalArticleId);
 
-                // Now get the actual submission data from the database
-                const newSubmission = await this.getSubmissionData(newArticleId, userEmail);
-                if (!newSubmission) {
-                    throw new Error(`Failed to create ${isCorrection ? 'correction' : 'revision'} submission`);
+                    // This will create the database record and return the new ID
+                    const newArticleId = await generateArticleId(req);
+
+                    // ⬅️ NEW: persist any uploaded file URLs from req.body
+                    // (uploadSingleFile returned them but deferred DB write
+                    // because the row didn't exist yet at upload time).
+                    await this.persistUploadedFileUrls(newArticleId, req.body, userEmail);
+
+                    // Now get the actual submission data from the database
+                    const newSubmission = await this.getSubmissionData(newArticleId, userEmail);
+                    if (!newSubmission) {
+                        throw new Error(`Failed to create ${isCorrection ? 'correction' : 'revision'} submission`);
+                    }
+
+                    // Get original data to copy related records
+                    const originalSubmission = await this.getSubmissionData(originalArticleId, userEmail);
+
+                    return {
+                        submission: newSubmission,
+                        articleId: newArticleId,
+                        keywords: originalSubmission ? await this.getSubmissionKeywords(originalArticleId) : [],
+                        authors: originalSubmission ? await this.getSubmissionAuthors(originalArticleId) : [],
+                        suggestedReviewers: originalSubmission ? await this.getSubmissionReviewers(originalArticleId) : [],
+                        isNew: false,
+                        isCorrection: isCorrection,
+                        isRevision: isRevision,
+                        originalArticleId: originalArticleId
+                    };
                 }
-
-                // Get original data to copy related records
-                const originalSubmission = await this.getSubmissionData(originalArticleId, userEmail);
-
-                return {
-                    submission: newSubmission,
-                    articleId: newArticleId,
-                    keywords: originalSubmission ? await this.getSubmissionKeywords(originalArticleId) : [],
-                    authors: originalSubmission ? await this.getSubmissionAuthors(originalArticleId) : [],
-                    suggestedReviewers: originalSubmission ? await this.getSubmissionReviewers(originalArticleId) : [],
-                    isNew: false,
-                    isCorrection: isCorrection,
-                    isRevision: isRevision,
-                    originalArticleId: originalArticleId
-                };
             }
-        }
+
             // For existing submissions
             if (type === 'existing' && submissionId) {
                 const submission = await this.getSubmissionData(submissionId, userEmail);
@@ -72,6 +85,11 @@ if (type === 'existing-new' && submissionId) {
                 const articleId = await generateArticleId(req);
                 console.log("Created new submission:", articleId);
 
+                // ⬅️ NEW: persist any uploaded file URLs that were
+                // uploaded before the row existed (e.g. client uploaded
+                // files, then called /initialize).
+                await this.persistUploadedFileUrls(articleId, req.body, userEmail);
+
                 // Get the actual submission data from database
                 const submission = await this.getSubmissionData(articleId, userEmail);
 
@@ -95,6 +113,62 @@ if (type === 'existing-new' && submissionId) {
         } catch (error) {
             console.error('Error in initializeSubmission:', error);
             throw error;
+        }
+    }
+
+    // ⬅️ NEW: writes any file URLs supplied by the client (or forwarded
+    // from the upload handler) into the freshly-created submission row.
+    // Only writes fields that are present and non-empty.
+    static async persistUploadedFileUrls(articleId, body, userEmail) {
+        if (!articleId || !body || !userEmail) return;
+
+        const FILE_URL_FIELDS = [
+            'manuscript_file',
+            'cover_letter_file',
+            'tables',
+            'figures',
+            'graphic_abstract',
+            'supplementary_material',
+            'tracked_manuscript_file'
+        ];
+
+        const updateData = {};
+        for (const field of FILE_URL_FIELDS) {
+            const value = body[field];
+            if (typeof value === 'string' && value.trim().length > 0) {
+                updateData[field] = value.trim();
+            }
+        }
+
+        if (Object.keys(updateData).length === 0) return;
+
+        try {
+            // Only update if the row exists and is still an editable draft
+            const [rows] = await dbPromise.query(
+                `SELECT status FROM submissions
+                 WHERE revision_id = ? AND corresponding_authors_email = ? LIMIT 1`,
+                [articleId, userEmail]
+            );
+
+            if (rows.length === 0) {
+                console.log(`persistUploadedFileUrls: no row for ${articleId} yet — skipping`);
+                return;
+            }
+
+            updateData.last_updated = new Date();
+
+            await dbPromise.query(
+                `UPDATE submissions SET ? WHERE revision_id = ? AND corresponding_authors_email = ?`,
+                [updateData, articleId, userEmail]
+            );
+
+            console.log(
+                `persistUploadedFileUrls: wrote ${Object.keys(updateData).length - 1} file URL(s) ` +
+                `to ${articleId}`
+            );
+        } catch (error) {
+            // Non-fatal — the client still holds the URLs and can retry
+            console.error(`persistUploadedFileUrls failed for ${articleId}:`, error);
         }
     }
 
@@ -133,12 +207,11 @@ if (type === 'existing-new' && submissionId) {
                  WHERE article_id = ? ORDER BY created_at`,
                 [submissionId]
             );
-            console.log(keywords)
+            console.log(keywords);
             return keywords.map(k => ({ keyword: k.keyword }));
         } catch (error) {
             console.error('Error fetching keywords:', error);
 
-            // If keywords table doesn't exist, return empty array
             if (error.code === 'ER_NO_SUCH_TABLE') {
                 return [];
             }
@@ -160,7 +233,6 @@ if (type === 'existing-new' && submissionId) {
         } catch (error) {
             console.error('Error fetching authors:', error);
 
-            // If authors table doesn't exist, return empty array
             if (error.code === 'ER_NO_SUCH_TABLE') {
                 return [];
             }
@@ -181,9 +253,8 @@ if (type === 'existing-new' && submissionId) {
         } catch (error) {
             console.error('Error fetching reviewers:', error);
 
-            // If reviewers table doesn't exist, return empty array
             if (error.code === 'ER_NO_SUCH_TABLE') {
-                console.log("Reviewers table does not exist")
+                console.log("Reviewers table does not exist");
                 return [];
             }
 
@@ -192,7 +263,7 @@ if (type === 'existing-new' && submissionId) {
     }
 
     static async saveStepData(submissionId, step, data) {
-        console.log(data)
+        console.log(data);
         try {
             // Validate submission exists and user has access
             const submission = await this.getSubmissionData(submissionId, data.userEmail || data.corresponding_authors_email);
@@ -253,7 +324,6 @@ if (type === 'existing-new' && submissionId) {
     static mapSpecialFields(step, data, updateData) {
         switch (step) {
             case 'article_type':
-                // Map form fields to database fields
                 if (data.article_type) updateData.article_type = data.article_type;
                 if (data.discipline) updateData.discipline = data.discipline;
                 if (data.is_women_in_contemporary_science) {
@@ -262,7 +332,7 @@ if (type === 'existing-new' && submissionId) {
                 if (data.is_kidnapping_for_ransom) {
                     updateData.is_kidnapping_for_ransom = data.is_kidnapping_for_ransom;
                 }
-                if (data.is_belispoint_academic) {           
+                if (data.is_belispoint_academic) {
                     updateData.is_belispoint_academic = data.is_belispoint_academic;
                 }
                 if (data.previous_manuscript_id) {
@@ -280,7 +350,6 @@ if (type === 'existing-new' && submissionId) {
 
             case 'upload_manuscript':
                 // File fields are handled by the file upload system
-                // These would be set when files are uploaded
                 break;
 
             case 'disclosures':
@@ -293,11 +362,10 @@ if (type === 'existing-new' && submissionId) {
         try {
             switch (step) {
                 case 'keywords':
-                    console.log(data)
+                    console.log(data);
                     if (data.keywords && Array.isArray(data.keywords)) {
                         await this.saveKeywords(submissionId, data.keywords);
                     } else if (data.keyword && Array.isArray(data.keyword)) {
-                        // Handle the form field name 'keyword[]'
                         await this.saveKeywords(submissionId, data.keyword);
                     }
                     break;
@@ -306,7 +374,6 @@ if (type === 'existing-new' && submissionId) {
                     if (data.authors && Array.isArray(data.authors)) {
                         await this.saveAuthors(submissionId, data.authors);
                     } else {
-                        // Extract authors from form data structure
                         const authors = this.extractAuthorsFromFormData(data);
                         if (authors.length > 0) {
                             await this.saveAuthors(submissionId, authors);
@@ -318,7 +385,6 @@ if (type === 'existing-new' && submissionId) {
                     if (data.reviewers && Array.isArray(data.reviewers)) {
                         await this.saveReviewers(submissionId, data.reviewers);
                     } else {
-                        // Extract reviewers from form data structure
                         const reviewers = this.extractReviewersFromFormData(data);
                         if (reviewers.length > 0) {
                             await this.saveReviewers(submissionId, reviewers);
@@ -328,14 +394,12 @@ if (type === 'existing-new' && submissionId) {
             }
         } catch (error) {
             console.error(`Error saving ${step} data:`, error);
-            // Don't re-throw for related data - main submission update should succeed
         }
     }
 
     static extractAuthorsFromFormData(data) {
         const authors = [];
 
-        // Handle logged-in author (main author)
         if (data.loggedIn_authors_first_name && data.loggedIn_authors_last_name) {
             authors.push({
                 authors_fullname: `${data.loggedIn_authors_prefix || ''} ${data.loggedIn_authors_first_name} ${data.loggedIn_authors_other_name || ''} ${data.loggedIn_authors_last_name}`.trim(),
@@ -348,7 +412,6 @@ if (type === 'existing-new' && submissionId) {
             });
         }
 
-        // Handle additional authors from arrays
         if (data['authors_first_name[]'] && Array.isArray(data['authors_first_name[]'])) {
             const authorCount = data['authors_first_name[]'].length;
 
@@ -393,11 +456,9 @@ if (type === 'existing-new' && submissionId) {
     }
 
     static async saveKeywords(submissionId, keywords) {
-        // Filter out empty keywords
         const validKeywords = keywords.filter(k => k && k.trim().length > 0);
 
         if (validKeywords.length === 0) {
-            // Clear existing keywords if no valid ones provided
             await dbPromise.query(
                 `DELETE FROM submission_keywords WHERE article_id = ?`,
                 [submissionId]
@@ -405,21 +466,18 @@ if (type === 'existing-new' && submissionId) {
             return;
         }
 
-        // Use transaction for keyword operations
         let connection;
         try {
             connection = await dbPromise.getConnection();
             await connection.beginTransaction();
 
-            // Clear existing keywords
             await dbPromise.query(
                 `DELETE FROM submission_keywords WHERE article_id = ?`,
                 [submissionId]
             );
 
-            // Insert new keywords
             const keywordValues = validKeywords.map(keyword => [submissionId, keyword.trim()]);
-            console.log("Keyword values", keywordValues)
+            console.log("Keyword values", keywordValues);
             await dbPromise.query(
                 `INSERT INTO submission_keywords (article_id, keyword) VALUES ?`,
                 [keywordValues]
@@ -435,11 +493,9 @@ if (type === 'existing-new' && submissionId) {
     }
 
     static async saveAuthors(submissionId, authors) {
-        // Filter out invalid authors
         const validAuthors = authors.filter(a => a && a.authors_fullname && a.authors_fullname.trim().length > 0);
 
         if (validAuthors.length === 0) {
-            // Clear existing authors if no valid ones provided
             await dbPromise.query(
                 `DELETE FROM submission_authors WHERE submission_id = ?`,
                 [submissionId]
@@ -452,13 +508,11 @@ if (type === 'existing-new' && submissionId) {
             connection = await dbPromise.getConnection();
             await connection.beginTransaction();
 
-            // Clear existing authors
             await dbPromise.query(
                 `DELETE FROM submission_authors WHERE submission_id = ?`,
                 [submissionId]
             );
 
-            // Insert new authors
             const authorValues = validAuthors.map(author => [
                 submissionId,
                 author.authors_fullname?.trim(),
@@ -488,11 +542,9 @@ if (type === 'existing-new' && submissionId) {
     }
 
     static async saveReviewers(submissionId, reviewers) {
-        // Filter out invalid reviewers
         const validReviewers = reviewers.filter(r => r && r.fullname && r.fullname.trim().length > 0);
 
         if (validReviewers.length === 0) {
-            // Clear existing reviewers if no valid ones provided
             await dbPromise.query(
                 `DELETE FROM suggested_reviewers WHERE article_id = ?`,
                 [submissionId]
@@ -505,13 +557,11 @@ if (type === 'existing-new' && submissionId) {
             connection = await dbPromise.getConnection();
             await connection.beginTransaction();
 
-            // Clear existing reviewers
             await dbPromise.query(
                 `DELETE FROM suggested_reviewers WHERE article_id = ?`,
                 [submissionId]
             );
 
-            // Insert new reviewers
             const reviewerValues = validReviewers.map(reviewer => [
                 submissionId,
                 reviewer.fullname?.trim(),
@@ -546,7 +596,7 @@ if (type === 'existing-new' && submissionId) {
                  ORDER BY last_updated DESC`,
                 [userEmail]
             );
-            console.log("drafts", drafts)
+            console.log("drafts", drafts);
             return drafts;
         } catch (error) {
             console.error('Error fetching user drafts:', error);
@@ -554,13 +604,11 @@ if (type === 'existing-new' && submissionId) {
         }
     }
 
-    // Helper method to get form data for auto-saving
     static extractFormData(formData) {
         const data = {};
 
         for (const [key, value] of formData.entries()) {
             if (key.endsWith('[]')) {
-                // Handle array fields
                 const baseKey = key.slice(0, -2);
                 if (!data[baseKey]) {
                     data[baseKey] = [];
@@ -574,23 +622,21 @@ if (type === 'existing-new' && submissionId) {
         return data;
     }
 
-    // get revisions count 
     static async getRevisionsCount(manuscriptId) {
         const [response] = await dbPromise.query(`SELECT revisions_count FROM submissions WHERE article_id = ? AND status LIKE '%submitted%' LIMIT 1`, [manuscriptId]);
         if (response.length > 0) {
             return response[0].revisions_count;
         }
-        console.log("Could not find revision count")
+        console.log("Could not find revision count");
         return 0;
     }
 
-    // get corrections count
     static async getCorrectionsCount(manuscriptId) {
         const [response] = await dbPromise.query(`SELECT corrections_count FROM submissions WHERE article_id = ? AND status LIKE '%submitted%' LIMIT 1`, [manuscriptId]);
         if (response.length > 0) {
             return response[0].corrections_count;
         }
-        console.log("Could not find correction count")
+        console.log("Could not find correction count");
         return 0;
     }
 }
