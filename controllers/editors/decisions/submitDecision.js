@@ -1,17 +1,10 @@
-const mysql = require("mysql2/promise");
+const db = require("../../../routes/db.config");
 const sendMail = require("../../utils/nodeMailer");
 const multer = require("multer");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("../../account/invitations/saveEmail");
 dotenv.config();
-
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-};
 
 const upload = multer({ dest: "uploads/" });
 
@@ -41,7 +34,7 @@ const submitDecision = async (req, res) => {
       return res.status(400).json({ status: "error", message: "Invalid decision type. Must be accept, reject, revise, or return" });
     }
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await db.promise();
 
     const [editorRows] = await connection.execute(
       "SELECT email, fullname FROM editors WHERE email = ?",

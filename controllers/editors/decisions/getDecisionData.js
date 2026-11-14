@@ -1,13 +1,6 @@
-const mysql = require("mysql2/promise");
+const db = require("../../../routes/db.config");
 const dotenv = require("dotenv");
 dotenv.config();
-
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-};
 
 const getDecisionData = async (req, res) => {
   let connection;
@@ -22,7 +15,7 @@ const getDecisionData = async (req, res) => {
       return res.status(400).json({ status: "error", message: "Article ID is required" });
     }
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await db.promise();
 
     const [invitation] = await connection.execute(
       "SELECT 1 FROM invitations WHERE invitation_link = ? AND invited_user = ? AND invited_for = 'To Decide'",

@@ -36,10 +36,11 @@ if (!mysql.__asfirjErrorGuardInstalled) {
     };
 }
 
-// Also cover the promise API used by dbPromise.config.js / db-pool.config.js
+// Also cover the promise API used by dbPromise.config.js
 const mysqlPromise = require("mysql2/promise");
 if (!mysqlPromise.__asfirjErrorGuardInstalled) {
     mysqlPromise.__asfirjErrorGuardInstalled = true;
+
     const originalCreatePool = mysqlPromise.createPool.bind(mysqlPromise);
     mysqlPromise.createPool = function (...args) {
         const pool = originalCreatePool(...args);
@@ -47,6 +48,15 @@ if (!mysqlPromise.__asfirjErrorGuardInstalled) {
             pool.on("error", () => {});
         }
         return pool;
+    };
+
+    const originalCreateConnection = mysqlPromise.createConnection.bind(mysqlPromise);
+    mysqlPromise.createConnection = async function (...args) {
+        const conn = await originalCreateConnection(...args);
+        if (typeof conn.on === "function") {
+            conn.on("error", () => {});
+        }
+        return conn;
     };
 }
 

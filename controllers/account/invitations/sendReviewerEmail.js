@@ -3,14 +3,13 @@ const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
 const isAdminAccount = require("../../editors/isAdminAccount");
-const db = require("../../../routes/db.config");
-const { promisify } = require("util");
+const db = require("../../../routes/dbPromise.config");
 const { escapeHtml } = require("../../utils/security");
 const convertQUILLTOHTML = require("./convertHTML");
 
 dotenv.config();
 
-const dbQuery = promisify(db.query).bind(db);
+const dbQuery = (sql, params) => db.query(sql, params);
 
 const inviteReviewerEmail = async (req, res) => {
   try {

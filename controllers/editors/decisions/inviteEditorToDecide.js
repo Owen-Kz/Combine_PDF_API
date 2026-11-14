@@ -1,15 +1,8 @@
-const mysql = require("mysql2/promise");
+const db = require("../../../routes/db.config");
 const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("../../account/invitations/saveEmail");
 dotenv.config();
-
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-};
 
 const inviteEditorToDecide = async (req, res) => {
   let connection;
@@ -24,7 +17,7 @@ const inviteEditorToDecide = async (req, res) => {
       return res.status(400).json({ status: "error", message: "articleId and editorEmail are required" });
     }
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await db.promise();
 
     const [requesterRows] = await connection.execute(
       "SELECT email FROM editors WHERE email = ? AND (editorial_level IN (?, ?, ?))",

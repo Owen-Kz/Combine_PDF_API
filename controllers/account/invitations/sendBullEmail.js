@@ -1,12 +1,10 @@
 const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
-const db = require("../../../routes/db.config");
-const { promisify } = require("util");
+const db = require("../../../routes/dbPromise.config");
 
 dotenv.config();
 
-// Promisify database queries
-const dbQuery = promisify(db.query).bind(db);
+const dbQuery = (sql, params) => db.query(sql, params);
 
 /**
  * Convert Quill JSON to HTML with proper sanitization

@@ -1,24 +1,12 @@
 const sendMail = require("../../utils/nodeMailer");
-const mysql = require("mysql2/promise");
 const axios = require("axios");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("./saveEmail");
 
 dotenv.config();
 
-// Database Configuration
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
-
-// Create a connection pool
-const pool = mysql.createPool(dbConfig);
+// Shared application pool (routes/db.config.js) — one bounded pool per process
+const pool = require("../../../routes/dbPromise.config");
 
 // Sender email for outbound mail
 const senderEmail = process.env.NODE_MAILER_SENDER_EMAIL || process.env.NODE_MAILER_EMAIL;

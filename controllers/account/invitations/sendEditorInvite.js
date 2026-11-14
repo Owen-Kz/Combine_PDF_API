@@ -1,17 +1,10 @@
 // backend/controllers/editors/email/inviteEditorEmail.js
-const mysql = require("mysql2/promise");
+const db = require("../../../routes/db.config");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const dotenv = require("dotenv");
 const { escapeHtml } = require("../../utils/security");
 
 dotenv.config();
-
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-};
 
 const inviteEditorEmail = async (req, res) => {
   let connection;
@@ -50,7 +43,7 @@ const inviteEditorEmail = async (req, res) => {
           }))
       : [];
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await db.promise();
 
     const [editorRows] = await connection.execute(
       "SELECT email FROM editors WHERE email = ? AND editorial_level IN (?, ?, ?)",

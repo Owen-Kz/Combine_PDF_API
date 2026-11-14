@@ -1,6 +1,6 @@
 const express = require("express");
 const multer = require("multer");
-const mysql = require("mysql2/promise");
+const db = require("../../../routes/db.config");
 const saveEmailDetails = require("./saveEmail");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const { uploadToCloudinary } = require("./uploadToCloudinary");
@@ -8,13 +8,6 @@ const { config } = require("dotenv");
 config()
 
 const upload = multer({ dest: "uploads/" });
-
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-};
 
 const ReturnPaper = async (req, res) => {
   let connection;
@@ -36,7 +29,7 @@ const ReturnPaper = async (req, res) => {
       return res.status(401).json({ status: "error", message: "Unauthorized account" });
     }
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await db.promise();
 
     // Validate editor's role
     const [editorRows] = await connection.execute(

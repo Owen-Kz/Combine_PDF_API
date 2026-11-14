@@ -1,18 +1,16 @@
-const mysql = require('mysql2/promise');
-const dotenv = require("dotenv").config();
+// routes/dbPromise.config.js
+//
+// Promise-style database handle used across the API. It is backed by the same
+// pool as routes/db.config.js so the process keeps one bounded set of
+// connections (instead of one pool per module) with the same keep-alive and
+// self-healing behaviour.
+//
+// Supported, unchanged API:
+//   dbPromise.query(sql, params)      -> [rows, fields]
+//   dbPromise.execute(sql, params)    -> [rows, fields]
+//   dbPromise.getConnection()         -> pooled connection (beginTransaction,
+//                                        commit, rollback, release)
 
-const dbPromise = mysql.createPool({
-    host: process.env.D_HOST,
-    user: process.env.D_USER,
-    password: process.env.D_PASSWORD,
-    database: process.env.D_NAME,
-    waitForConnections: true,
-    connectionLimit: 20,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 10000,
-    // acquireTimeout: 10000,
-    // lockWaitTimeout: 5,
-});
+const db = require("./db.config");
 
-module.exports = dbPromise;
+module.exports = db.pool.promise();

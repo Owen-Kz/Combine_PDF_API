@@ -2,19 +2,12 @@
 // awaiting an editorial decision. Used automatically after a review is
 // submitted (see controllers/reviewers/submitReviews.js) and by the manual
 // "Invite Editor" action on the reviewer dashboard.
-const mysql = require("mysql2/promise");
+const db = require("../../../routes/db.config");
 const sendMail = require("../../utils/nodeMailer");
 const dotenv = require("dotenv");
 const saveEmailDetails = require("../../account/invitations/saveEmail");
 
 dotenv.config();
-
-const dbConfig = {
-  host: process.env.D_HOST,
-  user: process.env.D_USER,
-  password: process.env.D_PASSWORD,
-  database: process.env.D_NAME,
-};
 
 /**
  * Resolve the responsible editor(s) for an article.
@@ -119,7 +112,7 @@ const notifyEditorForDecision = async ({ articleId, editorEmail = null, invitedB
       return { invited: false, editors: [], message: "Article ID is required" };
     }
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await db.promise();
 
     const [submission] = await connection.execute(
       "SELECT revision_id, article_id, title, status FROM submissions WHERE revision_id = ?",
