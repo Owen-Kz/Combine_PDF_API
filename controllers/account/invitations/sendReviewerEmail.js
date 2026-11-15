@@ -6,10 +6,16 @@ const isAdminAccount = require("../../editors/isAdminAccount");
 const db = require("../../../routes/dbPromise.config");
 const { escapeHtml } = require("../../utils/security");
 const convertQUILLTOHTML = require("./convertHTML");
+const { isManuscriptAuthor } = require("./isManuscriptAuthor");
 
 dotenv.config();
 
-const dbQuery = (sql, params) => db.query(sql, params);
+// dbPromise.query resolves to [rows, fields]; call sites in this file expect the
+// rows themselves (as the previous promisify(db.query) wrapper returned).
+const dbQuery = async (sql, params) => {
+  const [rows] = await db.query(sql, params);
+  return rows;
+};
 
 const inviteReviewerEmail = async (req, res) => {
   try {
@@ -17,7 +23,7 @@ const inviteReviewerEmail = async (req, res) => {
       return res.status(401).json({ status: "error", message: "Authentication required" });
     }
 
-    const {
+    let {
       articleId,
       reviewerEmail,
       subject,
@@ -31,6 +37,9 @@ const inviteReviewerEmail = async (req, res) => {
     if (!articleId || !reviewerEmail || !subject || !message) {
       return res.status(400).json({ status: "error", message: "Missing required fields" });
     }
+
+    reviewerEmail = String(reviewerEmail).trim();
+    articleId = String(articleId).trim();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(reviewerEmail)) {
@@ -79,12 +88,8 @@ const inviteReviewerEmail = async (req, res) => {
       }
     }
 
-    // Reviewer cannot be an author of the manuscript
-    const isAuthor = await dbQuery(
-      `SELECT 1 FROM submission_authors WHERE authors_email = ? AND submission_id = ?`,
-      [reviewerEmail, articleId]
-    );
-    if (isAuthor.length > 0) {
+        // Reviewer cannot be an author of the manuscript
+    if (await isManuscriptAuthor(reviewerEmail, articleId)) {
       return res.status(400).json({ status: "error", message: "Reviewer cannot be an author of this article" });
     }
 

@@ -3,13 +3,14 @@ const db = require("../../../routes/db.config");
 const { ReviewerAccountEmail } = require("./revieweerAccountEmail");
 const dotenv = require("dotenv");
 const { escapeHtml } = require("../../utils/security");
+const { isManuscriptAuthor } = require("./isManuscriptAuthor");
 
 dotenv.config();
 
 const inviteEditorEmail = async (req, res) => {
   let connection;
   try {
-    const {
+    let {
       articleId,
       reviewerEmail,
       subject,
@@ -30,6 +31,9 @@ const inviteEditorEmail = async (req, res) => {
     if (!articleId || !reviewerEmail || !subject || !message) {
       return res.status(400).json({ status: "error", message: "Missing required fields" });
     }
+
+    reviewerEmail = String(reviewerEmail).trim();
+    articleId = String(articleId).trim();
 
     // Attachments arrive as [{ url, name, size }] — already uploaded to the
     // local server via /editors/upload-invitation-attachment.
@@ -59,11 +63,7 @@ const inviteEditorEmail = async (req, res) => {
 
     const editor_email = editorRows[0].email;
 
-    const [isAuthor] = await connection.execute(
-      "SELECT 1 FROM submission_authors WHERE authors_email = ? AND submission_id = ?",
-      [reviewerEmail, articleId]
-    );
-    if (isAuthor.length > 0) {
+    if (await isManuscriptAuthor(reviewerEmail, articleId)) {
       return res.status(400).json({ status: "error", message: "Editor cannot be an author of this article" });
     }
 

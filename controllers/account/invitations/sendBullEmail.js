@@ -4,7 +4,12 @@ const db = require("../../../routes/dbPromise.config");
 
 dotenv.config();
 
-const dbQuery = (sql, params) => db.query(sql, params);
+// dbPromise.query resolves to [rows, fields]; return the rows, matching the
+// previous promisify(db.query) wrapper.
+const dbQuery = async (sql, params) => {
+  const [rows] = await db.query(sql, params);
+  return rows;
+};
 
 /**
  * Convert Quill JSON to HTML with proper sanitization
