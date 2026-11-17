@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
-const db = require('../../routes/db.config');
+// Promise pool: db.config exposes the callback API, whose execute() is not thenable.
+const db = require('../../routes/dbPromise.config');
 const { sendEditorWelcomeEmail } = require('../utils/sendWelcomeEmail');
 const { transformToLowerCase } = require('../../utils/utils.global');
 

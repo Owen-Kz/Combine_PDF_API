@@ -1,4 +1,5 @@
-const db = require("../../routes/db.config");
+// Promise pool: db.config exposes the callback API, whose execute() is not thenable.
+const db = require("../../routes/dbPromise.config");
 const isAdminAccount = require("./isAdminAccount");
 
 const deleteAuthorAccount = async (req, res) => {

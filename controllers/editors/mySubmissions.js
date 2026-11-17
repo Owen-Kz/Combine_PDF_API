@@ -3,6 +3,7 @@ const db = require("../../routes/db.config");
 const {
   getFamilyCache,
 } = require("./familyMap");
+const { sendSubmissionsCsv } = require("./submissionsCsv");
 
 const truthy = (v) =>
   v === true || v === 1 || v === "1" || v === "true" || v === "yes";
@@ -57,6 +58,21 @@ const mySubmissions = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid Parameters" });
     }
 
+    // CSV export returns every row matching the filters, not just one page.
+    const wantsCsv =
+      String(req.query.export || req.query.format || "").toLowerCase() === "csv";
+    const emptyResult = () =>
+      wantsCsv
+        ? sendSubmissionsCsv(res, [], "manuscripts")
+        : res.json({
+            success: true,
+            submissions: [],
+            total: 0,
+            totalPages: 0,
+            currentPage: page,
+            limit,
+          });
+
     // 1) Assigned article_ids
     const [assignedRows] = await db.promise().query(
       ASSIGNED_SUBQUERY, [editorEmail, editorEmail]
@@ -82,10 +98,7 @@ const mySubmissions = async (req, res) => {
         if (members) memberIds.push(...members);
       }
       if (memberIds.length === 0) {
-        return res.json({
-          success: true, submissions: [], total: 0,
-          totalPages: 0, currentPage: page, limit,
-        });
+        return emptyResult();
       }
 
       const [matches] = await db.promise().query(
@@ -114,10 +127,7 @@ const mySubmissions = async (req, res) => {
     }
 
     if (familyIds.length === 0) {
-      return res.json({
-        success: true, submissions: [], total: 0,
-        totalPages: 0, currentPage: page, limit,
-      });
+      return emptyResult();
     }
 
     // 5) Candidate article ids across surviving families
@@ -127,10 +137,7 @@ const mySubmissions = async (req, res) => {
       if (members) candidateArticleIds.push(...members);
     }
     if (candidateArticleIds.length === 0) {
-      return res.json({
-        success: true, submissions: [], total: 0,
-        totalPages: 0, currentPage: page, limit,
-      });
+      return emptyResult();
     }
 
     // 6) Build WHERE
@@ -281,10 +288,9 @@ const mySubmissions = async (req, res) => {
       });
 
     const total = representatives.length;
-    const pageSlice = representatives.slice(offset, offset + limit);
 
     // 10) Format
-    const formattedSubmissions = pageSlice.map(({ fid, row }) => {
+    const formatSubmission = ({ fid, row }) => {
       const authorParts = [row.prefix, row.firstname, row.lastname].filter(Boolean);
       const authorName = authorParts.join(" ") || "Unknown";
       const correspondingAuthor = authorParts.length > 0
@@ -345,7 +351,14 @@ const mySubmissions = async (req, res) => {
         newReviews: row.new_reviews || 0,
         files,
       };
-    });
+    };
+
+    if (wantsCsv) {
+      return sendSubmissionsCsv(res, representatives.map(formatSubmission), "manuscripts");
+    }
+
+    const pageSlice = representatives.slice(offset, offset + limit);
+    const formattedSubmissions = pageSlice.map(formatSubmission);
 
     return res.json({
       success: true,

@@ -9,6 +9,7 @@ const isAdminAccount = async (id) =>{
                 if(error){
                     console.log(error)
                     reject(false)
+                    return
                 }
                 if(data[0]){
                     resolve(true)
@@ -16,7 +17,8 @@ const isAdminAccount = async (id) =>{
                     const [isAuthorFirst] = await dbPromise.query("SELECT email FROM authors_account WHERE id = ? LIMIT 1", [id])
                     if(isAuthorFirst.length > 0){
                         // Check editors table 
-                        const isAdminEditor = await dbPromise.query("SELECT * FROM editors WHERE email = ? AND (editorial_level = 'editor_in_chief' OR editorial_level = 'editorial_assistant')", [isAuthorFirst.email])
+                        // dbPromise.query resolves to [rows, fields]; use the rows.
+                        const [isAdminEditor] = await dbPromise.query("SELECT * FROM editors WHERE email = ? AND (editorial_level = 'editor_in_chief' OR editorial_level = 'editorial_assistant')", [isAuthorFirst[0].email])
                         if(isAdminEditor.length > 0){
                             resolve(true)
                         }

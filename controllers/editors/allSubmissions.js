@@ -6,6 +6,7 @@ const {
   resolveToFamilyIds,
   getFamilyArticleIds,
 } = require("./familyMap");
+const { sendSubmissionsCsv } = require("./submissionsCsv");
 
 const MAX_LIMIT = 100;
 
@@ -45,6 +46,21 @@ const allSubmissions = async (req, res) => {
     if (!(await isAdminAccount(userEmail))) {
       return res.status(403).json({ error: "Not authorized" });
     }
+
+    // CSV export returns every row matching the filters, not just one page.
+    const wantsCsv =
+      String(req.query.export || req.query.format || "").toLowerCase() === "csv";
+    const emptyResult = () =>
+      wantsCsv
+        ? sendSubmissionsCsv(res, [], "manuscripts")
+        : res.json({
+            success: true,
+            submissions: [],
+            total: 0,
+            totalPages: 0,
+            currentPage: page,
+            limit,
+          });
 
     // 1) Family map
     const { map: familyMap, familyMembers } = await getFamilyCache();
@@ -88,14 +104,7 @@ const allSubmissions = async (req, res) => {
       candidateArticleIds.push(...getFamilyArticleIds(fid, familyMembers));
     }
     if (candidateArticleIds.length === 0) {
-      return res.json({
-        success: true,
-        submissions: [],
-        total: 0,
-        totalPages: 0,
-        currentPage: page,
-        limit,
-      });
+      return emptyResult();
     }
 
     // 4) Build WHERE with every filter
@@ -246,9 +255,8 @@ const allSubmissions = async (req, res) => {
       });
 
     const total = representatives.length;
-    const pageSlice = representatives.slice(offset, offset + limit);
 
-    if (total === 0) {
+    if (total === 0 && !wantsCsv) {
       return res.json({
         success: true,
         submissions: [],
@@ -260,7 +268,7 @@ const allSubmissions = async (req, res) => {
     }
 
     // 8) Format
-    const formattedSubmissions = pageSlice.map(({ fid, row }) => {
+    const formatSubmission = ({ fid, row }) => {
       const authorParts = [row.prefix, row.firstname, row.lastname].filter(Boolean);
       const authorName = authorParts.join(" ") || "Unknown";
       const correspondingAuthor =
@@ -324,7 +332,14 @@ const allSubmissions = async (req, res) => {
         newReviews: row.new_reviews || 0,
         files,
       };
-    });
+    };
+
+    if (wantsCsv) {
+      return sendSubmissionsCsv(res, representatives.map(formatSubmission), "manuscripts");
+    }
+
+    const pageSlice = representatives.slice(offset, offset + limit);
+    const formattedSubmissions = pageSlice.map(formatSubmission);
 
     return res.json({
       success: true,

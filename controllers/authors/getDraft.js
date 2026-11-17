@@ -82,16 +82,17 @@ const getDraftSubmissions = async (req, res) => {
                 
                 // Determine which step the user is on based on filled fields
                 let currentStep = 1;
-                const submissionData = await dbPromise.query(
+                // dbPromise.query resolves to [rows, fields]; read the draft row.
+                const [[draftData]] = await dbPromise.query(
                     `SELECT article_type, discipline, title, abstract, manuscript_file, cover_letter_file,
                             is_women_in_contemporary_science, is_kidnapping_for_ransom, is_belispoint_academic
                      FROM submissions WHERE revision_id = ?`,
                     [submission.id]
                 );
                 
-                if (submissionData[0]?.manuscript_file && submissionData[0]?.cover_letter_file) currentStep = 3;
-                if (submissionData[0]?.title) currentStep = 4;
-                if (submissionData[0]?.abstract) currentStep = 5;
+                if (draftData?.manuscript_file && draftData?.cover_letter_file) currentStep = 3;
+                if (draftData?.title) currentStep = 4;
+                if (draftData?.abstract) currentStep = 5;
                 if (keywords && keywords.length > 0) currentStep = 6;
                 if (authors && authors.length > 0) currentStep = 7;
                 
